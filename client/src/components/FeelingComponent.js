@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios';
 import FeelingtHistoryComponent from './FeelingtHistoryComponent';
 import SpinnerComponent from './SpinnerComponent';
@@ -20,6 +20,7 @@ const FeelingComponent  = ()  =>{
       axios.get(`${BASE_API_URL}/api/feelings`)
       .then((response) => {
           setState((prevState) => {
+            console.log('New data is')
               return {
                 ...prevState,
                 history: response.data,
@@ -32,10 +33,12 @@ const FeelingComponent  = ()  =>{
       });
     }
 
-    const setStatus = (status) => {
+    useEffect(() => {
+      getFeelings()
+    }, [])
 
+    const setStatus = (status) => {
       setState((prevState) => {
-        console.log('Status set', status);
         return {
           ...prevState,
           status,
@@ -59,8 +62,14 @@ const FeelingComponent  = ()  =>{
       console.log('State', state);
       return axios.post(`${BASE_API_URL}/api/feelings`,
         {
-          status: Number.parseFloat(state.status),
-          createdAt: state.createdAt
+          status: state.status.toString(),
+          createdAt: state.createdAt,
+          comment: state.comment,
+
+        }, {
+          headers: {
+            "x-user-id": "99936053-a2dc-449d-9020-0682c9bc7f36"
+          }
         })
         .then((res) => console.log('Success'))
         .then(getFeelings)
@@ -70,7 +79,7 @@ const FeelingComponent  = ()  =>{
   const renderSpinner = () => (<SpinnerComponent />)
 
   const renderWeightHistory = () => {
-    return <FeelingtHistoryComponent feelings={this.state.history}/>;
+    return <FeelingtHistoryComponent feelings={state.history}/>;
   }
 
   return (

@@ -1,8 +1,24 @@
 import React, { Component } from 'react'
 
-class FeelingHistoryComponent extends Component {
+const FeelingHistoryComponent = ({feelings}) => {
 
-    renderTableContent = (feelings) => {
+
+    const renderStatus = (s) => {
+      switch (Number.parseInt(s)) {
+        case 0:
+          return (<span>😔</span>);
+        case 1:
+          return (<span>🙁</span>);
+        case 2:
+          return (<span>😐</span>);
+        case 3:
+          return (<span>🙂</span>);
+        case 4:
+          return (<span>😀</span>);
+
+      }
+    }
+    const renderTableContent = (feelings) => {
       return (
         <table className="table table-striped">
             <tbody>
@@ -11,10 +27,10 @@ class FeelingHistoryComponent extends Component {
                 <th scope="col">Date</th>
               </tr>
               {
-                feelings.map((weight, i) => {
-                  const [year, month, date] = new Date(weight.createdAt).toISOString().substring(0,10).split('-')
+                feelings.map((f, i) => {
+                  const [year, month, date] = new Date(f.createdAt).toISOString().substring(0,10).split('-')
                   return (<tr key={i}>
-                  <td>{weight.kilograms}</td>
+                  <td>{renderStatus(f.status)}</td>
                   <td>{`${date}/${month}/${year}`}</td>
                 </tr>)
                 })
@@ -24,20 +40,20 @@ class FeelingHistoryComponent extends Component {
         )
     }
 
-    renderEmptyTable = () => {
+    const renderEmptyTable = () => {
       return (
         <div>No content</div>
       )
     }
 
-  render() {
-    const {feelings} = this.props;
+  // render() {
+    // const {feelings} = props;
       return (
         <div>
-          {feelings ? this.renderTableContent(feelings) : this.renderEmptyTable() }
+          {feelings ? renderTableContent(feelings) : renderEmptyTable() }
         </div>
       );
-  }
+  // }
 }
 
 export default FeelingHistoryComponent;
