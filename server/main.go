@@ -45,10 +45,7 @@ func main() {
 	//
 
 	//setup data base
-	//1P3dGrEUsGeEbxIP
-	//feeling
-	//mongodb+srv://feeling:<password>@cluster0.8pqgj.mongodb.net/<dbname>?retryWrites=true&w=majority
-	conString := "mongodb+srv://feeling:1P3dGrEUsGeEbxIP@cluster0.8pqgj.mongodb.net/test?retryWrites=true&w=majority"
+	conString := ""
 	_, err := SetupDB(conString)
 
 	if err != nil {
