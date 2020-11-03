@@ -8,7 +8,9 @@ import Profile from "./UserDetailsComponent";
 
 const FeelingComponent  = ()  =>{
     const auth = useAuth0();
-    const [state, setState] = useState({
+    // const { user, isAuthenticated, isLoading } = useAuth0();
+
+  const [state, setState] = useState({
       fetching: true,
       status: 0,
       createdAt: '',
@@ -17,10 +19,14 @@ const FeelingComponent  = ()  =>{
     });
 
     const getFeelings = () => {
-      axios.get(`${BASE_API_URL}/api/feelings`)
+      axios.get(`${BASE_API_URL}/api/feelings`,
+        {
+          headers: {
+            "x-user-id": auth.user.sub
+          }
+        })
       .then((response) => {
           setState((prevState) => {
-            console.log('New data is')
               return {
                 ...prevState,
                 history: response.data,
@@ -68,7 +74,7 @@ const FeelingComponent  = ()  =>{
 
         }, {
           headers: {
-            "x-user-id": "99936053-a2dc-449d-9020-0682c9bc7f36"
+            "x-user-id": auth.user.sub
           }
         })
         .then((res) => console.log('Success'))

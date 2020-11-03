@@ -86,11 +86,11 @@ func main() {
 		var results []*Feeling
 
 		// Get the user id from header
-
+		userID := c.Request.Header.Get("x-user-id")
 		//
 
 		// Passing bson.D{{}} as the filter matches all documents in the collection
-		cur, err := collection.Find(context.TODO(), bson.M{"userid": "99936053-a2dc-449d-9020-0682c9bc7f36"}, findOptions)
+		cur, err := collection.Find(context.TODO(), bson.M{"userid": userID}, findOptions)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -127,7 +127,6 @@ func main() {
 
 		//get user id from header
 		userID := c.Request.Header.Get("x-user-id")
-		log.Println("userId is", userID)
 		feeling.UserID = userID
 
 		if err != nil {
