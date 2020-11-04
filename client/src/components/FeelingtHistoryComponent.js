@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import moment from 'moment';
 
 const FeelingHistoryComponent = ({feelings}) => {
 
@@ -28,10 +29,10 @@ const FeelingHistoryComponent = ({feelings}) => {
               </tr>
               {
                 feelings.map((f, i) => {
-                  const [year, month, date] = new Date(f.createdAt).toISOString().substring(0,10).split('-')
+                  const date = moment(new Date(f.createdAt)).format('DD-MM-YYYY');
                   return (<tr key={i}>
                   <td>{renderStatus(f.status)}</td>
-                  <td>{`${date}/${month}/${year}`}</td>
+                  <td>{date}</td>
                 </tr>)
                 })
                }

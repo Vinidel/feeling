@@ -112,7 +112,6 @@ const FeelingComponent  = ()  =>{
           </label>
           <div className="col-sm-10">
             <textarea name="comment" id="comment" className="form-control" value={state.comment} onChange={handleCommentChange} />
-            {/*<textarea name="comment" id="comment" className="form-control" onChange={handleCommentChange} />*/}
           </div>
       </form>
       <div className="btn-container">
