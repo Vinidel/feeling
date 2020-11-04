@@ -15,8 +15,6 @@ RUN npm run build
 # that we will deploy to production
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
-ENV DB_USER=$DB_USER
-ENV DB_PASS=$DB_PASS
 COPY --from=builder /main ./
 COPY --from=node_builder /build ./web
 RUN chmod +x ./main
