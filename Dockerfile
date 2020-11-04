@@ -8,6 +8,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-w" -a -o /main .
 # Build the React application
 FROM node:alpine AS node_builder
 COPY --from=builder /app/client ./
+RUN npm cache clean --force
 RUN npm install
 RUN npm run build
 
