@@ -48,3 +48,19 @@
   border-radius: 4px;
   padding: 35px;
 }
+
+.btn-emoji:focus {
+    background: #20c997;
+}
+
+.btn-emoji:hover {
+    background: #20c997;
+}
+
+.comment-link {
+    cursor: pointer;
+}
+
+.comment-link:hover {
+    background-color: #20c997;
+}

@@ -100,11 +100,11 @@ const FeelingComponent  = ()  =>{
           </label>
           <div className="col-sm-10">
             <div className="btn-group ">
-              <button type="button" className="btn btn-primary-outline" onClick={() => setStatus(0)}>😔</button>
-              <button type="button" className="btn btn-primary-outline" onClick={() => setStatus(1)}>🙁</button>
-              <button type="button" className="btn btn-primary-outline" onClick={() => setStatus(2)}>😐</button>
-              <button type="button" className="btn btn-primary-outline" onClick={() => setStatus(3)}>🙂</button>
-              <button type="button" className="btn btn-primary-outline" onClick={() => setStatus(4)}>😀</button>
+              <button type="button" className="btn btn-primary-outline btn-emoji" onClick={() => setStatus(0)}>😔</button>
+              <button type="button" className="btn btn-primary-outline btn-emoji" onClick={() => setStatus(1)}>🙁</button>
+              <button type="button" className="btn btn-primary-outline btn-emoji" onClick={() => setStatus(2)}>😐</button>
+              <button type="button" className="btn btn-primary-outline btn-emoji" onClick={() => setStatus(3)}>🙂</button>
+              <button type="button" className="btn btn-primary-outline btn-emoji" onClick={() => setStatus(4)}>😀</button>
             </div>
           </div>
           <label className="col-sm-2 col-form-label">
