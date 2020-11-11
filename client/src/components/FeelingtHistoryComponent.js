@@ -6,7 +6,7 @@ const FeelingHistoryComponent = ({feelings}) => {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const toggle = () => setPopoverOpen(!popoverOpen);
 
-  const renderIcon = (comment) => (
+  const renderIcon = (comment, date) => (
     <div>
       <Button className="comment-link" id="comment-btn" type="button">
         <svg width="1em" height="1em" viewBox="0 0 16 16" className="bi bi-book" fill="currentColor"
@@ -16,7 +16,7 @@ const FeelingHistoryComponent = ({feelings}) => {
         </svg>
       </Button>
       <Popover placement="top" isOpen={popoverOpen} target="comment-btn" toggle={toggle}>
-        <PopoverHeader>Comment is always hidden</PopoverHeader>
+        <PopoverHeader>{moment(new Date(date)).format('MMMM Do YYYY, h:mm:ss a')}</PopoverHeader>
         <PopoverBody>{comment}</PopoverBody>
       </Popover>
     </div>)
@@ -54,7 +54,7 @@ const FeelingHistoryComponent = ({feelings}) => {
                   return (<tr key={i}>
                   <td>{renderStatus(f.status)}</td>
                   <td>{date}</td>
-                    <td>{f.comment ? renderIcon(f.comment) : renderEmpty()}</td>
+                    <td>{f.comment ? renderIcon(f.comment, f.createdAt) : renderEmpty()}</td>
                 </tr>)
                 })
                }
