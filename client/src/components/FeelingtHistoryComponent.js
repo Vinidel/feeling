@@ -1,4 +1,4 @@
-import React, { Component, useState } from 'react'
+import React, { useState } from 'react'
 import moment from 'moment';
 import {Button, Popover, PopoverHeader, PopoverBody} from "reactstrap";
 
@@ -69,14 +69,11 @@ const FeelingHistoryComponent = ({feelings}) => {
       )
     }
 
-  // render() {
-    // const {feelings} = props;
       return (
         <div>
           {feelings ? renderTableContent(feelings) : renderEmptyTable() }
         </div>
       );
-  // }
 }
 
 export default FeelingHistoryComponent;
