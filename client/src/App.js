@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import './App.css';
 import TitleComponent from './components/TitleComponent';
 import FeelingComponent from './components/FeelingComponent';
