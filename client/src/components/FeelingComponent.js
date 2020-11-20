@@ -1,47 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios';
 import FeelingtHistoryComponent from './FeelingtHistoryComponent';
-import SpinnerComponent from './SpinnerComponent';
 import {BASE_API_URL} from '../config';
 import {useAuth0} from "@auth0/auth0-react";
 import Profile from "./UserDetailsComponent";
+import WithFetch from "./WithFetch";
 
 const FeelingComponent  = ()  =>{
     const auth = useAuth0();
-    // const { user, isAuthenticated, isLoading } = useAuth0();
-
+  const [update, forceUpdate] = useState(0)
   const [state, setState] = useState({
-      fetching: true,
       status: 0,
       createdAt: '',
       comment: '',
-      history: [],
     });
-
-    const getFeelings = () => {
-      axios.get(`${BASE_API_URL}/api/feelings`,
-        {
-          headers: {
-            "x-user-id": auth.user.sub
-          }
-        })
-      .then((response) => {
-          setState((prevState) => {
-              return {
-                ...prevState,
-                history: response.data,
-                fetching: false
-              }
-          })
-      })
-      .catch(function (error) {
-          console.log('hey', error);
-      });
-    }
-
-    useEffect(() => {
-      getFeelings()
-    }, [])
 
     const setStatus = (status) => {
       setState((prevState) => {
@@ -65,7 +37,6 @@ const FeelingComponent  = ()  =>{
 
     const handleSubmit = (e) => {
       e.preventDefault();
-      console.log('State', state);
       return axios.post(`${BASE_API_URL}/api/feelings`,
         {
           status: state.status.toString(),
@@ -77,19 +48,16 @@ const FeelingComponent  = ()  =>{
             "x-user-id": auth.user.sub
           }
         })
-        .then((res) => console.log('Success'))
-        .then(getFeelings)
+        .then((res) => {
+          console.log('Calling set state')
+          return forceUpdate(n => n+1);
+        })
         .catch(e => console.log('Error', e))
-  }
-
-  const renderSpinner = () => (<SpinnerComponent />)
-
-  const renderWeightHistory = () => {
-    return <FeelingtHistoryComponent feelings={state.history}/>;
   }
 
   return (
     <div className="App-tile">
+      {console.log('Rendering')}
       <Profile />
       <button onClick={() => auth.logout({ returnTo: window.location.origin })}>
         Log Out
@@ -118,7 +86,11 @@ const FeelingComponent  = ()  =>{
         <button type="button" onClick={handleSubmit} className="btn btn-success">Save</button>
       </div>
       <br />
-      {state.fetching ? renderSpinner() : renderWeightHistory()}
+      <WithFetch
+        update={update}
+        url={`${BASE_API_URL}/api/feelings`}
+        render={({data, isFetching}) => (<FeelingtHistoryComponent data={data} isFetching={isFetching}/>)}
+      />
     </div>
   );
 }
