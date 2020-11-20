@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import axios from "axios";
-import useAuth0 from "@auth0/auth0-react/dist/use-auth0";
+import {useAuth0} from "@auth0/auth0-react";
+
 
 const WithFetch = (props) => {
   const { user } = useAuth0();
@@ -20,8 +21,14 @@ const WithFetch = (props) => {
     })
   }
 
+  useEffect(() => {
+    fetch();
+  }, [])
 
-  useEffect(() => fetch(), []);
+  useEffect(() => {
+    fetch();
+  }, [props.update])
+
 
   return props.render({data, isFetching})
 }
@@ -29,4 +36,7 @@ const WithFetch = (props) => {
 WithFetch.propTypes = {
   render: PropTypes.func.required,
   url: PropTypes.string,
+  update: PropTypes.number.required,
 }
+
+export default WithFetch;

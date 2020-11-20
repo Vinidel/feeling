@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import moment from 'moment';
 import {Button, Popover, PopoverHeader, PopoverBody} from "reactstrap";
+import SpinnerComponent from "./SpinnerComponent";
 
-const FeelingHistoryComponent = ({feelings}) => {
+const FeelingHistoryComponent = ({data, isFetching}) => {
 
   const renderIcon = (comment, date, id) => {
     const [popoverOpen, setPopoverOpen] = useState(false);
@@ -71,9 +72,12 @@ const FeelingHistoryComponent = ({feelings}) => {
       )
     }
 
+    const renderSpinner = () => (<SpinnerComponent />)
+
       return (
         <div>
-          {feelings ? renderTableContent(feelings) : renderEmptyTable() }
+          {isFetching ? renderSpinner() : ''}
+          {data && !isFetching ? renderTableContent(data) : renderEmptyTable() }
         </div>
       );
 }
