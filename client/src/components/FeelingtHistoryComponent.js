@@ -2,11 +2,12 @@ import React, { useState } from 'react'
 import moment from 'moment';
 import {Button, Popover, PopoverHeader, PopoverBody} from "reactstrap";
 import SpinnerComponent from "./SpinnerComponent";
+// import FeelingChartComponent from "./FeelingChartComponent";
 
 const FeelingHistoryComponent = ({data, isFetching}) => {
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   const renderIcon = (comment, date, id) => {
-    const [popoverOpen, setPopoverOpen] = useState(false);
     const toggle = () => setPopoverOpen(!popoverOpen);
 
     return (
@@ -66,7 +67,9 @@ const FeelingHistoryComponent = ({data, isFetching}) => {
         )
     }
 
-    const renderEmptyTable = () => {
+  // const renderChart = (data) => (<FeelingChartComponent feelingHistory={data}/>)
+
+  const renderEmptyTable = () => {
       return (
         <div>No content</div>
       )
@@ -78,6 +81,7 @@ const FeelingHistoryComponent = ({data, isFetching}) => {
         <div>
           {isFetching ? renderSpinner() : ''}
           {data && !isFetching ? renderTableContent(data) : renderEmptyTable() }
+          {/*{data && !isFetching ? renderChart(data) : "" }*/}
         </div>
       );
 }
