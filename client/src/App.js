@@ -20,8 +20,7 @@ const App = () => {
  const renderLoginComponent = () => (
     <LoginComponent />
   )
-
-
+  
     return (
       <div className="App">
         <TitleComponent />
