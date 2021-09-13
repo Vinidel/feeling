@@ -21,7 +21,6 @@ const App = () => {
     <LoginComponent />
   )
 
-
     return (
       <div className="App">
         <TitleComponent />
