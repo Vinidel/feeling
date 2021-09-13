@@ -8,7 +8,12 @@ const FeelingHistoryComponent = ({data, isFetching}) => {
   const [popoverOpen, setPopoverOpen] = useState(null);
 
   const renderIcon = (comment, date, id) => {
-    const toggle = () => setPopoverOpen(id);
+    const toggle = () => {
+      if (popoverOpen === id) {
+        return setPopoverOpen(null);
+      }
+      return setPopoverOpen(id)
+    };
 
     return (
       <div key={id}>
