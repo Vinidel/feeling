@@ -6,10 +6,8 @@ import (
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/itsjamie/gin-cors"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
 	"os"
 	"time"
 )
@@ -21,6 +19,12 @@ type Feeling struct {
 	UserID    string    `json:"userID"`
 }
 
+
+func GetConnectionString() string {
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("DB_PASS")
+	return "mongodb+srv://" + dbUser + ":" + dbPass + "@cluster0.8pqgj.mongodb.net/prod?retryWrites=true&w=majority"
+}
 
 func SetupDB(connectionString string) (*mongo.Client, error) {
 	// Set client options
@@ -48,20 +52,6 @@ func SetupDB(connectionString string) (*mongo.Client, error) {
 }
 
 func main() {
-	//Get env vars keys
-	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASS")
-	//
-
-	//setup data base
-	conString := "mongodb+srv://" + dbUser + ":" + dbPass + "@cluster0.8pqgj.mongodb.net/prod?retryWrites=true&w=majority"
-	dbClient, err := SetupDB(conString)
-
-	if err != nil {
-		log.Print(err)
-		log.Fatal("We exploded")
-	}
-
 	r := gin.Default()
 
 	r.Use(cors.Middleware(cors.Config{
@@ -76,76 +66,11 @@ func main() {
 
 	// Dont worry about this line just yet, it will make sense in the Dockerise bit!
 	r.Use(static.Serve("/", static.LocalFile("./web", true)))
+	r.GET("/api/feelings", GetFeelings)
+	r.POST("/api/feelings", PostFeeling)
 
-
-	r.GET("/api/feelings", func(c *gin.Context) {
-		collection := dbClient.Database("feeling").Collection("feelings")
-
-		// Pass these options to the Find method
-		findOptions := options.Find()
-		var results []*Feeling
-
-		// Get the user id from header
-		userID := c.Request.Header.Get("x-user-id")
-		//
-
-		// Passing bson.D{{}} as the filter matches all documents in the collection
-		cur, err := collection.Find(context.TODO(), bson.M{"userid": userID}, findOptions)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Finding multiple documents returns a cursor
-		// Iterating through the cursor allows us to decode documents one at a time
-		for cur.Next(context.TODO()) {
-
-			// create a value into which the single document can be decoded
-			var elem Feeling
-			err := cur.Decode(&elem)
-			if err != nil {
-				log.Print("There was an error decoding element")
-				log.Fatal(err)
-			}
-
-			results = append(results, &elem)
-		}
-
-		if err := cur.Err(); err != nil {
-			log.Fatal(err)
-		}
-
-		// Close the cursor once finished
-		cur.Close(context.TODO())
-
-		log.Printf("Found multiple documents (array of pointers): %+v\n", results)
-		c.JSON(200, results)
-	})
-
-	r.POST("/api/feelings", func(c *gin.Context) {
-		var feeling Feeling
-		err := c.BindJSON(&feeling)
-
-		//get user id from header
-		userID := c.Request.Header.Get("x-user-id")
-		feeling.UserID = userID
-
-		if err != nil {
-			log.Println("There was an error inserting feeling {}", err.Error())
-			c.JSON(400, err.Error())
-
-		}
-
-		fmt.Println(feeling)
-		collection := dbClient.Database("feeling").Collection("feelings")
-		result, dbErr := collection.InsertOne(context.TODO(), &feeling)
-
-		if dbErr != nil {
-			log.Println("There was an error inserting feeling {}", err.Error())
-		}
-
-		log.Println("Inserted multiple documents: ", result.InsertedID)
-		c.JSON(200, feeling)
-	})
-
-	r.Run()
+	err := r.Run()
+	if err != nil {
+		return 
+	}
 }
