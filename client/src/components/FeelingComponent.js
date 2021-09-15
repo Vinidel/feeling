@@ -7,7 +7,7 @@ import Profile from "./UserDetailsComponent";
 import WithFetch from "./WithFetch";
 
 const FeelingComponent  = ()  =>{
-    const auth = useAuth0();
+  const auth = useAuth0();
   const [update, forceUpdate] = useState(0)
   const [state, setState] = useState({
       status: 0,
@@ -35,8 +35,11 @@ const FeelingComponent  = ()  =>{
       })
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
       e.preventDefault();
+      const token = await auth.getAccessTokenSilently({
+        audience: "https://stormy-cliffs-52671.herokuapp.com/api",
+      });
       return axios.post(`${BASE_API_URL}/api/feelings`,
         {
           status: state.status.toString(),
@@ -45,7 +48,8 @@ const FeelingComponent  = ()  =>{
 
         }, {
           headers: {
-            "x-user-id": auth.user.sub
+            "x-user-id": auth.user.sub,
+            Authorization: `Bearer ${token}`,
           }
         })
         .then((res) => {
