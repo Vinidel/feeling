@@ -1,24 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import axios from "axios";
 import {useAuth0} from "@auth0/auth0-react";
-
+import config from "../config";
 
 const WithFetch = (props) => {
-  const { user } = useAuth0();
+  const { user, getAccessTokenSilently } = useAuth0();
   const [data, setData] = useState({});
   const [isFetching, setIsFetching] = useState(true);
 
-  const fetch = () => {
-    axios.get(props.url,
+  const fetch = async () => {
+    const token = await getAccessTokenSilently({
+      audience: config.AUD,
+    });
+    const response = await axios.get(props.url,
       {
         headers: {
-          "x-user-id": user.sub
+          "x-user-id": user.sub,
+          Authorization: `Bearer ${token}`,
         }
-      }).then((response) => {
+      });
+
       setData(response.data);
       setIsFetching(false);
-    })
   }
 
   useEffect(() => {

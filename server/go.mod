@@ -3,6 +3,9 @@ module github.com/vinidel/feeling/server
 go 1.14
 
 require (
+	github.com/auth0/go-jwt-middleware v1.0.1
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
+	github.com/form3tech-oss/jwt-go v3.2.5+incompatible
 	github.com/gin-gonic/contrib v0.0.0-20201101042839-6a891bf89f19
 	github.com/gin-gonic/gin v1.6.3
 	github.com/itsjamie/gin-cors v0.0.0-20160420130702-97b4a9da7933
