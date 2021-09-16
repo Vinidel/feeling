@@ -58,7 +58,7 @@ const FeelingHistoryComponent = ({data, isFetching}) => {
                 <th scope="col">Comment</th>
               </tr>
               {
-                feelings.sort((a, b) => (new Date(b) - new Date(a))).map((f, i) => {
+                feelings.sort((a, b) => (new Date(b.createdAt) - new Date(a.createdAt))).map((f, i) => {
                   const date = moment(new Date(f.createdAt)).format('DD-MM-YYYY');
                   return (<tr key={i}>
                   <td>{renderStatus(f.status)}</td>
