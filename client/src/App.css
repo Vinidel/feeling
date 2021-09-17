@@ -57,6 +57,10 @@
     background: #20c997;
 }
 
+.btn-emoji.selected {
+    background: #20c997;
+}
+
 .comment-link {
     cursor: pointer;
 }
