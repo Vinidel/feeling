@@ -54,6 +54,11 @@ const FeelingComponent  = ()  =>{
         })
         .then((res) => {
           console.log('Calling set state')
+          setState({
+            status: 0,
+            createdAt: '',
+            comment: '',
+          });
           return forceUpdate(n => n+1);
         })
         .catch(e => console.log('Error', e))
