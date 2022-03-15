@@ -6,8 +6,7 @@ RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-w" -a -o /main .
 
 # Build the React application
-FROM alpine:3.14 AS node_builder
-ENV NODE_VERSION 16.14.0
+FROM node:16.14.0-alpine3.15 AS node_builder
 COPY --from=builder /app/client ./
 RUN npm install
 RUN npm run build
