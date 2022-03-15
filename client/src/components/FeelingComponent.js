@@ -4,6 +4,7 @@ import FeelingtHistoryComponent from './FeelingtHistoryComponent';
 import {BASE_API_URL} from '../config';
 import {useAuth0} from "@auth0/auth0-react";
 import Profile from "./UserDetailsComponent";
+import NavBar from "./NavBar";
 import WithFetch from "./WithFetch";
 
 const FeelingComponent  = ()  =>{
@@ -69,42 +70,45 @@ const FeelingComponent  = ()  =>{
   }
 
   return (
-    <div className="App-tile">
-      {console.log('Rendering')}
-      <Profile />
-      <button onClick={() => auth.logout({ returnTo: window.location.origin })}>
-        Log Out
-      </button>
-      <form className="form-group row">
-        <label className="col-sm-2 col-form-label">
-          Status:
-        </label>
-        <div className="col-sm-10">
-          <div className="btn-group ">
-            <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(0)}`} onClick={() => setStatus(0)}>😔</button>
-            <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(1)}`} onClick={() => setStatus(1)}>🙁</button>
-            <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(2)}`} onClick={() => setStatus(2)}>😐</button>
-            <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(3)}`} onClick={() => setStatus(3)}>🙂</button>
-            <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(4)}`} onClick={() => setStatus(4)}>😀</button>
+    <div>
+      <div className="App-tile">
+        {console.log('Rendering')}
+        {/*<Profile />*/}
+        {/*<button onClick={() => auth.logout({ returnTo: window.location.origin })}>*/}
+        {/*  Log Out*/}
+        {/*</button>*/}
+        <form className="form-group row">
+          <label className="col-sm-2 col-form-label">
+            Status:
+          </label>
+          <div className="col-sm-10">
+            <div className="btn-group ">
+              <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(0)}`} onClick={() => setStatus(0)}>😔</button>
+              <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(1)}`} onClick={() => setStatus(1)}>🙁</button>
+              <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(2)}`} onClick={() => setStatus(2)}>😐</button>
+              <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(3)}`} onClick={() => setStatus(3)}>🙂</button>
+              <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(4)}`} onClick={() => setStatus(4)}>😀</button>
+            </div>
           </div>
+          <label className="col-sm-2 col-form-label">
+            Comment why:
+          </label>
+          <div className="col-sm-10">
+            <textarea name="comment" id="comment" className="form-control" value={state.comment} onChange={handleCommentChange} />
+          </div>
+        </form>
+        <div className="btn-container">
+          <button type="button" onClick={handleSubmit} className="btn btn-success">Save</button>
         </div>
-        <label className="col-sm-2 col-form-label">
-          Comment why:
-        </label>
-        <div className="col-sm-10">
-          <textarea name="comment" id="comment" className="form-control" value={state.comment} onChange={handleCommentChange} />
-        </div>
-      </form>
-      <div className="btn-container">
-        <button type="button" onClick={handleSubmit} className="btn btn-success">Save</button>
+        <br />
+        <WithFetch
+          update={update}
+          url={`${BASE_API_URL}/api/feelings`}
+          render={({data, isFetching}) => (<FeelingtHistoryComponent data={data} isFetching={isFetching}/>)}
+        />
       </div>
-      <br />
-      <WithFetch
-        update={update}
-        url={`${BASE_API_URL}/api/feelings`}
-        render={({data, isFetching}) => (<FeelingtHistoryComponent data={data} isFetching={isFetching}/>)}
-      />
     </div>
+
   );
 }
 
