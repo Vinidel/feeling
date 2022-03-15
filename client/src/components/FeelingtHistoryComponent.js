@@ -51,7 +51,7 @@ const FeelingHistoryComponent = ({data, isFetching}) => {
     }
     const renderTableContent = (feelings) => {
       return (
-        <table className="table table-striped">
+        <table className="table table-striped table-auto">
             <tbody>
               <tr>
                 <th scope="col">Feeling</th>

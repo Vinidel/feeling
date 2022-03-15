@@ -72,11 +72,6 @@ const FeelingComponent  = ()  =>{
   return (
     <div>
       <div className="App-tile">
-        {console.log('Rendering')}
-        {/*<Profile />*/}
-        {/*<button onClick={() => auth.logout({ returnTo: window.location.origin })}>*/}
-        {/*  Log Out*/}
-        {/*</button>*/}
         <form className="form-group row">
           <label className="col-sm-2 col-form-label">
             Status:
@@ -97,8 +92,11 @@ const FeelingComponent  = ()  =>{
             <textarea name="comment" id="comment" className="form-control" value={state.comment} onChange={handleCommentChange} />
           </div>
         </form>
-        <div className="btn-container">
-          <button type="button" onClick={handleSubmit} className="btn btn-success">Save</button>
+        <div className="btn-container text-right">
+          <button
+            className="group relative justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            type="button"
+            onClick={handleSubmit}>Save</button>
         </div>
         <br />
         <WithFetch

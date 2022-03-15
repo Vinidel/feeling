@@ -1,9 +1,10 @@
 .App {
-  text-align: center;
+  /*text-align: center;*/
   background-color: #f4f5f6;
 }
 
 .App-content {
+    /*text-align: center;*/
     display: flex;
     flex-direction: column;
     -webkit-box-align: center;
