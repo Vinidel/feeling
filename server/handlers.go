@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 )
+
 func GetFeelingsHandler(dbClient *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		collection := dbClient.Database("feeling").Collection("feelings")
@@ -56,7 +57,7 @@ func GetFeelingsHandler(dbClient *mongo.Client) gin.HandlerFunc {
 }
 
 func PostFeelingHandler(dbClient *mongo.Client) gin.HandlerFunc {
-	return func (c *gin.Context) {
+	return func(c *gin.Context) {
 		var feeling Feeling
 		err := c.BindJSON(&feeling)
 
