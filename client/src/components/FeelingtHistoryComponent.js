@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import moment from 'moment';
 import {Button, Popover, PopoverHeader, PopoverBody} from "reactstrap";
 import SpinnerComponent from "./SpinnerComponent";
+import FeelingChartComponent from "./FeelingChartComponent";
 // import FeelingChartComponent from "./FeelingChartComponent";
 
 const FeelingHistoryComponent = ({data, isFetching}) => {
@@ -85,8 +86,10 @@ const FeelingHistoryComponent = ({data, isFetching}) => {
       return (
         <div>
           {isFetching ? renderSpinner() : ''}
+          {data.length && <FeelingChartComponent feelingHistory={data}/>}
           {data && !isFetching ? renderTableContent(data) : renderEmptyTable() }
           {/*{data && !isFetching ? renderChart(data) : "" }*/}
+
         </div>
       );
 }

@@ -3,6 +3,7 @@ import './App.css';
 import TitleComponent from './components/TitleComponent';
 import FeelingComponent from './components/FeelingComponent';
 import LoginComponent from "./components/LoginComponent";
+import FeelingChartComponent from "./components/FeelingChartComponent";
 import { useAuth0 } from "@auth0/auth0-react";
 
 const App = () => {
