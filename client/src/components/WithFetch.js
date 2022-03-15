@@ -27,10 +27,6 @@ const WithFetch = (props) => {
 
   useEffect(() => {
     fetch();
-  }, [])
-
-  useEffect(() => {
-    fetch();
   }, [props.update])
 
 

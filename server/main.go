@@ -12,6 +12,7 @@ import (
 	"github.com/itsjamie/gin-cors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -148,13 +149,21 @@ func main() {
 		ValidateHeaders: false,
 	}))
 
-	// Dont worry about this line just yet, it will make sense in the Dockerise bit!
+	// Setup and connect to DB
+	conString := GetConnectionString()
+	dbClient, dbErr := SetupDB(conString)
+	if dbErr != nil {
+		log.Fatal(dbErr)
+	}
+
+	// Set routes and handlers
 	r.Use(static.Serve("/", static.LocalFile("./web", true)))
-	r.GET("/api/feelings", checkJWT(), GetFeelings)
-	r.POST("/api/feelings", checkJWT(), PostFeeling)
+	r.GET("/api/feelings", checkJWT(), GetFeelingsHandler(dbClient))
+	r.POST("/api/feelings", checkJWT(), PostFeelingHandler(dbClient))
 
 	err := r.Run()
 	if err != nil {
+		log.Fatal("Could not run server", err.Error())
 		return
 	}
 }
