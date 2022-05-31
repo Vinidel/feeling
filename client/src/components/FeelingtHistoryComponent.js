@@ -5,7 +5,7 @@ import SpinnerComponent from "./SpinnerComponent";
 import FeelingChartComponent from "./FeelingChartComponent";
 // import FeelingChartComponent from "./FeelingChartComponent";
 
-const FeelingHistoryComponent = ({data, isFetching}) => {
+const FeelingHistoryComponent = ({data = [], isFetching}) => {
   const [popoverOpen, setPopoverOpen] = useState(null);
 
   const renderIcon = (comment, date, id) => {
@@ -64,7 +64,7 @@ const FeelingHistoryComponent = ({data, isFetching}) => {
                   return (<tr key={i}>
                   <td>{renderStatus(f.status)}</td>
                   <td>{date}</td>
-                    <td>{f.comment ? renderIcon(f.comment, f.createdAt, i) : renderEmpty()}</td>
+                  <td className="popover-icon">{f.comment ? renderIcon(f.comment, f.createdAt, i) : renderEmpty()}</td>
                 </tr>)
                 })
                }
@@ -86,8 +86,8 @@ const FeelingHistoryComponent = ({data, isFetching}) => {
       return (
         <div>
           {isFetching ? renderSpinner() : ''}
-          {data.length && <FeelingChartComponent feelingHistory={data}/>}
-          {data && !isFetching ? renderTableContent(data) : renderEmptyTable() }
+          {data && data.length && <FeelingChartComponent feelingHistory={data}/>}
+          {data && data.length && !isFetching ? renderTableContent(data) : renderEmptyTable() }
           {/*{data && !isFetching ? renderChart(data) : "" }*/}
 
         </div>

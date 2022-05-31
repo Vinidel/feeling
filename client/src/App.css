@@ -64,6 +64,7 @@
 
 .comment-link {
     cursor: pointer;
+    background-color: aquamarine;
 }
 
 .comment-link:hover {
