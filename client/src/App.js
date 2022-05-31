@@ -5,6 +5,7 @@ import FeelingComponent from './components/FeelingComponent';
 import LoginComponent from "./components/LoginComponent";
 import FeelingChartComponent from "./components/FeelingChartComponent";
 import { useAuth0 } from "@auth0/auth0-react";
+import NavBar from "./components/NavBar";
 
 const App = () => {
   const { isAuthenticated } = useAuth0();
@@ -25,6 +26,7 @@ const App = () => {
     return (
       <div className="App">
         <TitleComponent />
+        {isLoggedIn() && <NavBar />}
       <div className="App-content">
         {isLoggedIn() ? renderFeelingComponent() : renderLoginComponent()}
       </div>

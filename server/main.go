@@ -117,7 +117,8 @@ var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
 
 		cert, err := getPemCert(token)
 		if err != nil {
-			panic(err.Error())
+			fmt.Println(err.Error())
+			return nil, err
 		}
 
 		result, _ := jwt.ParseRSAPublicKeyFromPEM([]byte(cert))
