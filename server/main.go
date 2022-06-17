@@ -5,21 +5,29 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/auth0/go-jwt-middleware"
-	"github.com/form3tech-oss/jwt-go"
-	"github.com/gin-gonic/contrib/static"
-	"github.com/gin-gonic/gin"
-	"github.com/itsjamie/gin-cors"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	jwtmiddleware "github.com/auth0/go-jwt-middleware"
+	"github.com/form3tech-oss/jwt-go"
+	"github.com/gin-gonic/contrib/static"
+	"github.com/gin-gonic/gin"
+	cors "github.com/itsjamie/gin-cors"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+type Activity struct {
+	Bow  bool `json:"bow"`
+	Lift bool `json:"lift"`
+	Run  bool `json:"run"`
+}
 
 // Feeling struct
 type Feeling struct {
+	Activities Activity  `json:"activities"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"createdAt"`
 	Comment   string    `json:"comment"`
