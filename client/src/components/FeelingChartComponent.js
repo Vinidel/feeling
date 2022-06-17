@@ -41,8 +41,6 @@ export default function MyChart({feelingHistory}) {
         height: '300px'
       }}
     >
-      {console.log(preparedData())}
-      {console.log('data is', data)}
       <Chart
         options={{
           data,

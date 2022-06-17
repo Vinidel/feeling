@@ -14,6 +14,11 @@ const FeelingComponent  = ()  =>{
     status: null,
     createdAt: '',
     comment: '',
+    activities: {
+      bow: false,
+      run: false,
+      lift: false,
+    },
   });
 
   const isSelected = (status) => {
@@ -26,6 +31,18 @@ const FeelingComponent  = ()  =>{
         ...prevState,
         status,
         createdAt: new Date().toISOString(),
+      }
+    })
+  }
+
+  const setActivity = (value, activityName) => {
+    setState((prevState) => {
+      return {
+        ...prevState,
+        activities: {
+          ...prevState.activities,
+          [activityName]: value,
+        }
       }
     })
   }
@@ -45,12 +62,13 @@ const FeelingComponent  = ()  =>{
     const token = await auth.getAccessTokenSilently({
       audience: "https://stormy-cliffs-52671.herokuapp.com/api",
     });
+    console.log('Calling post with', state)
     return axios.post(`${BASE_API_URL}/api/feelings`,
       {
         status: state.status.toString(),
         createdAt: state.createdAt,
         comment: state.comment,
-
+        activities: state.activities,
       }, {
         headers: {
           "x-user-id": auth.user.sub,
@@ -63,6 +81,11 @@ const FeelingComponent  = ()  =>{
           status: null,
           createdAt: '',
           comment: '',
+          activities: {
+            bow: false,
+            run: false,
+            lift: false,
+          },
         });
         return forceUpdate(n => n+1);
       })
@@ -90,6 +113,23 @@ const FeelingComponent  = ()  =>{
           </label>
           <div className="col-sm-10">
             <textarea name="comment" id="comment" className="form-control" value={state.comment} onChange={handleCommentChange} />
+          </div>
+          <label className="col-sm-2 col-form-label">
+            What did I do:
+          </label>
+          <div className="col-sm-10">
+            <span>
+              <input className="hobby-check" type="checkbox" name="run" value="run" onClick={(e) => setActivity(e.target.checked, "run")}/>
+              <label className="hobby-check"htmlFor="run">Run</label>
+            </span>
+            <span>
+              <input type="checkbox" name="shoot-arrows" onClick={(e) => setActivity(e.target.checked, "bow")}/>
+              <label htmlFor="shoot-arrows">Shoot arrows</label>
+            </span>
+            <span>
+              <input type="checkbox" name="lift" onClick={(e) => setActivity(e.target.checked, "lift")}/>
+              <label htmlFor="lift">Gym</label>
+            </span>
           </div>
         </form>
         <div className="btn-container text-right">
