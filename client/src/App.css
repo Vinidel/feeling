@@ -1,6 +1,6 @@
 .App {
   /*text-align: center;*/
-  background-color: #f4f5f6;
+  /* background-color: #f4f5f6; */
 }
 
 .App-content {
@@ -51,22 +51,22 @@
 }
 
 .btn-emoji:focus {
-    background: #20c997;
+    /* background: #20c997; */
 }
 
 .btn-emoji:hover {
-    background: #20c997;
+    /* background: #20c997; */
 }
 
 .btn-emoji.selected {
-    background: #20c997;
+    /* background: #20c997; */
 }
 
 .comment-link {
-    cursor: pointer;
-    background-color: aquamarine;
+    /* cursor: pointer; */
+    /* background-color: aquamarine; */
 }
 
 .comment-link:hover {
-    background-color: #20c997;
+    /* background-color: #20c997; */
 }

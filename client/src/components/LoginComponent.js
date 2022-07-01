@@ -14,7 +14,7 @@ const LoginComponent = () => {
             {/*  src="https://tailwindui.com/img/logos/workflow-mark-indigo-600.svg"*/}
             {/*  alt="Workflow"*/}
             {/*/>*/}
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">My.Feeling</h2>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">My.Feelings</h2>
           </div>
           <div>
             <button

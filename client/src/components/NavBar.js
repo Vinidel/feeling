@@ -5,7 +5,7 @@ import { BellIcon, MenuIcon, XIcon } from '@heroicons/react/outline'
 import {useAuth0} from "@auth0/auth0-react";
 
 const navigation = [
-  { name: 'My.Feeling', href: '#', current: true },
+  { name: 'My.Feelings', href: '#', current: true },
 ]
 
 function classNames(...classes) {

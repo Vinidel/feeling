@@ -18,7 +18,7 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
 
     return (
       <div key={id}>
-        <Button className="comment-link" id={'comment-btn' + id} type="button">
+        <Button className="comment-link bg-sky-800 hover:bg-sky-700" id={'comment-btn' + id} type="button">
           <svg width="1em" height="1em" viewBox="0 0 16 16" className="bi bi-book" fill="currentColor"
                xmlns="http://www.w3.org/2000/svg">
             <path fillRule="evenodd"

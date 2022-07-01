@@ -22,7 +22,7 @@ const FeelingComponent  = ()  =>{
   });
 
   const isSelected = (status) => {
-    return state.status === status ? "selected" : "";
+    return state.status === status ? "bg-blue-800" : "";
   }
 
   const setStatus = (status) => {
@@ -96,40 +96,71 @@ const FeelingComponent  = ()  =>{
     <div>
       <div className="App-tile">
         <form className="form-group row">
-          <label className="col-sm-2 col-form-label">
-            Status:
-          </label>
-          <div className="col-sm-10">
-            <div className="btn-group ">
-              <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(0)}`} onClick={() => setStatus(0)}>😔</button>
-              <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(1)}`} onClick={() => setStatus(1)}>🙁</button>
-              <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(2)}`} onClick={() => setStatus(2)}>😐</button>
-              <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(3)}`} onClick={() => setStatus(3)}>🙂</button>
-              <button type="button" className={`btn btn-primary-outline btn-emoji ${isSelected(4)}`} onClick={() => setStatus(4)}>😀</button>
+          <div className="row col-sm-12 row-container mb-4">
+            <label className="col-sm-6 col-form-label">
+              How are you feeling today:
+            </label>
+            <div className="col-sm-6">
+              <div className="btn-group">
+                <button type="button" className={`btn btn-primary-outline btn-emoji bg-sky-800 hover:bg-sky-700 active:bg-blue-800 focus:bg-blue-800 rounded mr-2 ${isSelected(0)}`} onClick={() => setStatus(0)}>😔</button>
+                <button type="button" className={`btn btn-primary-outline btn-emoji bg-sky-800 hover:bg-sky-700 active:bg-blue-800 focus:bg-blue-800 rounded mr-2 ${isSelected(1)}`} onClick={() => setStatus(1)}>🙁</button>
+                <button type="button" className={`btn btn-primary-outline btn-emoji bg-sky-800 hover:bg-sky-700 active:bg-blue-800 focus:bg-blue-800 rounded mr-2 ${isSelected(2)}`} onClick={() => setStatus(2)}>😐</button>
+                <button type="button" className={`btn btn-primary-outline btn-emoji bg-sky-800 hover:bg-sky-700 active:bg-blue-800 focus:bg-blue-800 rounded mr-2 ${isSelected(3)}`} onClick={() => setStatus(3)}>🙂</button>
+                <button type="button" className={`btn btn-primary-outline btn-emoji bg-sky-800 hover:bg-sky-700 active:bg-blue-800 focus:bg-blue-800 rounded mr-2 ${isSelected(4)}`} onClick={() => setStatus(4)}>😀</button>
+              </div>
             </div>
           </div>
-          <label className="col-sm-2 col-form-label">
-            Comment why:
-          </label>
-          <div className="col-sm-10">
-            <textarea name="comment" id="comment" className="form-control" value={state.comment} onChange={handleCommentChange} />
+          <div className="row row-container col-sm-12 mb-4">
+            <label className="col-sm-6 col-form-label">
+              Comment why you are feeling like this:
+            </label>
+            <div className="col-sm-6">
+              <textarea name="comment" id="comment" className="form-control" value={state.comment} onChange={handleCommentChange} />
+            </div>
           </div>
-          <label className="col-sm-2 col-form-label">
-            What did I do:
-          </label>
-          <div className="col-sm-10">
-            <span>
-              <input className="hobby-check" type="checkbox" name="run" value="run" onClick={(e) => setActivity(e.target.checked, "run")}/>
-              <label className="hobby-check"htmlFor="run">Run</label>
-            </span>
-            <span>
-              <input type="checkbox" name="shoot-arrows" onClick={(e) => setActivity(e.target.checked, "bow")}/>
-              <label htmlFor="shoot-arrows">Shoot arrows</label>
-            </span>
-            <span>
-              <input type="checkbox" name="lift" onClick={(e) => setActivity(e.target.checked, "lift")}/>
-              <label htmlFor="lift">Gym</label>
-            </span>
+          
+          <div className="row row-container col-sm-12 mb-4">
+            <label className="col-sm-6 col-form-label">
+              Today's activity:
+            </label>
+            <div className="col-sm-6">
+              <div class="form-check form-check-inline">
+                <input class="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
+                  checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat 
+                  bg-center bg-contain float-left mr-2 cursor-pointer" 
+                  type="checkbox" 
+                  id="run" 
+                  value="run" 
+                  onClick={() => setActivity(!state.activities.run, "run")} 
+                  checked={state.activities.run}
+                />
+                <label class="form-check-label inline-block text-gray-800" for="run">Run</label>
+              </div>  
+              <div class="form-check form-check-inline">
+                <input class="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
+                  checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat 
+                  bg-center bg-contain float-left mr-2 cursor-pointer" 
+                  type="checkbox" 
+                  id="bow" 
+                  value="bow" 
+                  onClick={() => setActivity(!state.activities.bow, "bow")} 
+                  checked={state.activities.bow}
+                />
+                <label class="form-check-label inline-block text-gray-800" for="bow">Bow</label>
+              </div>  
+              <div class="form-check form-check-inline">
+                <input class="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
+                checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat 
+                bg-center bg-contain float-left mr-2 cursor-pointer" 
+                type="checkbox" 
+                id="gym" 
+                value="gym" 
+                onClick={() => setActivity(!state.activities.lift, "lift")} 
+                checked={state.activities.lift}
+              />
+                <label class="form-check-label inline-block text-gray-800" for="gym">Gym</label>
+              </div>  
+            </div>
           </div>
         </form>
         <div className="btn-container text-right">
