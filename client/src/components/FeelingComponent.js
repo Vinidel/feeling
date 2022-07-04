@@ -124,8 +124,8 @@ const FeelingComponent  = ()  =>{
               Today's activity:
             </label>
             <div className="col-sm-6">
-              <div class="form-check form-check-inline">
-                <input class="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
+              <div className="form-check form-check-inline">
+                <input className="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
                   checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat 
                   bg-center bg-contain float-left mr-2 cursor-pointer" 
                   type="checkbox" 
@@ -134,10 +134,10 @@ const FeelingComponent  = ()  =>{
                   onClick={() => setActivity(!state.activities.run, "run")} 
                   checked={state.activities.run}
                 />
-                <label class="form-check-label inline-block text-gray-800" for="run">Run</label>
+                <label className="form-check-label inline-block text-gray-800" htmlFor="run">Run</label>
               </div>  
-              <div class="form-check form-check-inline">
-                <input class="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
+              <div className="form-check form-check-inline">
+                <input className="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
                   checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat 
                   bg-center bg-contain float-left mr-2 cursor-pointer" 
                   type="checkbox" 
@@ -146,10 +146,10 @@ const FeelingComponent  = ()  =>{
                   onClick={() => setActivity(!state.activities.bow, "bow")} 
                   checked={state.activities.bow}
                 />
-                <label class="form-check-label inline-block text-gray-800" for="bow">Bow</label>
+                <label className="form-check-label inline-block text-gray-800" htmlFor="bow">Bow</label>
               </div>  
-              <div class="form-check form-check-inline">
-                <input class="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
+              <div className="form-check form-check-inline">
+                <input className="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
                 checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat 
                 bg-center bg-contain float-left mr-2 cursor-pointer" 
                 type="checkbox" 
@@ -158,7 +158,7 @@ const FeelingComponent  = ()  =>{
                 onClick={() => setActivity(!state.activities.lift, "lift")} 
                 checked={state.activities.lift}
               />
-                <label class="form-check-label inline-block text-gray-800" for="gym">Gym</label>
+                <label className="form-check-label inline-block text-gray-800" htmlFor="gym">Gym</label>
               </div>  
             </div>
           </div>
