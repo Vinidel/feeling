@@ -56,7 +56,7 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
               <tr className="bg-sky-800 text-white">
                 <th scope="col">Feeling</th>
                 <th scope="col">Date</th>
-                <th scope="col">Activities</th>
+                <th className="hidden md:table-cell" scope="col">Activities</th>
                 <th scope="col">Comment</th>
               </tr>
               {
@@ -65,7 +65,7 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
                   return (<tr className="hover:bg-sky-700 hover:text-white" key={i}>
                   <td className="p-0 text-2xl pl-1 pr-1 align-middle">{renderStatus(f.status)}</td>
                   <td>{date}</td>
-                  <td>{Object.entries(f.activities).filter(([k,v]) => v ?? k).map(([k,v]) => k).join() || "No activity"}</td>
+                  <td className="hidden  md:table-cell">{Object.entries(f.activities).filter(([k,v]) => v ?? k).map(([k,v]) => k).join() || "No activity"}</td>
                   <td className="popover-icon">{f.comment ? renderIcon(f.comment, f.createdAt, i) : renderEmpty()}</td>
                 </tr>)
                 })

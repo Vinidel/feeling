@@ -95,12 +95,12 @@ const FeelingComponent  = ()  =>{
   return (
     <div>
       <div className="App-tile">
-        <form className="form-group row">
-          <div className="row col-sm-12 row-container mb-4">
-            <label className="col-sm-6 col-form-label">
+        <form className="form-group">
+          <div className="flex flex-col sm:flex-row sm:justify-between mb-4">
+            <label className="self-center sm:self-start col-form-label">
               How are you feeling today:
             </label>
-            <div className="col-sm-6">
+            <div className="self-center">
               <div className="btn-group">
                 <button type="button" className={`btn btn-primary-outline btn-emoji bg-sky-800 hover:bg-sky-700 active:bg-blue-800 focus:bg-blue-800 rounded mr-2 ${isSelected(0)}`} onClick={() => setStatus(0)}>😔</button>
                 <button type="button" className={`btn btn-primary-outline btn-emoji bg-sky-800 hover:bg-sky-700 active:bg-blue-800 focus:bg-blue-800 rounded mr-2 ${isSelected(1)}`} onClick={() => setStatus(1)}>🙁</button>
@@ -110,20 +110,11 @@ const FeelingComponent  = ()  =>{
               </div>
             </div>
           </div>
-          <div className="row row-container col-sm-12 mb-4">
-            <label className="col-sm-6 col-form-label">
-              Comment why you are feeling like this:
-            </label>
-            <div className="col-sm-6">
-              <textarea name="comment" id="comment" className="form-control" value={state.comment} onChange={handleCommentChange} />
-            </div>
-          </div>
-          
-          <div className="row row-container col-sm-12 mb-4">
-            <label className="col-sm-6 col-form-label">
+          <div className="flex flex-col sm:flex-row sm:justify-between mb-4">
+            <label className="self-center col-form-label">
               Today's activity:
             </label>
-            <div className="col-sm-6">
+            <div className="self-center ">
               <div className="form-check form-check-inline">
                 <input className="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
                   checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat 
@@ -162,10 +153,25 @@ const FeelingComponent  = ()  =>{
               </div>  
             </div>
           </div>
+          <div className="flex mb-4">
+            <div className="flex-auto">
+              <textarea name="comment" 
+              placeholder="Describe the reason why you are feeling this way"
+              id="comment" 
+              className="form-control" 
+              value={state.comment} 
+              onChange={handleCommentChange} />
+            </div>
+          </div>
         </form>
-        <div className="btn-container text-right">
+        <div className="btn-container md:text-right">
           <button
-            className="group relative justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-sky-800 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="group relative justify-center
+            w-full md:w-32
+            py-2 px-4 border border-transparent text-sm
+            font-medium rounded-md text-white bg-sky-800 
+            hover:bg-sky-700 focus:outline-none focus:ring-2 
+            focus:ring-offset-2 focus:ring-indigo-500"
             type="button"
             onClick={handleSubmit}>Save</button>
         </div>
