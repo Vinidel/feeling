@@ -51,9 +51,9 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
     }
     const renderTableContent = (feelings) => {
       return (
-        <table className="table table-striped table-auto">
+        <table className="table table-auto">
             <tbody>
-              <tr>
+              <tr className="bg-sky-800 text-white">
                 <th scope="col">Feeling</th>
                 <th scope="col">Date</th>
                 <th scope="col">Activities</th>
@@ -62,8 +62,8 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
               {
                 feelings.sort((a, b) => (new Date(b.createdAt) - new Date(a.createdAt))).map((f, i) => {
                   const date = moment(new Date(f.createdAt)).format('DD-MM-YYYY');
-                  return (<tr key={i}>
-                  <td>{renderStatus(f.status)}</td>
+                  return (<tr className="hover:bg-sky-700 hover:text-white" key={i}>
+                  <td className="p-0 text-2xl pl-1 pr-1 align-middle">{renderStatus(f.status)}</td>
                   <td>{date}</td>
                   <td>{Object.entries(f.activities).filter(([k,v]) => v ?? k).map(([k,v]) => k).join() || "No activity"}</td>
                   <td className="popover-icon">{f.comment ? renderIcon(f.comment, f.createdAt, i) : renderEmpty()}</td>

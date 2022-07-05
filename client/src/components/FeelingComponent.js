@@ -165,7 +165,7 @@ const FeelingComponent  = ()  =>{
         </form>
         <div className="btn-container text-right">
           <button
-            className="group relative justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="group relative justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-sky-800 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             type="button"
             onClick={handleSubmit}>Save</button>
         </div>
