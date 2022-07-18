@@ -49,24 +49,50 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
 
       }
     }
+    
+    const renderActivitiePill = (activity) => {
+      const classMap =  {
+        bow: "bg-blue-500 hover:bg-blue-600",
+        lift: "bg-yellow-500 hover:bg-yellow-600",
+        run: "bg-green-500 hover:bg-green-600",
+      }
+  
+      return (
+        <button className={`px-4 py-2 text-xs mr-1 rounded-full text-white ${classMap[activity]}`}>
+          {activity}
+        </button>
+      )
+    }
+
+    const parseActivitiesToArray = (activities) => {
+      console.log(Object.entries(activities).filter(([k,v]) => v ?? k).map(([k,v]) => k))
+      return Object.entries(activities).filter(([k,v]) => v ?? k).map(([k,v]) => k);
+    }
+
     const renderTableContent = (feelings) => {
       return (
         <table className="table table-auto">
             <tbody>
               <tr className="bg-sky-800 text-white">
                 <th scope="col">Feeling</th>
-                <th scope="col">Date</th>
-                <th className="hidden md:table-cell" scope="col">Activities</th>
+                <th className="hidden md:table-cell" scope="col">Date</th>
+                <th scope="col">Activities</th>
                 <th scope="col">Comment</th>
               </tr>
               {
                 feelings.sort((a, b) => (new Date(b.createdAt) - new Date(a.createdAt))).map((f, i) => {
                   const date = moment(new Date(f.createdAt)).format('DD-MM-YYYY');
-                  return (<tr className="hover:bg-sky-700 hover:text-white" key={i}>
-                  <td className="p-0 text-2xl pl-1 pr-1 align-middle">{renderStatus(f.status)}</td>
-                  <td>{date}</td>
-                  <td className="hidden  md:table-cell">{Object.entries(f.activities).filter(([k,v]) => v ?? k).map(([k,v]) => k).join() || "No activity"}</td>
-                  <td className="popover-icon">{f.comment ? renderIcon(f.comment, f.createdAt, i) : renderEmpty()}</td>
+                  return (
+                  <tr className="hover:bg-sky-700 hover:text-white " key={i}>
+                    <td className="p-0 text-2xl pl-1 pr-1 align-middle">{renderStatus(f.status)}</td>
+                    <td className="hidden  md:table-cell">{date}</td>
+                    <td className="">
+                      {
+                      parseActivitiesToArray(f.activities)
+                        .map((e) => renderActivitiePill(e))
+                      }
+                    </td>
+                    <td className="popover-icon">{f.comment ? renderIcon(f.comment, f.createdAt, i) : renderEmpty()}</td>
                 </tr>)
                 })
                }
@@ -75,11 +101,11 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
         )
     }
 
-  const renderEmptyTable = () => {
-      return (
-        <div>No content</div>
-      )
-    }
+    const renderEmptyTable = () => {
+        return (
+          <div>No content</div>
+        )
+      }
 
     const renderSpinner = () => (<SpinnerComponent />)
 
