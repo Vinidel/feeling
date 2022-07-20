@@ -6,31 +6,14 @@ import FeelingChartComponent from "./FeelingChartComponent";
 // import FeelingChartComponent from "./FeelingChartComponent";
 
 const FeelingHistoryComponent = ({data = [], isFetching}) => {
-  const [popoverOpen, setPopoverOpen] = useState(null);
+  const [commentRowToggle, setCommentRowToggle] = useState(null);
 
-  const renderIcon = (comment, date, id) => {
-    const toggle = () => {
-      if (popoverOpen === id) {
-        return setPopoverOpen(null);
-      }
-      return setPopoverOpen(id)
-    };
-
-    return (
-      <div key={id}>
-        <Button className="comment-link bg-sky-800 hover:bg-sky-700" id={'comment-btn' + id} type="button">
-          <svg width="1em" height="1em" viewBox="0 0 16 16" className="bi bi-book" fill="currentColor"
-               xmlns="http://www.w3.org/2000/svg">
-            <path fillRule="evenodd"
-                  d="M1 2.828v9.923c.918-.35 2.107-.692 3.287-.81 1.094-.111 2.278-.039 3.213.492V2.687c-.654-.689-1.782-.886-3.112-.752-1.234.124-2.503.523-3.388.893zm7.5-.141v9.746c.935-.53 2.12-.603 3.213-.493 1.18.12 2.37.461 3.287.811V2.828c-.885-.37-2.154-.769-3.388-.893-1.33-.134-2.458.063-3.112.752zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783z"/>
-          </svg>
-        </Button>
-        <Popover placement="top" isOpen={popoverOpen === id} target={'comment-btn' + id} toggle={toggle}>
-          <PopoverHeader>{moment(new Date(date)).format('MMMM Do YYYY, h:mm:ss a')}</PopoverHeader>
-          <PopoverBody >{comment}</PopoverBody>
-        </Popover>
-      </div>)
-  }
+  const toggle = (id) => {
+    if (commentRowToggle === id) {
+      return setCommentRowToggle(null);
+    }
+    return setCommentRowToggle(id)
+  };
 
   const renderEmpty = () => (<span></span>)
 
@@ -52,13 +35,13 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
     
     const renderActivitiePill = (activity) => {
       const classMap =  {
-        bow: "bg-blue-500 hover:bg-blue-600",
-        lift: "bg-yellow-500 hover:bg-yellow-600",
-        run: "bg-green-500 hover:bg-green-600",
+        bow: "bg-blue-500",
+        lift: "bg-yellow-500",
+        run: "bg-green-500",
       }
   
       return (
-        <button className={`px-4 py-2 text-xs mr-1 rounded-full text-white ${classMap[activity]}`}>
+        <button className={`cursor-auto px-4 py-2 text-xs mr-1 rounded-full text-white ${classMap[activity]}`}>
           {activity}
         </button>
       )
@@ -69,21 +52,30 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
       return Object.entries(activities).filter(([k,v]) => v ?? k).map(([k,v]) => k);
     }
 
+    const renderChevronButton = (id) => {
+      const direction = commentRowToggle === id ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7";
+      return (
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d={direction} />
+      </svg>)
+    }
+
     const renderTableContent = (feelings) => {
       return (
-        <table className="table table-auto">
+        <table className="table table-fixed">
             <tbody>
               <tr className="bg-sky-800 text-white">
                 <th scope="col">Feeling</th>
                 <th className="hidden md:table-cell" scope="col">Date</th>
                 <th scope="col">Activities</th>
-                <th scope="col">Comment</th>
+                <th scope="col"></th>
               </tr>
               {
                 feelings.sort((a, b) => (new Date(b.createdAt) - new Date(a.createdAt))).map((f, i) => {
                   const date = moment(new Date(f.createdAt)).format('DD-MM-YYYY');
                   return (
-                  <tr className="hover:bg-sky-700 hover:text-white " key={i}>
+                    <>
+                  <tr className="hover:bg-sky-700 hover:text-white hover:cursor-pointer" key={i} onClick={() => toggle(i)}>
                     <td className="p-0 text-2xl pl-1 pr-1 align-middle">{renderStatus(f.status)}</td>
                     <td className="hidden  md:table-cell">{date}</td>
                     <td className="">
@@ -92,8 +84,14 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
                         .map((e) => renderActivitiePill(e))
                       }
                     </td>
-                    <td className="popover-icon">{f.comment ? renderIcon(f.comment, f.createdAt, i) : renderEmpty()}</td>
-                </tr>)
+                    <td className="">{renderChevronButton(i)}</td>
+                  </tr>
+                  <tr className={`hover:bg-sky-700 hover:text-white ${commentRowToggle === i ? "table-row":"hidden"}`} key={i}>
+                    <td className="pl-2 pr-2 w-96 table-cell  md:hidden" colspan={"3"}>{f.comment}</td>
+                    <td className="pl-2 pr-2 w-96 hidden  md:table-cell" colspan={"4"}>{f.comment}</td>
+                  </tr>
+                    </>
+                  )
                 })
                }
               </tbody>
