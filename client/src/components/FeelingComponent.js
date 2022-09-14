@@ -12,7 +12,7 @@ const FeelingComponent  = ()  =>{
   const [update, forceUpdate] = useState(0)
   const [state, setState] = useState({
     status: null,
-    createdAt: '',
+    createdAt: new Date(),
     comment: '',
     activities: {
       bow: false,
@@ -30,7 +30,16 @@ const FeelingComponent  = ()  =>{
       return {
         ...prevState,
         status,
-        createdAt: new Date().toISOString(),
+      }
+    })
+  }
+
+  const setDate = (date) => {
+    console.log(date);
+    setState((prevState) => {
+      return {
+        ...prevState,
+        createdAt: date || new Date().toISOString(),
       }
     })
   }
@@ -66,7 +75,7 @@ const FeelingComponent  = ()  =>{
     return axios.post(`${BASE_API_URL}/api/feelings`,
       {
         status: state.status.toString(),
-        createdAt: state.createdAt,
+        createdAt: new Date(state.createdAt).toISOString(),
         comment: state.comment,
         activities: state.activities,
       }, {
@@ -122,7 +131,7 @@ const FeelingComponent  = ()  =>{
                   type="checkbox" 
                   id="run" 
                   value="run" 
-                  onClick={() => setActivity(!state.activities.run, "run")} 
+                  onChange={() => setActivity(!state.activities.run, "run")} 
                   checked={state.activities.run}
                 />
                 <label className="form-check-label inline-block text-gray-800" htmlFor="run">Run</label>
@@ -134,7 +143,7 @@ const FeelingComponent  = ()  =>{
                   type="checkbox" 
                   id="bow" 
                   value="bow" 
-                  onClick={() => setActivity(!state.activities.bow, "bow")} 
+                  onChange={() => setActivity(!state.activities.bow, "bow")} 
                   checked={state.activities.bow}
                 />
                 <label className="form-check-label inline-block text-gray-800" htmlFor="bow">Bow</label>
@@ -146,10 +155,27 @@ const FeelingComponent  = ()  =>{
                 type="checkbox" 
                 id="gym" 
                 value="gym" 
-                onClick={() => setActivity(!state.activities.lift, "lift")} 
+                onChange={() => setActivity(!state.activities.lift, "lift")} 
                 checked={state.activities.lift}
               />
                 <label className="form-check-label inline-block text-gray-800" htmlFor="gym">Gym</label>
+              </div>  
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:justify-between mb-4">
+            <label className="self-center col-form-label">
+              Date:
+            </label>
+            <div className="self-center">
+              <div className="form-check form-check-inline">
+                <input className="border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
+                  checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat 
+                  bg-center bg-contain float-left mr-2 cursor-pointer" 
+                  type="date" 
+                  id="activity-date" 
+                  value={state.createdAt} 
+                  onChange={(e) => setDate(e.target.value)}
+                />
               </div>  
             </div>
           </div>
@@ -177,7 +203,7 @@ const FeelingComponent  = ()  =>{
         </div>
         <br />
         <WithFetch
-          update={update}
+          myUpdate={update}
           url={`${BASE_API_URL}/api/feelings`}
           render={({data, isFetching}) => (<FeelingtHistoryComponent data={data} isFetching={isFetching}/>)}
         />

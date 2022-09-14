@@ -27,16 +27,16 @@ const WithFetch = (props) => {
 
   useEffect(() => {
     fetch();
-  }, [props.update])
+  }, [props.myUpdate])
 
 
   return props.render({data, isFetching})
 }
 
-WithFetch.propTypes = {
-  render: PropTypes.func.required,
+WithFetch.propTypes = { 
+  render: PropTypes.func,
   url: PropTypes.string,
-  update: PropTypes.number.required,
+  myUpdate: PropTypes.number,
 }
 
 export default WithFetch;
