@@ -6,6 +6,7 @@ import {useAuth0} from "@auth0/auth0-react";
 import Profile from "./UserDetailsComponent";
 import NavBar from "./NavBar";
 import WithFetch from "./WithFetch";
+import ActivityGroup from "./ActivityGroup";
 
 const FeelingComponent  = ()  =>{
   const auth = useAuth0();
@@ -18,6 +19,7 @@ const FeelingComponent  = ()  =>{
       bow: false,
       run: false,
       lift: false,
+      swim: false,
     },
   });
 
@@ -94,6 +96,7 @@ const FeelingComponent  = ()  =>{
             bow: false,
             run: false,
             lift: false,
+            swim: false,
           },
         });
         return forceUpdate(n => n+1);
@@ -124,42 +127,13 @@ const FeelingComponent  = ()  =>{
               Today's activity:
             </label>
             <div className="self-center ">
-              <div className="form-check form-check-inline">
-                <input className="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
-                  checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat 
-                  bg-center bg-contain float-left mr-2 cursor-pointer" 
-                  type="checkbox" 
-                  id="run" 
-                  value="run" 
-                  onChange={() => setActivity(!state.activities.run, "run")} 
-                  checked={state.activities.run}
-                />
-                <label className="form-check-label inline-block text-gray-800" htmlFor="run">Run</label>
-              </div>  
-              <div className="form-check form-check-inline">
-                <input className="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
-                  checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat 
-                  bg-center bg-contain float-left mr-2 cursor-pointer" 
-                  type="checkbox" 
-                  id="bow" 
-                  value="bow" 
-                  onChange={() => setActivity(!state.activities.bow, "bow")} 
-                  checked={state.activities.bow}
-                />
-                <label className="form-check-label inline-block text-gray-800" htmlFor="bow">Bow</label>
-              </div>  
-              <div className="form-check form-check-inline">
-                <input className="form-check-input h-4 w-4 border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
-                checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat 
-                bg-center bg-contain float-left mr-2 cursor-pointer" 
-                type="checkbox" 
-                id="gym" 
-                value="gym" 
-                onChange={() => setActivity(!state.activities.lift, "lift")} 
-                checked={state.activities.lift}
-              />
-                <label className="form-check-label inline-block text-gray-800" htmlFor="gym">Gym</label>
-              </div>  
+              {
+                Object.entries(state.activities).map(([key, value]) => (
+                  <div className="form-check form-check-inline" key={key}>
+                    <ActivityGroup activity={{id: key, label: key, checked: value}} handleOnChange={setActivity}/>
+                  </div>
+                ))
+              }
             </div>
           </div>
           <div className="flex flex-col sm:flex-row sm:justify-between mb-4">

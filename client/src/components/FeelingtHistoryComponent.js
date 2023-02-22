@@ -33,9 +33,11 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
   
   const renderActivitiePill = (activity, index) => {
     const classMap =  {
-      bow: "bg-blue-500",
+      bow: "bg-amber-500",
       lift: "bg-yellow-500",
-      run: "bg-green-500",
+      run: "bg-lime-500",
+      swim: "bg-cyan-500",
+      cycle: "bg-indigo-500",
     }
 
     return (
@@ -46,7 +48,6 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
   }
 
   const parseActivitiesToArray = (activities) => {
-    console.log(Object.entries(activities).filter(([k,v]) => v ?? k).map(([k,v]) => k))
     return Object.entries(activities).filter(([k,v]) => v ?? k).map(([k,v]) => k);
   }
 

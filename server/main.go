@@ -20,9 +20,11 @@ import (
 )
 
 type Activity struct {
-	Bow  bool `json:"bow"`
-	Lift bool `json:"lift"`
-	Run  bool `json:"run"`
+	Bow  	bool `json:"bow"`
+	Lift 	bool `json:"lift"`
+	Run  	bool `json:"run"`
+	Cycle bool `json:"cycle"`
+	Swim  bool `json:"swim"`
 }
 
 // Feeling struct
