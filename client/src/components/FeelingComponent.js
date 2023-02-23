@@ -20,6 +20,7 @@ const FeelingComponent  = ()  =>{
       run: false,
       lift: false,
       swim: false,
+      cycle: false,
     },
   });
 
@@ -97,6 +98,7 @@ const FeelingComponent  = ()  =>{
             run: false,
             lift: false,
             swim: false,
+            cycle: false
           },
         });
         return forceUpdate(n => n+1);
