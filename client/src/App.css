@@ -1,72 +1,84 @@
-.App {
-  /*text-align: center;*/
-  /* background-color: #f4f5f6; */
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  color: #0f172a;
 }
 
-.App-content {
-    /*text-align: center;*/
-    display: flex;
-    flex-direction: column;
-    -webkit-box-align: center;
-    font-family: "Ciutadella Regular", sans-serif;
-    position: relative;
-    color: rgb(50, 50, 50);
-    padding: 50px 10px;
-    max-width: 900px;
-    margin-top: 0px;
-    margin-right: auto;
-    margin-bottom: 0px;
-    margin-left: auto;
+.app-inner {
+  position: relative;
+  z-index: 1;
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0 56px;
 }
 
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 80px;
+.app-content {
+  margin-top: 24px;
 }
 
-.App-header {
-  background-color: #222;
-  padding: 20px;
-  color: white;
-  width: 100%
+.app-gradient,
+.app-noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
 }
 
-.App-intro {
-  font-size: large;
+.app-gradient {
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(139, 92, 246, 0.16), transparent 24%),
+    linear-gradient(180deg, #f8fbff 0%, #eef4ff 48%, #f8fafc 100%);
 }
 
-
-@keyframes App-logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.app-noise {
+  opacity: 0.18;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(circle at center, black, transparent 82%);
 }
 
-.App-tile {
-  background-color: rgb(255, 255, 255);
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  border-radius: 4px;
-  padding: 35px;
+.panel {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
-.btn-emoji:focus {
-    /* background: #20c997; */
+.section-card {
+  border-radius: 28px;
+  padding: 28px;
 }
 
-.btn-emoji:hover {
-    /* background: #20c997; */
+.section-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0f172a;
 }
 
-.btn-emoji.selected {
-    /* background: #20c997; */
+.section-subtitle {
+  margin: 8px 0 0;
+  color: #475569;
+  line-height: 1.6;
 }
 
-.comment-link {
-    /* cursor: pointer; */
-    /* background-color: aquamarine; */
-}
+@media (max-width: 768px) {
+  .app-inner {
+    width: min(100% - 20px, 1120px);
+    padding-top: 20px;
+    padding-bottom: 28px;
+  }
 
-.comment-link:hover {
-    /* background-color: #20c997; */
+  .app-content {
+    margin-top: 16px;
+  }
+
+  .section-card {
+    padding: 20px;
+    border-radius: 22px;
+  }
 }

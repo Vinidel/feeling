@@ -1,9 +1,30 @@
 import React, { useState } from 'react'
 import moment from 'moment';
-import {Button, Popover, PopoverHeader, PopoverBody} from "reactstrap";
 import SpinnerComponent from "./SpinnerComponent";
-import FeelingChartComponent from "./FeelingChartComponent";
-// import FeelingChartComponent from "./FeelingChartComponent";
+
+const statusMap = {
+  0: { emoji: '😔', label: 'Rough', tone: 'bg-rose-50 text-rose-700 border-rose-200' },
+  1: { emoji: '🙁', label: 'Low', tone: 'bg-orange-50 text-orange-700 border-orange-200' },
+  2: { emoji: '😐', label: 'Steady', tone: 'bg-slate-100 text-slate-700 border-slate-200' },
+  3: { emoji: '🙂', label: 'Good', tone: 'bg-sky-50 text-sky-700 border-sky-200' },
+  4: { emoji: '😀', label: 'Great', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+};
+
+const activityClassMap =  {
+  bow: "bg-amber-100 text-amber-700 border-amber-200",
+  lift: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  run: "bg-lime-100 text-lime-700 border-lime-200",
+  swim: "bg-cyan-100 text-cyan-700 border-cyan-200",
+  cycle: "bg-indigo-100 text-indigo-700 border-indigo-200",
+}
+
+const activityMeta = {
+  bow: '🏹 Bow',
+  lift: '🏋️ Lift',
+  run: '🏃 Run',
+  swim: '🏊 Swim',
+  cycle: '🚴 Cycle',
+};
 
 const FeelingHistoryComponent = ({data = [], isFetching}) => {
   const [commentRowToggle, setCommentRowToggle] = useState(null);
@@ -15,106 +36,91 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
     return setCommentRowToggle(id)
   };
 
-  const renderStatus = (s) => {
-    switch (Number.parseInt(s)) {
-      case 0:
-        return (<span>😔</span>);
-      case 1:
-        return (<span>🙁</span>);
-      case 2:
-        return (<span>😐</span>);
-      case 3:
-        return (<span>🙂</span>);
-      case 4:
-        return (<span>😀</span>);
-
-    }
-  }
-  
-  const renderActivitiePill = (activity, index) => {
-    const classMap =  {
-      bow: "bg-amber-500",
-      lift: "bg-yellow-500",
-      run: "bg-lime-500",
-      swim: "bg-cyan-500",
-      cycle: "bg-indigo-500",
-    }
-
-    return (
-      <button className={`cursor-auto px-4 py-2 text-xs mr-1 rounded-full text-white ${classMap[activity]}`} key={index}>
-        {activity}
-      </button>
-    )
-  }
-
-  const parseActivitiesToArray = (activities) => {
-    return Object.entries(activities).filter(([k,v]) => v ?? k).map(([k,v]) => k);
-  }
-
-  const renderChevronButton = (id) => {
-    const direction = commentRowToggle === id ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7";
-    return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d={direction} />
-    </svg>)
+  const parseActivitiesToArray = (activities = {}) => {
+    return Object.entries(activities).filter(([, value]) => Boolean(value)).map(([key]) => key);
   }
 
   const renderTableContent = (feelings) => {
     return (
-      <table className="table table-fixed">
-          <tbody>
-            <tr className="bg-sky-800 text-white">
-              <th scope="col">Feeling</th>
-              <th className="hidden md:table-cell" scope="col">Date</th>
-              <th scope="col">Activities</th>
-              <th scope="col"></th>
-            </tr>
-            {
-              feelings.sort((a, b) => (new Date(b.createdAt) - new Date(a.createdAt))).map((f, i) => {
-                const date = moment(new Date(f.createdAt)).format('DD-MM-YYYY');
-                return (
-                  <>
-                <tr className="hover:bg-sky-700 hover:text-white hover:cursor-pointer" key={i} onClick={() => toggle(i)}>
-                  <td className="p-0 text-2xl pl-1 pr-1 align-middle">{renderStatus(f.status)}</td>
-                  <td className="hidden  md:table-cell">{date}</td>
-                  <td className="">
-                    {
-                    parseActivitiesToArray(f.activities)
-                      .map((e, i) => renderActivitiePill(e, i))
-                    }
-                  </td>
-                  <td className="">{renderChevronButton(i)}</td>
-                </tr>
-                <tr className={`hover:bg-sky-700 hover:text-white ${commentRowToggle === i ? "table-row":"hidden"}`} key={i + 'description'}>
-                  <td className="pl-2 pr-2 w-96 table-cell  md:hidden" colSpan={"3"}>{f.comment}</td>
-                  <td className="pl-2 pr-2 w-96 hidden  md:table-cell" colSpan={"4"}>{f.comment}</td>
-                </tr>
-                  </>
-                )
-              })
-              }
-            </tbody>
-      </table>
-      )
+      <div className="space-y-4">
+        {feelings
+          .sort((a, b) => (new Date(b.createdAt) - new Date(a.createdAt)))
+          .map((f, i) => {
+            const date = moment(new Date(f.createdAt)).format('DD MMM YYYY');
+            const status = statusMap[Number.parseInt(f.status, 10)] || statusMap[2];
+            const isOpen = commentRowToggle === i;
+            const activities = parseActivitiesToArray(f.activities);
+
+            return (
+              <div
+                className="overflow-hidden rounded-3xl border border-slate-200 bg-white/80 shadow-sm transition hover:shadow-md"
+                key={`${f.createdAt}-${i}`}
+              >
+                <button
+                  type="button"
+                  className="flex w-full flex-col gap-4 px-5 py-5 text-left md:flex-row md:items-center md:justify-between"
+                  onClick={() => toggle(i)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-3xl shadow-lg shadow-slate-900/10">
+                      <span>{status.emoji}</span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">{status.label}</div>
+                      <div className="mt-1 text-sm text-slate-500">{date}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-1 flex-wrap items-center justify-start gap-2 md:justify-end">
+                    <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${status.tone}`}>
+                      {status.label}
+                    </span>
+                    {activities.length ? activities.map((activity) => (
+                      <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${activityClassMap[activity] || 'bg-slate-100 text-slate-700 border-slate-200'}`} key={activity}>
+                        {activityMeta[activity] || activity}
+                      </span>
+                    )) : (
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
+                        No activity tagged
+                      </span>
+                    )}
+                    <span className={`ml-auto text-slate-400 transition md:ml-2 ${isOpen ? 'rotate-180' : ''}`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </span>
+                  </div>
+                </button>
+
+                {isOpen ? (
+                  <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-4 text-sm leading-7 text-slate-600">
+                    {f.comment ? f.comment : 'No note added for this entry.'}
+                  </div>
+                ) : null}
+              </div>
+            )
+          })}
+      </div>
+    )
   }
 
   const renderEmptyTable = () => {
-      return (
-        <div>No content</div>
-      )
-    }
+    return (
+      <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center text-slate-500">
+        No entries yet. Your first check-in will show up here.
+      </div>
+    )
+  }
 
   const renderSpinner = () => (<SpinnerComponent />)
 
-    // TODO: We need to curate the data before creating the chart because it got too slow with activities object
-    return (
-      <div>
-        {isFetching ? renderSpinner() : ''}
-        {/*{data && data.length && <FeelingChartComponent feelingHistory={data}/>}*/}
-        <br/>
-        {data && data.length && !isFetching ? renderTableContent(data) : renderEmptyTable() }
-      </div>
-    );
+  return (
+    <div>
+      {isFetching ? renderSpinner() : ''}
+      <br/>
+      {data && data.length && !isFetching ? renderTableContent(data) : renderEmptyTable() }
+    </div>
+  );
 }
 
 export default FeelingHistoryComponent;
