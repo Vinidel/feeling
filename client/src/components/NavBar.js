@@ -9,15 +9,16 @@ export default function NavBar() {
   }
 
   return (
-    <header className="app-header-minimal">
+    <header className="app-header-character">
       <div>
-        <div className="app-kicker">Mood journal</div>
-        <h1 className="app-title">My.Feelings</h1>
+        <div className="app-kicker app-kicker-character">Mood journal</div>
+        <h1 className="app-title app-title-character">My.Feelings</h1>
+        <p className="app-tagline">A softer way to notice how your days are landing.</p>
       </div>
 
-      <div className="app-userbar">
+      <div className="app-userbar app-userbar-character">
         <img
-          className="app-avatar"
+          className="app-avatar app-avatar-character"
           src={user.picture}
           alt={user.name}
         />
@@ -27,7 +28,7 @@ export default function NavBar() {
         <button
           type="button"
           onClick={() => logout({ returnTo: window.location.origin })}
-          className="app-logout"
+          className="app-logout app-logout-character"
         >
           Sign out
         </button>

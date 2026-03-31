@@ -7,11 +7,11 @@ import WithFetch from "./WithFetch";
 import ActivityGroup from "./ActivityGroup";
 
 const moodOptions = [
-  { value: 0, emoji: '😔', label: 'Rough' },
-  { value: 1, emoji: '🙁', label: 'Low' },
-  { value: 2, emoji: '😐', label: 'Steady' },
-  { value: 3, emoji: '🙂', label: 'Good' },
-  { value: 4, emoji: '😀', label: 'Great' },
+  { value: 0, emoji: '😔', label: 'Rough', tone: 'mood-tone-rough' },
+  { value: 1, emoji: '🙁', label: 'Low', tone: 'mood-tone-low' },
+  { value: 2, emoji: '😐', label: 'Steady', tone: 'mood-tone-steady' },
+  { value: 3, emoji: '🙂', label: 'Good', tone: 'mood-tone-good' },
+  { value: 4, emoji: '😀', label: 'Great', tone: 'mood-tone-great' },
 ];
 
 const emptyActivities = {
@@ -107,12 +107,12 @@ const FeelingComponent  = ()  =>{
   }
 
   return (
-    <div className="minimal-layout">
-      <section className="minimal-section panel section-card">
+    <div className="minimal-layout character-layout">
+      <section className="minimal-section panel section-card section-card-character">
         <div className="minimal-section-head">
           <div>
-            <h2 className="section-title">Today</h2>
-            <p className="section-subtitle">A simple check-in for mood, movement, and context.</p>
+            <h2 className="section-title section-title-character">Today</h2>
+            <p className="section-subtitle section-subtitle-character">A quick check-in for mood, movement, and context.</p>
           </div>
         </div>
 
@@ -126,11 +126,11 @@ const FeelingComponent  = ()  =>{
                   <button
                     key={option.value}
                     type="button"
-                    className={`minimal-mood-card ${selected ? 'minimal-mood-card-selected' : ''}`}
+                    className={`minimal-mood-card character-mood-card ${option.tone} ${selected ? 'minimal-mood-card-selected character-mood-card-selected' : ''}`}
                     onClick={() => setStatus(option.value)}
                   >
-                    <span className="minimal-mood-emoji">{option.emoji}</span>
-                    <span className="minimal-mood-text">{option.label}</span>
+                    <span className="minimal-mood-emoji character-mood-emoji">{option.emoji}</span>
+                    <span className="minimal-mood-text character-mood-text">{option.label}</span>
                   </button>
                 );
               })}
@@ -157,7 +157,7 @@ const FeelingComponent  = ()  =>{
             <div>
               <label className="minimal-label">Date</label>
               <input
-                className="minimal-input"
+                className="minimal-input character-input"
                 type="date"
                 id="activity-date"
                 value={state.createdAt}
@@ -170,7 +170,7 @@ const FeelingComponent  = ()  =>{
                 name="comment"
                 placeholder="Add a note"
                 id="comment"
-                className="minimal-textarea"
+                className="minimal-textarea character-input"
                 value={state.comment}
                 onChange={handleCommentChange}
               />
@@ -179,7 +179,7 @@ const FeelingComponent  = ()  =>{
 
           <div className="minimal-actions">
             <button
-              className="minimal-primary-button"
+              className="minimal-primary-button character-primary-button"
               type="submit"
               disabled={isSaving}
             >
@@ -189,11 +189,11 @@ const FeelingComponent  = ()  =>{
         </form>
       </section>
 
-      <section className="minimal-section panel section-card">
+      <section className="minimal-section panel section-card section-card-character">
         <div className="minimal-section-head">
           <div>
-            <h2 className="section-title">History</h2>
-            <p className="section-subtitle">Recent entries, kept simple.</p>
+            <h2 className="section-title section-title-character">History</h2>
+            <p className="section-subtitle section-subtitle-character">Recent entries with a little more warmth.</p>
           </div>
         </div>
         <WithFetch

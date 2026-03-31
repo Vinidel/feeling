@@ -3,11 +3,11 @@ import moment from 'moment';
 import SpinnerComponent from "./SpinnerComponent";
 
 const statusMap = {
-  0: { emoji: '😔', label: 'Rough' },
-  1: { emoji: '🙁', label: 'Low' },
-  2: { emoji: '😐', label: 'Steady' },
-  3: { emoji: '🙂', label: 'Good' },
-  4: { emoji: '😀', label: 'Great' },
+  0: { emoji: '😔', label: 'Rough', tone: 'history-tone-rough' },
+  1: { emoji: '🙁', label: 'Low', tone: 'history-tone-low' },
+  2: { emoji: '😐', label: 'Steady', tone: 'history-tone-steady' },
+  3: { emoji: '🙂', label: 'Good', tone: 'history-tone-good' },
+  4: { emoji: '😀', label: 'Great', tone: 'history-tone-great' },
 };
 
 const activityMeta = {
@@ -47,14 +47,14 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
           const activities = parseActivitiesToArray(f.activities);
 
           return (
-            <div className="minimal-history-item" key={`${f.createdAt}-${i}`}>
+            <div className={`minimal-history-item character-history-item ${status.tone}`} key={`${f.createdAt}-${i}`}>
               <button
                 type="button"
                 className="minimal-history-button"
                 onClick={() => toggle(i)}
               >
                 <div className="minimal-history-main">
-                  <span className="minimal-history-emoji">{status.emoji}</span>
+                  <span className="minimal-history-emoji character-history-emoji">{status.emoji}</span>
                   <div>
                     <div className="minimal-history-title">{status.label}</div>
                     <div className="minimal-history-date">{date}</div>
@@ -65,7 +65,7 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
                   {activities.length ? (
                     <div className="minimal-history-tags">
                       {activities.map((activity) => (
-                        <span className="minimal-tag" key={activity}>
+                        <span className="minimal-tag character-tag" key={activity}>
                           {activityMeta[activity] || activity}
                         </span>
                       ))}
@@ -80,7 +80,7 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
               </button>
 
               {isOpen ? (
-                <div className="minimal-history-note">
+                <div className="minimal-history-note character-history-note">
                   {f.comment ? f.comment : 'No note added.'}
                 </div>
               ) : null}
@@ -93,7 +93,7 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
 
   const renderEmpty = () => {
     return (
-      <div className="minimal-empty-state">
+      <div className="minimal-empty-state character-empty-state">
         No entries yet.
       </div>
     )
