@@ -1,0 +1,5 @@
+{
+  "name": "feeling",
+  "description": "Mood tracking app with Go backend and React frontend",
+  "stack": "container"
+}

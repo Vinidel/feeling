@@ -172,7 +172,12 @@ func main() {
 	r.GET("/api/feelings", checkJWT(), GetFeelingsHandler(dbClient))
 	r.POST("/api/feelings", checkJWT(), PostFeelingHandler(dbClient))
 
-	err := r.Run()
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	err := r.Run(":" + port)
 	if err != nil {
 		log.Fatal("Could not run server", err.Error())
 		return
