@@ -21,10 +21,10 @@ const activityMeta = {
 const FeelingHistoryComponent = ({data = [], isFetching}) => {
   const [commentRowToggle, setCommentRowToggle] = useState(null);
 
-  const sortedFeelings = useMemo(
-    () => [...data].sort((a, b) => (new Date(b.createdAt) - new Date(a.createdAt))),
-    [data]
-  );
+  const sortedFeelings = useMemo(() => {
+    const normalizedData = Array.isArray(data) ? data : [];
+    return [...normalizedData].sort((a, b) => (new Date(b.createdAt) - new Date(a.createdAt)));
+  }, [data]);
 
   const toggle = (id) => {
     if (commentRowToggle === id) {
