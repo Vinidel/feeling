@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import moment from 'moment';
 import SpinnerComponent from "./SpinnerComponent";
 
@@ -29,6 +29,11 @@ const activityMeta = {
 const FeelingHistoryComponent = ({data = [], isFetching}) => {
   const [commentRowToggle, setCommentRowToggle] = useState(null);
 
+  const sortedFeelings = useMemo(
+    () => [...data].sort((a, b) => (new Date(b.createdAt) - new Date(a.createdAt))),
+    [data]
+  );
+
   const toggle = (id) => {
     if (commentRowToggle === id) {
       return setCommentRowToggle(null);
@@ -40,66 +45,93 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
     return Object.entries(activities).filter(([, value]) => Boolean(value)).map(([key]) => key);
   }
 
-  const renderTableContent = (feelings) => {
+  const stats = useMemo(() => {
+    if (!sortedFeelings.length) {
+      return [];
+    }
+
+    const recent = sortedFeelings.slice(0, 7);
+    const average = recent.reduce((sum, item) => sum + Number.parseInt(item.status, 10), 0) / recent.length;
+    const noteCount = recent.filter((item) => item.comment && item.comment.trim().length).length;
+    const activityCount = recent.reduce((sum, item) => sum + parseActivitiesToArray(item.activities).length, 0);
+
+    return [
+      { label: 'Last 7 average', value: `${average.toFixed(1)}/4` },
+      { label: 'Entries with notes', value: `${noteCount}` },
+      { label: 'Tagged activities', value: `${activityCount}` },
+    ];
+  }, [sortedFeelings]);
+
+  const renderTableContent = () => {
     return (
       <div className="space-y-4">
-        {feelings
-          .sort((a, b) => (new Date(b.createdAt) - new Date(a.createdAt)))
-          .map((f, i) => {
-            const date = moment(new Date(f.createdAt)).format('DD MMM YYYY');
-            const status = statusMap[Number.parseInt(f.status, 10)] || statusMap[2];
-            const isOpen = commentRowToggle === i;
-            const activities = parseActivitiesToArray(f.activities);
-
-            return (
-              <div
-                className="overflow-hidden rounded-3xl border border-slate-200 bg-white/80 shadow-sm transition hover:shadow-md"
-                key={`${f.createdAt}-${i}`}
-              >
-                <button
-                  type="button"
-                  className="flex w-full flex-col gap-4 px-5 py-5 text-left md:flex-row md:items-center md:justify-between"
-                  onClick={() => toggle(i)}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-3xl shadow-lg shadow-slate-900/10">
-                      <span>{status.emoji}</span>
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-slate-900">{status.label}</div>
-                      <div className="mt-1 text-sm text-slate-500">{date}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-1 flex-wrap items-center justify-start gap-2 md:justify-end">
-                    <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${status.tone}`}>
-                      {status.label}
-                    </span>
-                    {activities.length ? activities.map((activity) => (
-                      <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${activityClassMap[activity] || 'bg-slate-100 text-slate-700 border-slate-200'}`} key={activity}>
-                        {activityMeta[activity] || activity}
-                      </span>
-                    )) : (
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
-                        No activity tagged
-                      </span>
-                    )}
-                    <span className={`ml-auto text-slate-400 transition md:ml-2 ${isOpen ? 'rotate-180' : ''}`}>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </span>
-                  </div>
-                </button>
-
-                {isOpen ? (
-                  <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-4 text-sm leading-7 text-slate-600">
-                    {f.comment ? f.comment : 'No note added for this entry.'}
-                  </div>
-                ) : null}
+        {stats.length ? (
+          <div className="grid gap-3 md:grid-cols-3">
+            {stats.map((item) => (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4" key={item.label}>
+                <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{item.label}</div>
+                <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{item.value}</div>
               </div>
-            )
-          })}
+            ))}
+          </div>
+        ) : null}
+
+        {sortedFeelings.map((f, i) => {
+          const date = moment(new Date(f.createdAt)).format('DD MMM YYYY');
+          const timeAgo = moment(new Date(f.createdAt)).fromNow();
+          const status = statusMap[Number.parseInt(f.status, 10)] || statusMap[2];
+          const isOpen = commentRowToggle === i;
+          const activities = parseActivitiesToArray(f.activities);
+
+          return (
+            <div
+              className="history-card"
+              key={`${f.createdAt}-${i}`}
+            >
+              <button
+                type="button"
+                className="flex w-full flex-col gap-4 px-5 py-5 text-left md:flex-row md:items-center md:justify-between"
+                onClick={() => toggle(i)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="history-emoji-wrap">
+                    <span>{status.emoji}</span>
+                  </div>
+                  <div>
+                    <div className="text-base font-semibold text-slate-900">{status.label}</div>
+                    <div className="mt-1 text-sm text-slate-500">{date} · {timeAgo}</div>
+                  </div>
+                </div>
+
+                <div className="flex flex-1 flex-wrap items-center justify-start gap-2 md:justify-end">
+                  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${status.tone}`}>
+                    Mood
+                  </span>
+                  {activities.length ? activities.map((activity) => (
+                    <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${activityClassMap[activity] || 'bg-slate-100 text-slate-700 border-slate-200'}`} key={activity}>
+                      {activityMeta[activity] || activity}
+                    </span>
+                  )) : (
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
+                      No activity tagged
+                    </span>
+                  )}
+                  <span className={`ml-auto text-slate-400 transition md:ml-2 ${isOpen ? 'rotate-180' : ''}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </span>
+                </div>
+              </button>
+
+              {isOpen ? (
+                <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-4 text-sm leading-7 text-slate-600">
+                  {f.comment ? f.comment : 'No note added for this entry.'}
+                </div>
+              ) : null}
+            </div>
+          )
+        })}
       </div>
     )
   }
@@ -118,7 +150,7 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
     <div>
       {isFetching ? renderSpinner() : ''}
       <br/>
-      {data && data.length && !isFetching ? renderTableContent(data) : renderEmptyTable() }
+      {sortedFeelings.length && !isFetching ? renderTableContent() : renderEmptyTable() }
     </div>
   );
 }
