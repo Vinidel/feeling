@@ -6,7 +6,7 @@ import config from "../config";
 
 const WithFetch = (props) => {
   const { user, getAccessTokenSilently } = useAuth0();
-  const [data, setData] = useState({});
+  const [data, setData] = useState([]);
   const [isFetching, setIsFetching] = useState(true);
 
   const fetch = async () => {
