@@ -1,15 +1,14 @@
-import React, { Component } from 'react'
-class TitleComponent extends Component {
-    render() {
-        return (
-          <div className="d-flex justify-content-center">
-            <div className="spinner-border" role="status">
-              <span className="sr-only">Loading...</span>
-            </div>
-          </div>
+import React from 'react'
 
-        )
-    }
+const SpinnerComponent = () => {
+  return (
+    <div className="flex items-center justify-center py-10">
+      <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white/80 px-4 py-3 text-sm font-medium text-slate-600 shadow-sm">
+        <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-sky-500" />
+        Loading entries...
+      </div>
+    </div>
+  )
 }
 
-export default TitleComponent;
+export default SpinnerComponent;

@@ -1,191 +1,208 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import axios from 'axios';
 import FeelingtHistoryComponent from './FeelingtHistoryComponent';
 import {BASE_API_URL} from '../config';
 import {useAuth0} from "@auth0/auth0-react";
-import Profile from "./UserDetailsComponent";
-import NavBar from "./NavBar";
 import WithFetch from "./WithFetch";
 import ActivityGroup from "./ActivityGroup";
+
+const moodOptions = [
+  { value: 0, emoji: '😔', label: 'Rough', tone: 'mood-tone-rough' },
+  { value: 1, emoji: '🙁', label: 'Low', tone: 'mood-tone-low' },
+  { value: 2, emoji: '😐', label: 'Steady', tone: 'mood-tone-steady' },
+  { value: 3, emoji: '🙂', label: 'Good', tone: 'mood-tone-good' },
+  { value: 4, emoji: '😀', label: 'Great', tone: 'mood-tone-great' },
+];
+
+const emptyActivities = {
+  bow: false,
+  run: false,
+  lift: false,
+  swim: false,
+  cycle: false,
+};
+
+const formatDateInput = (value) => {
+  const date = value ? new Date(value) : new Date();
+  return date.toISOString().slice(0, 10);
+};
 
 const FeelingComponent  = ()  =>{
   const auth = useAuth0();
   const [update, forceUpdate] = useState(0)
+  const [isSaving, setIsSaving] = useState(false);
   const [state, setState] = useState({
-    status: null,
-    createdAt: new Date(),
+    status: 2,
+    createdAt: formatDateInput(),
     comment: '',
-    activities: {
-      bow: false,
-      run: false,
-      lift: false,
-      swim: false,
-      cycle: false,
-    },
+    activities: emptyActivities,
   });
 
-  const isSelected = (status) => {
-    return state.status === status ? "bg-blue-800" : "";
-  }
-
   const setStatus = (status) => {
-    setState((prevState) => {
-      return {
-        ...prevState,
-        status,
-      }
-    })
+    setState((prevState) => ({
+      ...prevState,
+      status,
+    }))
   }
 
   const setDate = (date) => {
-    console.log(date);
-    setState((prevState) => {
-      return {
-        ...prevState,
-        createdAt: date || new Date().toISOString(),
-      }
-    })
+    setState((prevState) => ({
+      ...prevState,
+      createdAt: date || formatDateInput(),
+    }))
   }
 
   const setActivity = (value, activityName) => {
-    setState((prevState) => {
-      return {
-        ...prevState,
-        activities: {
-          ...prevState.activities,
-          [activityName]: value,
-        }
+    setState((prevState) => ({
+      ...prevState,
+      activities: {
+        ...prevState.activities,
+        [activityName]: value,
       }
-    })
+    }))
   }
 
   const handleCommentChange = (event) => {
-    event.persist();
-    setState((prevState) => {
-      return {
-        ...prevState,
-        comment: event.target.value,
-      }
-    })
+    const { value } = event.target;
+    setState((prevState) => ({
+      ...prevState,
+      comment: value,
+    }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = await auth.getAccessTokenSilently({
-      audience: "https://stormy-cliffs-52671.herokuapp.com/api",
-    });
-    console.log('Calling post with', state)
-    return axios.post(`${BASE_API_URL}/api/feelings`,
-      {
-        status: state.status.toString(),
-        createdAt: new Date(state.createdAt).toISOString(),
-        comment: state.comment,
-        activities: state.activities,
-      }, {
-        headers: {
-          "x-user-id": auth.user.sub,
-          Authorization: `Bearer ${token}`,
-        }
-      })
-      .then((res) => {
-        console.log('Calling set state')
-        setState({
-          status: null,
-          createdAt: '',
-          comment: '',
-          activities: {
-            bow: false,
-            run: false,
-            lift: false,
-            swim: false,
-            cycle: false
-          },
+    setIsSaving(true);
+
+    try {
+      const token = await auth.getAccessTokenSilently({
+        audience: "https://stormy-cliffs-52671.herokuapp.com/api",
+      });
+
+      await axios.post(`${BASE_API_URL}/api/feelings`,
+        {
+          status: state.status.toString(),
+          createdAt: new Date(state.createdAt).toISOString(),
+          comment: state.comment,
+          activities: state.activities,
+        }, {
+          headers: {
+            "x-user-id": auth.user.sub,
+            Authorization: `Bearer ${token}`,
+          }
         });
-        return forceUpdate(n => n+1);
-      })
-      .catch(e => console.log('Error', e))
+
+      setState({
+        status: 2,
+        createdAt: formatDateInput(),
+        comment: '',
+        activities: emptyActivities,
+      });
+      forceUpdate(n => n+1);
+    } catch (err) {
+      console.log('Error', err)
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
-    <div>
-      <div className="App-tile">
-        <form className="form-group">
-          <div className="flex flex-col sm:flex-row sm:justify-between mb-4">
-            <label className="self-center sm:self-start col-form-label">
-              How are you feeling today:
-            </label>
-            <div className="self-center">
-              <div className="btn-group">
-                <button type="button" className={`btn btn-primary-outline btn-emoji bg-sky-800 hover:bg-sky-700 active:bg-blue-800 focus:bg-blue-800 rounded mr-2 ${isSelected(0)}`} onClick={() => setStatus(0)}>😔</button>
-                <button type="button" className={`btn btn-primary-outline btn-emoji bg-sky-800 hover:bg-sky-700 active:bg-blue-800 focus:bg-blue-800 rounded mr-2 ${isSelected(1)}`} onClick={() => setStatus(1)}>🙁</button>
-                <button type="button" className={`btn btn-primary-outline btn-emoji bg-sky-800 hover:bg-sky-700 active:bg-blue-800 focus:bg-blue-800 rounded mr-2 ${isSelected(2)}`} onClick={() => setStatus(2)}>😐</button>
-                <button type="button" className={`btn btn-primary-outline btn-emoji bg-sky-800 hover:bg-sky-700 active:bg-blue-800 focus:bg-blue-800 rounded mr-2 ${isSelected(3)}`} onClick={() => setStatus(3)}>🙂</button>
-                <button type="button" className={`btn btn-primary-outline btn-emoji bg-sky-800 hover:bg-sky-700 active:bg-blue-800 focus:bg-blue-800 rounded mr-2 ${isSelected(4)}`} onClick={() => setStatus(4)}>😀</button>
-              </div>
+    <div className="minimal-layout character-layout">
+      <section className="minimal-section panel section-card section-card-character">
+        <div className="minimal-section-head">
+          <div>
+            <h2 className="section-title section-title-character">Today</h2>
+            <p className="section-subtitle section-subtitle-character">A quick check-in for mood, movement, and context.</p>
+          </div>
+        </div>
+
+        <form className="minimal-form" onSubmit={handleSubmit}>
+          <div>
+            <label className="minimal-label">Mood</label>
+            <div className="minimal-mood-grid">
+              {moodOptions.map((option) => {
+                const selected = state.status === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`minimal-mood-card character-mood-card ${option.tone} ${selected ? 'minimal-mood-card-selected character-mood-card-selected' : ''}`}
+                    onClick={() => setStatus(option.value)}
+                  >
+                    <span className="minimal-mood-emoji character-mood-emoji">{option.emoji}</span>
+                    <span className="minimal-mood-text character-mood-text">{option.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between mb-4">
-            <label className="self-center col-form-label">
-              Today's activity:
-            </label>
-            <div className="self-center ">
-              {
-                Object.entries(state.activities).map(([key, value]) => (
-                  <div className="form-check form-check-inline" key={key}>
-                    <ActivityGroup activity={{id: key, label: key, checked: value}} handleOnChange={setActivity}/>
-                  </div>
-                ))
-              }
+
+          <div>
+            <div className="minimal-row-head">
+              <label className="minimal-label">Activities</label>
+              <span className="minimal-muted">Optional</span>
             </div>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between mb-4">
-            <label className="self-center col-form-label">
-              Date:
-            </label>
-            <div className="self-center">
-              <div className="form-check form-check-inline">
-                <input className="border border-gray-300 rounded-sm bg-white checked:bg-sky-700 
-                  checked:border-blue-600 focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat 
-                  bg-center bg-contain float-left mr-2 cursor-pointer" 
-                  type="date" 
-                  id="activity-date" 
-                  value={state.createdAt} 
-                  onChange={(e) => setDate(e.target.value)}
+            <div className="minimal-activity-grid">
+              {Object.entries(state.activities).map(([key, value]) => (
+                <ActivityGroup
+                  key={key}
+                  activity={{id: key, label: key, checked: value}}
+                  handleOnChange={setActivity}
                 />
-              </div>  
+              ))}
             </div>
           </div>
-          <div className="flex mb-4">
-            <div className="flex-auto">
-              <textarea name="comment" 
-              placeholder="Describe the reason why you are feeling this way"
-              id="comment" 
-              className="form-control" 
-              value={state.comment} 
-              onChange={handleCommentChange} />
+
+          <div className="minimal-meta-grid">
+            <div>
+              <label className="minimal-label">Date</label>
+              <input
+                className="minimal-input character-input"
+                type="date"
+                id="activity-date"
+                value={state.createdAt}
+                onChange={(e) => setDate(e.target.value)}
+              />
             </div>
+            <div>
+              <label className="minimal-label" htmlFor="comment">Note</label>
+              <textarea
+                name="comment"
+                placeholder="Add a note"
+                id="comment"
+                className="minimal-textarea character-input"
+                value={state.comment}
+                onChange={handleCommentChange}
+              />
+            </div>
+          </div>
+
+          <div className="minimal-actions">
+            <button
+              className="minimal-primary-button character-primary-button"
+              type="submit"
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving…' : 'Save'}
+            </button>
           </div>
         </form>
-        <div className="btn-container md:text-right">
-          <button
-            className="group relative justify-center
-            w-full md:w-32
-            py-2 px-4 border border-transparent text-sm
-            font-medium rounded-md text-white bg-sky-800 
-            hover:bg-sky-700 focus:outline-none focus:ring-2 
-            focus:ring-offset-2 focus:ring-indigo-500"
-            type="button"
-            onClick={handleSubmit}>Save</button>
+      </section>
+
+      <section className="minimal-section panel section-card section-card-character">
+        <div className="minimal-section-head">
+          <div>
+            <h2 className="section-title section-title-character">History</h2>
+            <p className="section-subtitle section-subtitle-character">Recent entries with a little more warmth.</p>
+          </div>
         </div>
-        <br />
         <WithFetch
           myUpdate={update}
           url={`${BASE_API_URL}/api/feelings`}
-          render={({data, isFetching}) => (<FeelingtHistoryComponent data={data} isFetching={isFetching}/>)}
+          render={({data, isFetching}) => (<FeelingtHistoryComponent data={data} isFetching={isFetching}/>) }
         />
-      </div>
+      </section>
     </div>
-
   );
 }
 
