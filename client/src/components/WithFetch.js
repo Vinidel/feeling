@@ -17,7 +17,7 @@ const WithFetch = (props) => {
     }
 
     try {
-      setIsFetching(true);
+      setIsFetching((previousState) => previousState && data.length === 0);
       const token = await getAccessTokenSilently({
         audience: config.AUD,
       });
@@ -35,7 +35,7 @@ const WithFetch = (props) => {
     } finally {
       setIsFetching(false);
     }
-  }, [getAccessTokenSilently, isAuthenticated, props.url, user]);
+  }, [data.length, getAccessTokenSilently, isAuthenticated, props.url, user]);
 
   useEffect(() => {
     fetchData();
