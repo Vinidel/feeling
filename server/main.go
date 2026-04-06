@@ -20,9 +20,9 @@ import (
 )
 
 type Activity struct {
-	Bow  	bool `json:"bow"`
-	Lift 	bool `json:"lift"`
-	Run  	bool `json:"run"`
+	Bow   bool `json:"bow"`
+	Lift  bool `json:"lift"`
+	Run   bool `json:"run"`
 	Cycle bool `json:"cycle"`
 	Swim  bool `json:"swim"`
 }
@@ -30,10 +30,10 @@ type Activity struct {
 // Feeling struct
 type Feeling struct {
 	Activities Activity  `json:"activities"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"createdAt"`
-	Comment   string    `json:"comment"`
-	UserID    string    `json:"userID"`
+	Status     string    `json:"status"`
+	CreatedAt  time.Time `json:"createdAt"`
+	Comment    string    `json:"comment"`
+	UserID     string    `json:"userID"`
 }
 
 type Jwks struct {
@@ -56,23 +56,15 @@ func GetConnectionString() string {
 }
 
 func SetupDB(connectionString string) (*mongo.Client, error) {
-	// Set client options
-	// clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 	clientOptions := options.Client().ApplyURI(connectionString)
-
-	// Connect to MongoDB
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 
 	if err != nil {
-		//log.Fatal(err)
 		return nil, err
 	}
 
-	// Check the connection
 	err = client.Ping(context.TODO(), nil)
-
 	if err != nil {
-		//log.Fatal(err)
 		return nil, err
 	}
 
@@ -96,7 +88,7 @@ func getPemCert(token *jwt.Token) (string, error) {
 		return cert, err
 	}
 
-	for k, _ := range jwks.Keys {
+	for k := range jwks.Keys {
 		if token.Header["kid"] == jwks.Keys[k].Kid {
 			cert = "-----BEGIN CERTIFICATE-----\n" + jwks.Keys[k].X5c[0] + "\n-----END CERTIFICATE-----"
 		}
@@ -112,13 +104,12 @@ func getPemCert(token *jwt.Token) (string, error) {
 
 var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
 	ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
-		// Verify 'aud' claim
 		aud := "https://stormy-cliffs-52671.herokuapp.com/api"
 		checkAud := token.Claims.(jwt.MapClaims).VerifyAudience(aud, false)
 		if !checkAud {
 			return token, errors.New("invalid audience")
 		}
-		// Verify 'iss' claim
+
 		iss := "https://dev-vin.au.auth0.com/"
 		checkIss := token.Claims.(jwt.MapClaims).VerifyIssuer(iss, false)
 		if !checkIss {
@@ -142,35 +133,58 @@ func checkJWT() gin.HandlerFunc {
 		jwtMid := *jwtMiddleware
 		if err := jwtMid.CheckJWT(c.Writer, c.Request); err != nil {
 			c.AbortWithStatus(401)
+			return
 		}
+		c.Next()
+	}
+}
+
+func checkChatIngestToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		expectedToken := os.Getenv("CHAT_INGEST_TOKEN")
+		providedToken := c.GetHeader("x-ingest-token")
+
+		if expectedToken == "" {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "chat ingest token is not configured"})
+			return
+		}
+
+		if providedToken == "" || providedToken != expectedToken {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "invalid ingest token"})
+			return
+		}
+
+		c.Next()
 	}
 }
 
 func main() {
-
 	r := gin.Default()
 
 	r.Use(cors.Middleware(cors.Config{
 		Origins:         "*",
 		Methods:         "GET, PUT, POST, DELETE",
-		RequestHeaders:  "Origin, Authorization, Content-Type, x-user-id",
+		RequestHeaders:  "Origin, Authorization, Content-Type, x-user-id, x-ingest-token",
 		ExposedHeaders:  "",
 		MaxAge:          50 * time.Second,
 		Credentials:     true,
 		ValidateHeaders: false,
 	}))
 
-	// Setup and connect to DB
 	conString := GetConnectionString()
 	dbClient, dbErr := SetupDB(conString)
 	if dbErr != nil {
 		log.Fatal(dbErr)
 	}
 
-	// Set routes and handlers
 	r.Use(static.Serve("/", static.LocalFile("./web", true)))
 	r.GET("/api/feelings", checkJWT(), GetFeelingsHandler(dbClient))
 	r.POST("/api/feelings", checkJWT(), PostFeelingHandler(dbClient))
+
+	chat := r.Group("/api/chat")
+	chat.Use(checkChatIngestToken())
+	chat.GET("/capabilities", GetChatCapabilitiesHandler())
+	chat.POST("/feeling", PostChatFeelingHandler(dbClient))
 
 	port := os.Getenv("PORT")
 	if port == "" {
