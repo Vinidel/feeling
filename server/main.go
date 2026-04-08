@@ -158,13 +158,32 @@ func checkChatIngestToken() gin.HandlerFunc {
 	}
 }
 
+func checkAgentToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		expectedToken := os.Getenv("AGENT_API_TOKEN")
+		providedToken := c.GetHeader("x-agent-token")
+
+		if expectedToken == "" {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "agent api token is not configured"})
+			return
+		}
+
+		if providedToken == "" || providedToken != expectedToken {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "invalid agent token"})
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func main() {
 	r := gin.Default()
 
 	r.Use(cors.Middleware(cors.Config{
 		Origins:         "*",
 		Methods:         "GET, PUT, POST, DELETE",
-		RequestHeaders:  "Origin, Authorization, Content-Type, x-user-id, x-ingest-token",
+		RequestHeaders:  "Origin, Authorization, Content-Type, x-user-id, x-ingest-token, x-agent-token",
 		ExposedHeaders:  "",
 		MaxAge:          50 * time.Second,
 		Credentials:     true,
@@ -185,6 +204,10 @@ func main() {
 	chat.Use(checkChatIngestToken())
 	chat.GET("/capabilities", GetChatCapabilitiesHandler())
 	chat.POST("/feeling", PostChatFeelingHandler(dbClient))
+
+	agent := r.Group("/api/agent")
+	agent.Use(checkAgentToken())
+	agent.GET("/feelings", GetAgentFeelingsHandler(dbClient))
 
 	port := os.Getenv("PORT")
 	if port == "" {

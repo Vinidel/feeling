@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -57,6 +58,57 @@ func GetFeelingsHandler(dbClient *mongo.Client) gin.HandlerFunc {
 
 		cur.Close(context.TODO())
 		c.JSON(200, results)
+	}
+}
+
+func GetAgentFeelingsHandler(dbClient *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		collection := dbClient.Database("feeling").Collection("feelings")
+		findOptions := options.Find()
+		findOptions.SetSort(bson.D{{Key: "createdat", Value: -1}})
+
+		if limitParam := c.Query("limit"); limitParam != "" {
+			if limit, err := strconv.ParseInt(limitParam, 10, 64); err == nil && limit > 0 {
+				findOptions.SetLimit(limit)
+			}
+		}
+
+		userID := c.Request.Header.Get("x-user-id")
+		if userID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "missing x-user-id header"})
+			return
+		}
+
+		cur, err := collection.Find(context.TODO(), bson.M{"userid": userID}, findOptions)
+		if err != nil {
+			log.Print(err)
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "could not fetch feelings"})
+			return
+		}
+		defer cur.Close(context.TODO())
+
+		var results []*Feeling
+		for cur.Next(context.TODO()) {
+			var elem Feeling
+			if err := cur.Decode(&elem); err != nil {
+				log.Print("There was an error decoding element")
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "could not decode feelings"})
+				return
+			}
+			results = append(results, &elem)
+		}
+
+		if err := cur.Err(); err != nil {
+			log.Print(err)
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "could not fetch feelings"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"ok":      true,
+			"count":   len(results),
+			"records": results,
+		})
 	}
 }
 
