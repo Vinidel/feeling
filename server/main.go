@@ -27,6 +27,31 @@ type Activity struct {
 	Swim  bool `json:"swim"`
 }
 
+type WeeklyTrackerChecks struct {
+	Cardio   bool `json:"cardio" bson:"cardio"`
+	Strength bool `json:"strength" bson:"strength"`
+	Mobility bool `json:"mobility" bson:"mobility"`
+	Build    bool `json:"build" bson:"build"`
+	Archery  bool `json:"archery" bson:"archery"`
+	Hunt     bool `json:"hunt" bson:"hunt"`
+}
+
+type WeeklyTrackerNotes struct {
+	Win       string `json:"win" bson:"win"`
+	Challenge string `json:"challenge" bson:"challenge"`
+	NextWeek  string `json:"nextWeek" bson:"nextWeek"`
+}
+
+type WeeklyTracker struct {
+	WeekOf         string              `json:"weekOf" bson:"weekof"`
+	Mood           string              `json:"mood" bson:"mood"`
+	TrackerVersion int                 `json:"trackerVersion" bson:"trackerVersion"`
+	Checks         WeeklyTrackerChecks `json:"checks" bson:"checks"`
+	Notes          WeeklyTrackerNotes  `json:"notes" bson:"notes"`
+	UserID         string              `json:"userID" bson:"userid"`
+	UpdatedAt      time.Time           `json:"updatedAt" bson:"updatedat"`
+}
+
 // Feeling struct
 type Feeling struct {
 	Activities Activity  `json:"activities"`
@@ -199,6 +224,8 @@ func main() {
 	r.Use(static.Serve("/", static.LocalFile("./web", true)))
 	r.GET("/api/feelings", checkJWT(), GetFeelingsHandler(dbClient))
 	r.POST("/api/feelings", checkJWT(), PostFeelingHandler(dbClient))
+	r.GET("/api/weekly-tracker", checkJWT(), GetWeeklyTrackerHandler(dbClient))
+	r.POST("/api/weekly-tracker", checkJWT(), PostWeeklyTrackerHandler(dbClient))
 
 	chat := r.Group("/api/chat")
 	chat.Use(checkChatIngestToken())

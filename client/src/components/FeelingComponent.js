@@ -169,8 +169,8 @@ const FeelingComponent  = ()  =>{
             </div>
           </div>
 
-          <div className="minimal-meta-grid">
-            <div>
+          <div className="minimal-meta-grid feeling-meta-grid">
+            <div className="feeling-meta-field">
               <label className="minimal-label">Date</label>
               <input
                 className="minimal-input character-input"
@@ -180,13 +180,13 @@ const FeelingComponent  = ()  =>{
                 onChange={(e) => setDate(e.target.value)}
               />
             </div>
-            <div>
+            <div className="feeling-meta-field feeling-note-field">
               <label className="minimal-label" htmlFor="comment">Note</label>
               <textarea
                 name="comment"
                 placeholder="What influenced your mood today?"
                 id="comment"
-                className="minimal-textarea character-input"
+                className="minimal-textarea character-input feeling-note-textarea"
                 value={state.comment}
                 onChange={handleCommentChange}
               />

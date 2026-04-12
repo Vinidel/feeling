@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -109,6 +110,88 @@ func GetAgentFeelingsHandler(dbClient *mongo.Client) gin.HandlerFunc {
 			"count":   len(results),
 			"records": results,
 		})
+	}
+}
+
+func GetWeeklyTrackerHandler(dbClient *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		collection := dbClient.Database("feeling").Collection("weekly_trackers")
+
+		userID := c.Request.Header.Get("x-user-id")
+		weekOf := c.Query("weekOf")
+		if userID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "missing x-user-id header"})
+			return
+		}
+		if weekOf == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "missing weekOf query param"})
+			return
+		}
+
+		var tracker WeeklyTracker
+		err := collection.FindOne(context.TODO(), bson.M{"userid": userID, "weekof": weekOf}).Decode(&tracker)
+		if err == mongo.ErrNoDocuments {
+			c.JSON(http.StatusOK, gin.H{"ok": true, "record": nil})
+			return
+		}
+		if err != nil {
+			log.Print(err)
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "could not fetch weekly tracker"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"ok": true, "record": tracker})
+	}
+}
+
+func PostWeeklyTrackerHandler(dbClient *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var tracker WeeklyTracker
+		if err := c.BindJSON(&tracker); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request body"})
+			return
+		}
+
+		userID := c.Request.Header.Get("x-user-id")
+		if userID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "missing x-user-id header"})
+			return
+		}
+		if tracker.WeekOf == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "weekOf is required"})
+			return
+		}
+		if strings.TrimSpace(tracker.Mood) == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "mood is required"})
+			return
+		}
+
+		tracker.UserID = userID
+		tracker.TrackerVersion = 1
+		tracker.UpdatedAt = time.Now().UTC()
+
+		collection := dbClient.Database("feeling").Collection("weekly_trackers")
+		filter := bson.M{"userid": userID, "weekof": tracker.WeekOf}
+		update := bson.M{
+			"$set": bson.M{
+				"weekof":         tracker.WeekOf,
+				"mood":           tracker.Mood,
+				"trackerVersion": tracker.TrackerVersion,
+				"checks":         tracker.Checks,
+				"notes":          tracker.Notes,
+				"userid":         tracker.UserID,
+				"updatedat":      tracker.UpdatedAt,
+			},
+		}
+		options := options.Update().SetUpsert(true)
+		_, err := collection.UpdateOne(context.TODO(), filter, update, options)
+		if err != nil {
+			log.Print(err)
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "could not save weekly tracker"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"ok": true, "record": tracker})
 	}
 }
 
