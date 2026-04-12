@@ -338,6 +338,10 @@
   gap: 16px;
 }
 
+.tracker-top-grid-simple {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .minimal-input,
 .minimal-textarea {
   width: 100%;
@@ -570,6 +574,10 @@
   gap: 12px;
 }
 
+.tracker-check-grid-simple {
+  grid-template-columns: 1fr;
+}
+
 .tracker-check {
   display: flex;
   align-items: center;
@@ -619,8 +627,20 @@
   gap: 18px;
 }
 
+.tracker-text-grid-simple {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .tracker-textarea {
   min-height: 120px;
+}
+
+.tracker-textarea-simple {
+  min-height: 110px;
+}
+
+.tracker-full-width {
+  grid-column: 1 / -1;
 }
 
 .minimal-selected-mood {
