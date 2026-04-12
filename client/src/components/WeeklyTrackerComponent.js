@@ -1,4 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
+import { useAuth0 } from '@auth0/auth0-react';
+import { BASE_API_URL } from '../config';
 
 const getWeekLabel = () => {
   const now = new Date();
@@ -10,27 +13,39 @@ const getWeekLabel = () => {
 };
 
 const checklist = [
-  '2 cardio sessions',
-  '2 strength sessions',
-  '1 mobility / rehab session',
-  '2 build sessions',
-  '1 archery session',
-  '1 hunt step',
+  { key: 'cardio', label: '2 cardio sessions' },
+  { key: 'strength', label: '2 strength sessions' },
+  { key: 'mobility', label: '1 mobility / rehab session' },
+  { key: 'build', label: '2 build sessions' },
+  { key: 'archery', label: '1 archery session' },
+  { key: 'hunt', label: '1 hunt step' },
 ];
 
-const moodOptions = ['Rough', 'Low', 'Steady', 'Good', 'Great'];
+const moodOptions = ['rough', 'low', 'steady', 'good', 'great'];
+
+const emptyChecks = {
+  cardio: false,
+  strength: false,
+  mobility: false,
+  build: false,
+  archery: false,
+  hunt: false,
+};
+
+const emptyNotes = {
+  win: '',
+  challenge: '',
+  nextWeek: '',
+};
 
 export default function WeeklyTrackerComponent() {
+  const { user, getAccessTokenSilently, isAuthenticated } = useAuth0();
   const [weekOf, setWeekOf] = useState(getWeekLabel());
-  const [mood, setMood] = useState('Steady');
-  const [checks, setChecks] = useState(
-    Object.fromEntries(checklist.map((item) => [item, false]))
-  );
-  const [fields, setFields] = useState({
-    win: '',
-    challenge: '',
-    nextWeek: '',
-  });
+  const [mood, setMood] = useState('steady');
+  const [checks, setChecks] = useState(emptyChecks);
+  const [notes, setNotes] = useState(emptyNotes);
+  const [isSaving, setIsSaving] = useState(false);
+  const [feedback, setFeedback] = useState({ type: '', message: '' });
 
   const completion = useMemo(() => {
     const total = checklist.length;
@@ -38,12 +53,87 @@ export default function WeeklyTrackerComponent() {
     return Math.round((done / total) * 100);
   }, [checks]);
 
+  useEffect(() => {
+    const loadWeeklyTracker = async () => {
+      if (!isAuthenticated || !user?.sub) {
+        return;
+      }
+
+      try {
+        const token = await getAccessTokenSilently({
+          audience: 'https://stormy-cliffs-52671.herokuapp.com/api',
+        });
+
+        const response = await axios.get(`${BASE_API_URL}/api/weekly-tracker`, {
+          params: { weekOf },
+          headers: {
+            'x-user-id': user.sub,
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const record = response.data?.record;
+        if (!record) {
+          setMood('steady');
+          setChecks(emptyChecks);
+          setNotes(emptyNotes);
+          setFeedback({ type: '', message: '' });
+          return;
+        }
+
+        setMood(record.mood || 'steady');
+        setChecks({ ...emptyChecks, ...(record.checks || {}) });
+        setNotes({ ...emptyNotes, ...(record.notes || {}) });
+        setFeedback({ type: '', message: '' });
+      } catch (error) {
+        console.log('Error loading weekly tracker', error);
+      }
+    };
+
+    loadWeeklyTracker();
+  }, [BASE_API_URL, getAccessTokenSilently, isAuthenticated, user, weekOf]);
+
   const toggleCheck = (key) => {
     setChecks((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const updateField = (key, value) => {
-    setFields((prev) => ({ ...prev, [key]: value }));
+  const updateNote = (key, value) => {
+    setNotes((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSave = async () => {
+    if (!isAuthenticated || !user?.sub) {
+      return;
+    }
+
+    setIsSaving(true);
+    setFeedback({ type: '', message: '' });
+
+    try {
+      const token = await getAccessTokenSilently({
+        audience: 'https://stormy-cliffs-52671.herokuapp.com/api',
+      });
+
+      await axios.post(`${BASE_API_URL}/api/weekly-tracker`, {
+        weekOf,
+        mood,
+        trackerVersion: 1,
+        checks,
+        notes,
+      }, {
+        headers: {
+          'x-user-id': user.sub,
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setFeedback({ type: 'success', message: 'Weekly tracker saved.' });
+    } catch (error) {
+      console.log('Error saving weekly tracker', error);
+      setFeedback({ type: 'error', message: 'Could not save weekly tracker.' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -80,7 +170,7 @@ export default function WeeklyTrackerComponent() {
               value={mood}
               onChange={(e) => setMood(e.target.value)}
             >
-              {moodOptions.map((option) => <option key={option}>{option}</option>)}
+              {moodOptions.map((option) => <option key={option} value={option}>{option.charAt(0).toUpperCase() + option.slice(1)}</option>)}
             </select>
           </div>
         </div>
@@ -97,13 +187,13 @@ export default function WeeklyTrackerComponent() {
         <div className="tracker-check-grid tracker-check-grid-simple">
           {checklist.map((item) => (
             <button
-              key={item}
+              key={item.key}
               type="button"
-              className={`tracker-check ${checks[item] ? 'tracker-check-active' : ''}`}
-              onClick={() => toggleCheck(item)}
+              className={`tracker-check ${checks[item.key] ? 'tracker-check-active' : ''}`}
+              onClick={() => toggleCheck(item.key)}
             >
-              <span className="tracker-check-box">{checks[item] ? '✓' : ''}</span>
-              <span>{item}</span>
+              <span className="tracker-check-box">{checks[item.key] ? '✓' : ''}</span>
+              <span>{item.label}</span>
             </button>
           ))}
         </div>
@@ -124,8 +214,8 @@ export default function WeeklyTrackerComponent() {
               id="win"
               className="minimal-textarea character-input tracker-textarea tracker-textarea-simple"
               placeholder="What actually went well?"
-              value={fields.win}
-              onChange={(e) => updateField('win', e.target.value)}
+              value={notes.win}
+              onChange={(e) => updateNote('win', e.target.value)}
             />
           </div>
 
@@ -135,8 +225,8 @@ export default function WeeklyTrackerComponent() {
               id="challenge"
               className="minimal-textarea character-input tracker-textarea tracker-textarea-simple"
               placeholder="What got in the way?"
-              value={fields.challenge}
-              onChange={(e) => updateField('challenge', e.target.value)}
+              value={notes.challenge}
+              onChange={(e) => updateNote('challenge', e.target.value)}
             />
           </div>
 
@@ -146,10 +236,26 @@ export default function WeeklyTrackerComponent() {
               id="nextWeek"
               className="minimal-textarea character-input tracker-textarea tracker-textarea-simple"
               placeholder="What matters most next week?"
-              value={fields.nextWeek}
-              onChange={(e) => updateField('nextWeek', e.target.value)}
+              value={notes.nextWeek}
+              onChange={(e) => updateNote('nextWeek', e.target.value)}
             />
           </div>
+        </div>
+
+        <div className="minimal-actions tracker-actions">
+          {feedback.message ? (
+            <div className={`minimal-feedback ${feedback.type === 'success' ? 'minimal-feedback-success' : 'minimal-feedback-error'}`}>
+              {feedback.message}
+            </div>
+          ) : null}
+          <button
+            type="button"
+            className="minimal-primary-button character-primary-button"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Saving…' : 'Save weekly tracker'}
+          </button>
         </div>
       </section>
     </div>
