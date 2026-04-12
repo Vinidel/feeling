@@ -378,6 +378,24 @@
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
 }
 
+.feeling-meta-grid {
+  align-items: start;
+}
+
+.feeling-meta-field {
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+}
+
+.feeling-note-field {
+  min-width: 0;
+}
+
+.feeling-note-textarea {
+  min-height: 160px;
+}
+
 .minimal-actions {
   display: flex;
   justify-content: flex-end;
