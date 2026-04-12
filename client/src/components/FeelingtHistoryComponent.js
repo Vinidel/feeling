@@ -18,8 +18,15 @@ const activityMeta = {
   cycle: 'Cycle',
 };
 
+const filterMeta = [
+  { key: 'all', label: 'All entries' },
+  { key: 'noted', label: 'With notes' },
+  { key: 'positive', label: 'Good + Great' },
+];
+
 const FeelingHistoryComponent = ({data = [], isFetching}) => {
   const [commentRowToggle, setCommentRowToggle] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('all');
 
   const sortedFeelings = useMemo(() => {
     const normalizedData = Array.isArray(data) ? data : [];
@@ -37,21 +44,58 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
     return Object.entries(activities).filter(([, value]) => Boolean(value)).map(([key]) => key);
   }
 
+  const filteredFeelings = useMemo(() => {
+    if (activeFilter === 'noted') {
+      return sortedFeelings.filter((entry) => Boolean(entry.comment && entry.comment.trim()));
+    }
+
+    if (activeFilter === 'positive') {
+      return sortedFeelings.filter((entry) => {
+        const status = Number.parseInt(entry.status, 10);
+        return status >= 3;
+      });
+    }
+
+    return sortedFeelings;
+  }, [activeFilter, sortedFeelings]);
+
+  const moodSummary = useMemo(() => {
+    const totals = sortedFeelings.reduce((accumulator, entry) => {
+      const status = statusMap[Number.parseInt(entry.status, 10)] || statusMap[2];
+      const key = status.label;
+      return {
+        ...accumulator,
+        [key]: (accumulator[key] || 0) + 1,
+      };
+    }, {});
+
+    return [
+      { label: 'Great', value: totals.Great || 0, className: 'history-trend-tone-great' },
+      { label: 'Good', value: totals.Good || 0, className: 'history-trend-tone-good' },
+      { label: 'Steady', value: totals.Steady || 0, className: 'history-trend-tone-steady' },
+      { label: 'Low', value: totals.Low || 0, className: 'history-trend-tone-low' },
+      { label: 'Rough', value: totals.Rough || 0, className: 'history-trend-tone-rough' },
+    ];
+  }, [sortedFeelings]);
+
+  const totalEntries = sortedFeelings.length;
+
   const renderContent = () => {
     return (
       <div className="minimal-history-list">
-        {sortedFeelings.map((f, i) => {
+        {filteredFeelings.map((f, i) => {
           const date = moment(new Date(f.createdAt)).format('DD MMM YYYY');
           const status = statusMap[Number.parseInt(f.status, 10)] || statusMap[2];
-          const isOpen = commentRowToggle === i;
+          const rowId = `${f.createdAt}-${i}`;
+          const isOpen = commentRowToggle === rowId;
           const activities = parseActivitiesToArray(f.activities);
 
           return (
-            <div className={`minimal-history-item character-history-item ${status.tone}`} key={`${f.createdAt}-${i}`}>
+            <div className={`minimal-history-item character-history-item ${status.tone}`} key={rowId}>
               <button
                 type="button"
                 className="minimal-history-button"
-                onClick={() => toggle(i)}
+                onClick={() => toggle(rowId)}
               >
                 <div className="minimal-history-main">
                   <span className="minimal-history-emoji character-history-emoji">{status.emoji}</span>
@@ -94,16 +138,62 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
   const renderEmpty = () => {
     return (
       <div className="minimal-empty-state character-empty-state">
-        No entries yet.
+        No entries yet - your check-ins will show up here.
       </div>
     )
   }
 
   return (
-    <div>
+    <div className="history-stack">
+      {!isFetching && totalEntries ? (
+        <div className="history-summary-card">
+          <div className="history-summary-top">
+            <div>
+              <div className="history-summary-title">Trend snapshot</div>
+              <div className="history-summary-subtitle">{totalEntries} total check-ins</div>
+            </div>
+            <div className="history-filter-group">
+              {filterMeta.map((filter) => (
+                <button
+                  key={filter.key}
+                  type="button"
+                  className={`history-filter-chip ${activeFilter === filter.key ? 'history-filter-chip-active' : ''}`}
+                  onClick={() => setActiveFilter(filter.key)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="history-summary-bars">
+            {moodSummary.map((entry) => {
+              const width = totalEntries ? Math.max(6, Math.round((entry.value / totalEntries) * 100)) : 6;
+              return (
+                <div key={entry.label} className="history-summary-row">
+                  <div className="history-summary-row-head">
+                    <span>{entry.label}</span>
+                    <span>{entry.value}</span>
+                  </div>
+                  <div className="history-trend-track">
+                    <div
+                      className={`history-trend-fill ${entry.className}`}
+                      style={{ width: `${width}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
       {isFetching ? <SpinnerComponent /> : null}
-      {!isFetching && sortedFeelings.length ? renderContent() : null}
-      {!isFetching && !sortedFeelings.length ? renderEmpty() : null}
+      {!isFetching && filteredFeelings.length ? renderContent() : null}
+      {!isFetching && totalEntries > 0 && !filteredFeelings.length ? (
+        <div className="minimal-empty-state character-empty-state">
+          No entries match this filter yet.
+        </div>
+      ) : null}
+      {!isFetching && !totalEntries ? renderEmpty() : null}
     </div>
   );
 }
