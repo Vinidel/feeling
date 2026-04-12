@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import axios from 'axios';
 import FeelingtHistoryComponent from './FeelingtHistoryComponent';
 import {BASE_API_URL} from '../config';
 import {useAuth0} from "@auth0/auth0-react";
 import WithFetch from "./WithFetch";
 import ActivityGroup from "./ActivityGroup";
+import FeelingChartComponent from "./FeelingChartComponent";
 
 const moodOptions = [
   { value: 0, emoji: '😔', label: 'Rough', tone: 'mood-tone-rough' },
@@ -31,12 +32,19 @@ const FeelingComponent  = ()  =>{
   const auth = useAuth0();
   const [update, forceUpdate] = useState(0)
   const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+  const [saveError, setSaveError] = useState('');
   const [state, setState] = useState({
     status: 2,
     createdAt: formatDateInput(),
     comment: '',
     activities: emptyActivities,
   });
+
+  const selectedMood = useMemo(
+    () => moodOptions.find((option) => option.value === state.status) || moodOptions[2],
+    [state.status]
+  );
 
   const setStatus = (status) => {
     setState((prevState) => ({
@@ -73,6 +81,8 @@ const FeelingComponent  = ()  =>{
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
+    setSaveMessage('');
+    setSaveError('');
 
     try {
       const token = await auth.getAccessTokenSilently({
@@ -99,8 +109,10 @@ const FeelingComponent  = ()  =>{
         activities: emptyActivities,
       });
       forceUpdate(n => n+1);
+      setSaveMessage('Saved. Your entry is now in history.');
     } catch (err) {
       console.log('Error', err)
+      setSaveError('Could not save your check-in. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -119,6 +131,9 @@ const FeelingComponent  = ()  =>{
         <form className="minimal-form" onSubmit={handleSubmit}>
           <div>
             <label className="minimal-label">Mood</label>
+            <div className="minimal-selected-mood">
+              Selected: <span className="minimal-selected-mood-value">{selectedMood.emoji} {selectedMood.label}</span>
+            </div>
             <div className="minimal-mood-grid">
               {moodOptions.map((option) => {
                 const selected = state.status === option.value;
@@ -128,6 +143,7 @@ const FeelingComponent  = ()  =>{
                     type="button"
                     className={`minimal-mood-card character-mood-card ${option.tone} ${selected ? 'minimal-mood-card-selected character-mood-card-selected' : ''}`}
                     onClick={() => setStatus(option.value)}
+                    aria-pressed={selected}
                   >
                     <span className="minimal-mood-emoji character-mood-emoji">{option.emoji}</span>
                     <span className="minimal-mood-text character-mood-text">{option.label}</span>
@@ -168,14 +184,20 @@ const FeelingComponent  = ()  =>{
               <label className="minimal-label" htmlFor="comment">Note</label>
               <textarea
                 name="comment"
-                placeholder="Add a note"
+                placeholder="What influenced your mood today?"
                 id="comment"
                 className="minimal-textarea character-input"
                 value={state.comment}
                 onChange={handleCommentChange}
               />
+              <div className="minimal-helper-text">
+                Optional: one or two lines are enough to make patterns easier to spot later.
+              </div>
             </div>
           </div>
+
+          {saveMessage ? <div className="minimal-feedback minimal-feedback-success">{saveMessage}</div> : null}
+          {saveError ? <div className="minimal-feedback minimal-feedback-error">{saveError}</div> : null}
 
           <div className="minimal-actions">
             <button
@@ -192,14 +214,23 @@ const FeelingComponent  = ()  =>{
       <section className="minimal-section panel section-card section-card-character">
         <div className="minimal-section-head">
           <div>
-            <h2 className="section-title section-title-character">History</h2>
-            <p className="section-subtitle section-subtitle-character">Recent entries with a little more warmth.</p>
+            <h2 className="section-title section-title-character">History and trends</h2>
+            <p className="section-subtitle section-subtitle-character">Recent entries plus a quick trend overview.</p>
           </div>
         </div>
         <WithFetch
           myUpdate={update}
           url={`${BASE_API_URL}/api/feelings`}
-          render={({data, isFetching}) => (<FeelingtHistoryComponent data={data} isFetching={isFetching}/>) }
+          render={({data, isFetching}) => (
+            <div className="minimal-history-stack">
+              {!isFetching && data.length ? (
+                <div className="minimal-chart-shell">
+                  <FeelingChartComponent feelingHistory={data} />
+                </div>
+              ) : null}
+              <FeelingtHistoryComponent data={data} isFetching={isFetching}/>
+            </div>
+          ) }
         />
       </section>
     </div>
