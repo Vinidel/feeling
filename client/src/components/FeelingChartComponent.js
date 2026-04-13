@@ -9,6 +9,15 @@ const clampMood = (value) => {
   return Math.min(4, Math.max(0, value))
 }
 
+/** react-charts may pass null into formatters during tooltip/hover updates */
+const formatAxisNumber = (value) => {
+  if (value == null) {
+    return ''
+  }
+  const n = Number(value)
+  return Number.isFinite(n) ? n.toFixed(0) : ''
+}
+
 const parseEntryDate = (raw) => {
   const parsed = raw instanceof Date ? raw : new Date(raw)
   return Number.isNaN(parsed.getTime()) ? null : parsed
@@ -63,8 +72,8 @@ export default function FeelingChartComponent({ feelingHistory }) {
         max: 4,
         tickCount: 5,
         formatters: {
-          scale: (value) => value.toFixed(0),
-          tooltip: (value) => value.toFixed(0),
+          scale: formatAxisNumber,
+          tooltip: formatAxisNumber,
         },
       },
     ],
