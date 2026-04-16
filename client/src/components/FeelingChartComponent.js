@@ -19,8 +19,20 @@ const formatAxisNumber = (value) => {
 }
 
 const parseEntryDate = (raw) => {
+  if (!raw) {
+    return null
+  }
   const parsed = raw instanceof Date ? raw : new Date(raw)
-  return Number.isNaN(parsed.getTime()) ? null : parsed
+  if (Number.isNaN(parsed.getTime())) {
+    return null
+  }
+
+  // Some persisted records use year 0001 as an "empty" value and should not be charted.
+  if (parsed.getUTCFullYear() < 1970) {
+    return null
+  }
+
+  return parsed
 }
 
 export default function FeelingChartComponent({ feelingHistory }) {
@@ -55,7 +67,7 @@ export default function FeelingChartComponent({ feelingHistory }) {
       scaleType: 'localTime',
       getValue: (datum) => datum.date,
       formatters: {
-        scale: (value) => moment(value).format('MMM D'),
+        scale: (value) => moment(value).format('MMM D, YYYY'),
         tooltip: (value) => moment(value).format('lll'),
       },
     }),
