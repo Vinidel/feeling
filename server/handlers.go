@@ -23,13 +23,27 @@ type ChatFeelingPayload struct {
 	Source     string   `json:"source"`
 }
 
+func jwtUserID(c *gin.Context) (string, bool) {
+	id, exists := c.Get("authenticatedUserID")
+	if !exists {
+		return "", false
+	}
+
+	userID, ok := id.(string)
+	return userID, ok && userID != ""
+}
+
 func GetFeelingsHandler(dbClient *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		collection := dbClient.Database("feeling").Collection("feelings")
 		findOptions := options.Find()
 		var results []*Feeling
 
-		userID := c.Request.Header.Get("x-user-id")
+		userID, ok := jwtUserID(c)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+			return
+		}
 
 		cur, err := collection.Find(context.TODO(), bson.M{"userid": userID}, findOptions)
 		if err != nil {
@@ -117,12 +131,13 @@ func GetWeeklyTrackerHandler(dbClient *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		collection := dbClient.Database("feeling").Collection("weekly_trackers")
 
-		userID := c.Request.Header.Get("x-user-id")
-		weekOf := c.Query("weekOf")
-		if userID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "missing x-user-id header"})
+		userID, ok := jwtUserID(c)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
 			return
 		}
+
+		weekOf := c.Query("weekOf")
 		if weekOf == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "missing weekOf query param"})
 			return
@@ -152,11 +167,12 @@ func PostWeeklyTrackerHandler(dbClient *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		userID := c.Request.Header.Get("x-user-id")
-		if userID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "missing x-user-id header"})
+		userID, ok := jwtUserID(c)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
 			return
 		}
+
 		if tracker.WeekOf == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "weekOf is required"})
 			return
@@ -200,7 +216,12 @@ func PostFeelingHandler(dbClient *mongo.Client) gin.HandlerFunc {
 		var feeling Feeling
 		err := c.BindJSON(&feeling)
 
-		userID := c.Request.Header.Get("x-user-id")
+		userID, ok := jwtUserID(c)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+			return
+		}
+
 		feeling.UserID = userID
 
 		if err != nil {

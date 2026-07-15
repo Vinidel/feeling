@@ -153,6 +153,26 @@ var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
 	SigningMethod: jwt.SigningMethodRS256,
 })
 
+func userIDFromRequestContext(c *gin.Context) (string, bool) {
+	tokenValue := c.Request.Context().Value("user")
+	token, ok := tokenValue.(*jwt.Token)
+	if !ok || token == nil || !token.Valid {
+		return "", false
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", false
+	}
+
+	sub, ok := claims["sub"].(string)
+	if !ok || sub == "" {
+		return "", false
+	}
+
+	return sub, true
+}
+
 func checkJWT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jwtMid := *jwtMiddleware
@@ -160,6 +180,19 @@ func checkJWT() gin.HandlerFunc {
 			c.AbortWithStatus(401)
 			return
 		}
+
+		userID, ok := userIDFromRequestContext(c)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "invalid token claims"})
+			return
+		}
+
+		if headerID := c.GetHeader("x-user-id"); headerID != "" && headerID != userID {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "x-user-id does not match authenticated user"})
+			return
+		}
+
+		c.Set("authenticatedUserID", userID)
 		c.Next()
 	}
 }
