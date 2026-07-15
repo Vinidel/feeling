@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
@@ -97,34 +98,71 @@ func SetupDB(connectionString string) (*mongo.Client, error) {
 	return client, nil
 }
 
-func getPemCert(token *jwt.Token) (string, error) {
-	cert := ""
-	resp, err := http.Get("https://dev-vin.au.auth0.com/.well-known/jwks.json")
+const jwksCacheTTL = time.Hour
 
+var (
+	jwksCacheMu   sync.RWMutex
+	jwksCacheData Jwks
+	jwksCacheTime time.Time
+)
+
+func fetchJWKS() (Jwks, error) {
+	jwksCacheMu.RLock()
+	if time.Since(jwksCacheTime) < jwksCacheTTL && len(jwksCacheData.Keys) > 0 {
+		cached := jwksCacheData
+		jwksCacheMu.RUnlock()
+		return cached, nil
+	}
+	jwksCacheMu.RUnlock()
+
+	jwksCacheMu.Lock()
+	defer jwksCacheMu.Unlock()
+
+	if time.Since(jwksCacheTime) < jwksCacheTTL && len(jwksCacheData.Keys) > 0 {
+		return jwksCacheData, nil
+	}
+
+	resp, err := http.Get("https://dev-vin.au.auth0.com/.well-known/jwks.json")
 	if err != nil {
-		return cert, err
+		return Jwks{}, err
 	}
 	defer resp.Body.Close()
 
-	var jwks = Jwks{}
-	err = json.NewDecoder(resp.Body).Decode(&jwks)
-
-	if err != nil {
-		return cert, err
+	if resp.StatusCode != http.StatusOK {
+		return Jwks{}, fmt.Errorf("unexpected JWKS status: %s", resp.Status)
 	}
 
-	for k := range jwks.Keys {
-		if token.Header["kid"] == jwks.Keys[k].Kid {
-			cert = "-----BEGIN CERTIFICATE-----\n" + jwks.Keys[k].X5c[0] + "\n-----END CERTIFICATE-----"
+	var jwks Jwks
+	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
+		return Jwks{}, err
+	}
+
+	jwksCacheData = jwks
+	jwksCacheTime = time.Now()
+	return jwks, nil
+}
+
+func getPemCert(token *jwt.Token) (string, error) {
+	jwks, err := fetchJWKS()
+	if err != nil {
+		return "", err
+	}
+
+	kid, ok := token.Header["kid"].(string)
+	if !ok || kid == "" {
+		return "", errors.New("token is missing kid header")
+	}
+
+	for _, key := range jwks.Keys {
+		if kid == key.Kid {
+			if len(key.X5c) == 0 {
+				return "", errors.New("JWKS key is missing certificate chain")
+			}
+			return "-----BEGIN CERTIFICATE-----\n" + key.X5c[0] + "\n-----END CERTIFICATE-----", nil
 		}
 	}
 
-	if cert == "" {
-		err := errors.New("Unable to find appropriate key.")
-		return cert, err
-	}
-
-	return cert, nil
+	return "", errors.New("unable to find appropriate key")
 }
 
 var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
@@ -143,11 +181,13 @@ var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
 
 		cert, err := getPemCert(token)
 		if err != nil {
-			fmt.Println(err.Error())
 			return nil, err
 		}
 
-		result, _ := jwt.ParseRSAPublicKeyFromPEM([]byte(cert))
+		result, err := jwt.ParseRSAPublicKeyFromPEM([]byte(cert))
+		if err != nil {
+			return nil, err
+		}
 		return result, nil
 	},
 	SigningMethod: jwt.SigningMethodRS256,
@@ -235,11 +275,19 @@ func checkAgentToken() gin.HandlerFunc {
 	}
 }
 
+func corsOrigins() string {
+	if origins := os.Getenv("CORS_ORIGINS"); origins != "" {
+		return origins
+	}
+
+	return "http://localhost:3000, https://stormy-cliffs-52671.herokuapp.com"
+}
+
 func main() {
 	r := gin.Default()
 
 	r.Use(cors.Middleware(cors.Config{
-		Origins:         "*",
+		Origins:         corsOrigins(),
 		Methods:         "GET, PUT, POST, DELETE",
 		RequestHeaders:  "Origin, Authorization, Content-Type, x-user-id, x-ingest-token, x-agent-token",
 		ExposedHeaders:  "",

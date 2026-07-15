@@ -1,5 +1,5 @@
 # Build the Go API
-FROM golang:1.22 AS go_builder
+FROM golang:1.23 AS go_builder
 WORKDIR /app
 COPY server/go.mod server/go.sum ./server/
 WORKDIR /app/server
