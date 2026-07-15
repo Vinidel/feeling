@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -57,8 +58,9 @@ func GetFeelingsHandler(dbClient *mongo.Client) gin.HandlerFunc {
 			var elem Feeling
 			err := cur.Decode(&elem)
 			if err != nil {
-				log.Print("There was an error decoding element")
-				log.Fatal(err)
+				log.Print("There was an error decoding element: ", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "could not decode feelings"})
+				return
 			}
 
 			results = append(results, &elem)
@@ -76,13 +78,31 @@ func GetFeelingsHandler(dbClient *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+func agentAllowedUserIDs() map[string]struct{} {
+	allowed := os.Getenv("AGENT_ALLOWED_USER_IDS")
+	if strings.TrimSpace(allowed) == "" {
+		return nil
+	}
+
+	allowedUsers := make(map[string]struct{})
+	for _, userID := range strings.Split(allowed, ",") {
+		userID = strings.TrimSpace(userID)
+		if userID != "" {
+			allowedUsers[userID] = struct{}{}
+		}
+	}
+
+	return allowedUsers
+}
+
 func GetAgentFeelingsHandler(dbClient *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		collection := dbClient.Database("feeling").Collection("feelings")
 		findOptions := options.Find()
 		findOptions.SetSort(bson.D{{Key: "createdat", Value: -1}})
 
-		if limitParam := c.Query("limit"); limitParam != "" {
+		limitParam := c.Query("limit")
+		if limitParam != "" {
 			if limit, err := strconv.ParseInt(limitParam, 10, 64); err == nil && limit > 0 {
 				findOptions.SetLimit(limit)
 			}
@@ -93,6 +113,20 @@ func GetAgentFeelingsHandler(dbClient *mongo.Client) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "missing x-user-id header"})
 			return
 		}
+
+		if allowedUsers := agentAllowedUserIDs(); allowedUsers != nil {
+			if _, ok := allowedUsers[userID]; !ok {
+				c.JSON(http.StatusForbidden, gin.H{"message": "agent access is not allowed for this user"})
+				return
+			}
+		}
+
+		log.Printf(
+			"agent_api_access user_id=%s limit=%s remote_addr=%s",
+			userID,
+			limitParam,
+			c.ClientIP(),
+		)
 
 		cur, err := collection.Find(context.TODO(), bson.M{"userid": userID}, findOptions)
 		if err != nil {
