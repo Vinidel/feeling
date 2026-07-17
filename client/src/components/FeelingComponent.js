@@ -215,7 +215,7 @@ const FeelingComponent  = ()  =>{
         <div className="minimal-section-head">
           <div>
             <h2 className="section-title section-title-character">History and trends</h2>
-            <p className="section-subtitle section-subtitle-character">Recent entries plus a quick trend overview.</p>
+            <p className="section-subtitle section-subtitle-character">Last 30 days at a glance, plus your entry history.</p>
           </div>
         </div>
         <WithFetch
