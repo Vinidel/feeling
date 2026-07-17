@@ -17,7 +17,7 @@ export default function NavBar({ activeView = 'feelings' }) {
     <header className="app-header-character">
       <div>
         <div className="app-kicker app-kicker-character">Mood journal</div>
-        <h1 className="app-title app-title-character">My.Feelings</h1>
+        <h1 className="app-title app-title-character">Steady</h1>
         <p className="app-tagline">A softer way to notice how your days are landing.</p>
         <nav className="app-nav-tabs" aria-label="Primary">
           {navItems.map((item) => (

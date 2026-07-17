@@ -14,7 +14,7 @@ class TitleComponent extends Component {
     }
 
     render() {
-        // return <h1>My.Feeling</h1>;
+        // return <h1>Steady</h1>;
         return '';
     }
 }
