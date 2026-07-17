@@ -1,10 +1,10 @@
 # Steady
 
-[![Heroku](https://img.shields.io/badge/Heroku-stormy--cliffs--52671-7056bf?logo=heroku&logoColor=white)](https://stormy-cliffs-52671.herokuapp.com)
+[![Live](https://img.shields.io/badge/Live-www.delasc.io-7056bf?logo=heroku&logoColor=white)](https://www.delasc.io/)
 
 A personal mood and activity tracker. Log how you feel day to day, note related activities, review your history on a timeline, and keep a weekly check-in.
 
-**Live app:** [https://stormy-cliffs-52671.herokuapp.com](https://stormy-cliffs-52671.herokuapp.com)
+**Live app:** [https://www.delasc.io/](https://www.delasc.io/)
 
 ## What it does
 
@@ -129,7 +129,7 @@ docker run -p 8080:8080 \
 | `DB_USER` | Yes | MongoDB Atlas username |
 | `DB_PASS` | Yes | MongoDB Atlas password |
 | `PORT` | No | HTTP port (default `8080`) |
-| `CORS_ORIGINS` | No | Allowed origins, comma-separated (defaults to `http://localhost:3000` and the Heroku URL) |
+| `CORS_ORIGINS` | No | Allowed origins, comma-separated. In production, include `https://www.delasc.io`. Defaults to `http://localhost:3000` and the Heroku URL. |
 | `CHAT_INGEST_TOKEN` | No | Shared secret for the chat ingest API (`x-ingest-token` header) |
 | `AGENT_API_TOKEN` | No | Shared secret for the agent API (`x-agent-token` header) |
 | `AGENT_ALLOWED_USER_IDS` | No | Comma-separated Auth0 user IDs allowed to use the agent API |
@@ -152,7 +152,8 @@ All user-facing endpoints require a valid Auth0 JWT in the `Authorization` heade
 
 The app is deployed on **Heroku** as a Docker container:
 
-- **URL:** [https://stormy-cliffs-52671.herokuapp.com](https://stormy-cliffs-52671.herokuapp.com)
+- **App URL:** [https://www.delasc.io/](https://www.delasc.io/)
+- **Heroku app:** `stormy-cliffs-52671` ([https://stormy-cliffs-52671.herokuapp.com](https://stormy-cliffs-52671.herokuapp.com))
 - **Config:** `heroku.yml` + root `Dockerfile`
 - **Stack:** Container
 
