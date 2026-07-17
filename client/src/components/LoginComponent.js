@@ -41,7 +41,7 @@ const LoginComponent = () => {
               Welcome back
             </div>
             <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
-              Sign in to My.Feelings
+              Sign in to Steady
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-500">
               Your private space for daily emotional check-ins and lightweight reflection.
