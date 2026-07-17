@@ -1,14 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import moment from 'moment';
 import SpinnerComponent from "./SpinnerComponent";
-
-const statusMap = {
-  0: { emoji: '😔', label: 'Rough', tone: 'history-tone-rough' },
-  1: { emoji: '🙁', label: 'Low', tone: 'history-tone-low' },
-  2: { emoji: '😐', label: 'Steady', tone: 'history-tone-steady' },
-  3: { emoji: '🙂', label: 'Good', tone: 'history-tone-good' },
-  4: { emoji: '😀', label: 'Great', tone: 'history-tone-great' },
-};
+import { getMoodByValue, MOOD_OPTIONS } from '../moodMeta';
 
 const activityMeta = {
   bow: 'Bow',
@@ -61,7 +54,7 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
 
   const moodSummary = useMemo(() => {
     const totals = sortedFeelings.reduce((accumulator, entry) => {
-      const status = statusMap[Number.parseInt(entry.status, 10)] || statusMap[2];
+      const status = getMoodByValue(entry.status);
       const key = status.label;
       return {
         ...accumulator,
@@ -69,13 +62,13 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
       };
     }, {});
 
-    return [
-      { label: 'Great', value: totals.Great || 0, className: 'history-trend-tone-great' },
-      { label: 'Good', value: totals.Good || 0, className: 'history-trend-tone-good' },
-      { label: 'Steady', value: totals.Steady || 0, className: 'history-trend-tone-steady' },
-      { label: 'Low', value: totals.Low || 0, className: 'history-trend-tone-low' },
-      { label: 'Rough', value: totals.Rough || 0, className: 'history-trend-tone-rough' },
-    ];
+    return [...MOOD_OPTIONS]
+      .reverse()
+      .map((mood) => ({
+        label: mood.label,
+        value: totals[mood.label] || 0,
+        className: mood.trendTone,
+      }));
   }, [sortedFeelings]);
 
   const totalEntries = sortedFeelings.length;
@@ -85,13 +78,13 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
       <div className="minimal-history-list">
         {filteredFeelings.map((f, i) => {
           const date = moment(new Date(f.createdAt)).format('DD MMM YYYY');
-          const status = statusMap[Number.parseInt(f.status, 10)] || statusMap[2];
+          const status = getMoodByValue(f.status);
           const rowId = `${f.createdAt}-${i}`;
           const isOpen = commentRowToggle === rowId;
           const activities = parseActivitiesToArray(f.activities);
 
           return (
-            <div className={`minimal-history-item character-history-item ${status.tone}`} key={rowId}>
+            <div className={`minimal-history-item character-history-item ${status.historyTone}`} key={rowId}>
               <button
                 type="button"
                 className="minimal-history-button"

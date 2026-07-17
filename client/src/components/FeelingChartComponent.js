@@ -2,32 +2,10 @@ import React, { useMemo } from 'react'
 import moment from 'moment'
 import { curveStepAfter } from 'd3-shape'
 import { Chart } from 'react-charts'
-
-const MOOD_META = [
-  { value: 0, emoji: '😔', label: 'Rough' },
-  { value: 1, emoji: '🙁', label: 'Low' },
-  { value: 2, emoji: '😐', label: 'Steady' },
-  { value: 3, emoji: '🙂', label: 'Good' },
-  { value: 4, emoji: '😀', label: 'Great' },
-]
+import { clampMood, getMoodByValue } from '../moodMeta'
 
 const CHART_WINDOW_DAYS = 30
 const SUMMARY_WINDOW_DAYS = 7
-
-const clampMood = (value) => {
-  if (!Number.isFinite(value)) {
-    return null
-  }
-  return Math.min(4, Math.max(0, value))
-}
-
-const getMoodMeta = (value) => {
-  const status = clampMood(value)
-  if (status === null) {
-    return MOOD_META[2]
-  }
-  return MOOD_META[status]
-}
 
 const parseEntryDate = (raw) => {
   if (!raw) {
@@ -109,7 +87,7 @@ const dominantMood = (entries) => {
   }
 
   const counts = entries.reduce((accumulator, entry) => {
-    const label = getMoodMeta(entry.status).label
+    const label = getMoodByValue(entry.status).label
     return {
       ...accumulator,
       [label]: (accumulator[label] || 0) + 1,
@@ -149,7 +127,7 @@ const formatAxisMood = (value) => {
   if (status === null) {
     return ''
   }
-  const mood = getMoodMeta(status)
+  const mood = getMoodByValue(status)
   return `${mood.emoji} ${mood.label}`
 }
 
@@ -226,7 +204,7 @@ export default function FeelingChartComponent({ feelingHistory }) {
         formatters: {
           scale: formatAxisMood,
           tooltip: (value) => {
-            const mood = getMoodMeta(value)
+            const mood = getMoodByValue(value)
             return `${mood.emoji} ${mood.label}`
           },
         },
