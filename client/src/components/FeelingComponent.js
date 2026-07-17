@@ -6,14 +6,7 @@ import {useAuth0} from "@auth0/auth0-react";
 import WithFetch from "./WithFetch";
 import ActivityGroup from "./ActivityGroup";
 import FeelingChartComponent from "./FeelingChartComponent";
-
-const moodOptions = [
-  { value: 0, emoji: '😔', label: 'Rough', tone: 'mood-tone-rough' },
-  { value: 1, emoji: '🙁', label: 'Low', tone: 'mood-tone-low' },
-  { value: 2, emoji: '😐', label: 'Steady', tone: 'mood-tone-steady' },
-  { value: 3, emoji: '🙂', label: 'Good', tone: 'mood-tone-good' },
-  { value: 4, emoji: '😀', label: 'Great', tone: 'mood-tone-great' },
-];
+import { getMoodByValue, MOOD_OPTIONS } from '../moodMeta';
 
 const emptyActivities = {
   bow: false,
@@ -42,7 +35,7 @@ const FeelingComponent  = ()  =>{
   });
 
   const selectedMood = useMemo(
-    () => moodOptions.find((option) => option.value === state.status) || moodOptions[2],
+    () => getMoodByValue(state.status),
     [state.status]
   );
 
@@ -135,13 +128,13 @@ const FeelingComponent  = ()  =>{
               Selected: <span className="minimal-selected-mood-value">{selectedMood.emoji} {selectedMood.label}</span>
             </div>
             <div className="minimal-mood-grid">
-              {moodOptions.map((option) => {
+              {MOOD_OPTIONS.map((option) => {
                 const selected = state.status === option.value;
                 return (
                   <button
                     key={option.value}
                     type="button"
-                    className={`minimal-mood-card character-mood-card ${option.tone} ${selected ? 'minimal-mood-card-selected character-mood-card-selected' : ''}`}
+                    className={`minimal-mood-card character-mood-card ${option.moodTone} ${selected ? 'minimal-mood-card-selected character-mood-card-selected' : ''}`}
                     onClick={() => setStatus(option.value)}
                     aria-pressed={selected}
                   >
@@ -215,7 +208,7 @@ const FeelingComponent  = ()  =>{
         <div className="minimal-section-head">
           <div>
             <h2 className="section-title section-title-character">History and trends</h2>
-            <p className="section-subtitle section-subtitle-character">Recent entries plus a quick trend overview.</p>
+            <p className="section-subtitle section-subtitle-character">Last 30 days at a glance, plus your entry history.</p>
           </div>
         </div>
         <WithFetch

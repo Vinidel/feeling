@@ -710,6 +710,65 @@
   padding: 12px;
 }
 
+.mood-chart-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.mood-chart-summary {
+  display: grid;
+  gap: 6px;
+  padding: 2px 4px 0;
+}
+
+.mood-chart-summary-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.mood-chart-summary-label {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mood-chart-summary-value {
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.mood-chart-summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+.mood-chart-summary-divider {
+  color: rgba(148, 163, 184, 0.55);
+}
+
+.mood-chart-canvas {
+  height: 280px;
+}
+
+.mood-chart-empty {
+  border: 1px dashed rgba(71, 85, 105, 0.55);
+  border-radius: 16px;
+  color: #94a3b8;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  padding: 18px 16px;
+  text-align: center;
+}
+
 .history-summary-card {
   border: 1px solid rgba(71, 85, 105, 0.42);
   border-radius: 20px;
