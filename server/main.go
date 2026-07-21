@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -275,12 +276,31 @@ func checkAgentToken() gin.HandlerFunc {
 	}
 }
 
-func corsOrigins() string {
-	if origins := os.Getenv("CORS_ORIGINS"); origins != "" {
-		return origins
+func normalizeCORSOrigins(raw string) string {
+	parts := strings.Split(raw, ",")
+	origins := make([]string, 0, len(parts))
+	for _, part := range parts {
+		origin := strings.TrimSpace(part)
+		if origin != "" {
+			origins = append(origins, origin)
+		}
 	}
 
-	return "http://localhost:3000, https://stormy-cliffs-52671.herokuapp.com"
+	// gin-cors splits allowed origins on ", " (comma + space).
+	return strings.Join(origins, ", ")
+}
+
+func corsOrigins() string {
+	if origins := os.Getenv("CORS_ORIGINS"); origins != "" {
+		return normalizeCORSOrigins(origins)
+	}
+
+	return normalizeCORSOrigins(strings.Join([]string{
+		"http://localhost:3000",
+		"https://stormy-cliffs-52671.herokuapp.com",
+		"https://www.delasc.io",
+		"https://delasc.io",
+	}, ","))
 }
 
 func main() {
