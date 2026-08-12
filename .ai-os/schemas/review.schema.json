@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "review.schema.json",
+  "title": "AI OS Review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["work_id", "sources", "verdict", "findings", "acceptance_criteria_evidence", "approval"],
+  "properties": {
+    "work_id": {"type": "string", "minLength": 1},
+    "sources": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "verdict": {"type": "string", "enum": ["pass", "needs_input", "needs_changes", "blocked"]},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "severity", "status", "summary", "evidence", "owner"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "severity": {"type": "string", "enum": ["critical", "high", "medium", "low", "info"]},
+          "status": {"type": "string", "enum": ["open", "resolved", "waived"]},
+          "summary": {"type": "string", "minLength": 1},
+          "evidence": {"type": "string", "minLength": 1},
+          "owner": {"type": "string"},
+          "waiver_reason": {"type": "string"},
+          "waived_by": {"type": "string"}
+        }
+      }
+    },
+    "acceptance_criteria_evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ac_id", "status", "evidence"],
+        "properties": {
+          "ac_id": {"type": "string", "pattern": "^AC-[0-9]+$"},
+          "status": {"type": "string", "enum": ["pass", "fail", "not_verified"]},
+          "evidence": {"type": "string"}
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "by", "at", "reason"],
+      "properties": {
+        "status": {"type": "string", "enum": ["pending", "approved", "rejected"]},
+        "by": {"type": "string"},
+        "at": {"type": "string"},
+        "reason": {"type": "string"}
+      }
+    }
+  }
+}
