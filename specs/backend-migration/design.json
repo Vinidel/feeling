@@ -1,0 +1,387 @@
+{
+  "work_id": "backend-migration",
+  "source_brief": "specs/backend-migration/brief.json",
+  "summary": "Select option D: a deliberately thin standalone Deno 2 TypeScript compatibility service combined with Supabase Postgres and native RLS. The service preserves the same-origin React delivery model and the four supported /api routes, validates the existing Auth0 access token, normalizes requests and responses, and delegates durable state, relational constraints, atomic upserts, timestamps, ordering, and row isolation to Supabase. Application tables live in a non-Data-API-exposed schema and are reached through a least-privilege Postgres role whose RLS identity is set transaction-locally from the verified Auth0 sub. Node.js, Bun, direct browser Data API access, and Supabase Edge Functions are not used in the initial replacement. The migration uses an idempotent TypeScript data tool and a short write freeze rather than permanent dual writes. The Go/Heroku/MongoDB system remains recoverable through Review and Release, and production changes remain separately authorized.",
+  "decisions": [
+    {
+      "id": "ARCH-001",
+      "area": "architecture",
+      "decision": "Select option D, a standalone Deno TypeScript API plus Supabase hybrid: use a Deno 2 compatibility service for the public HTTP/auth boundary and use Supabase Postgres, SQL constraints, migrations, and RLS for the data/security core. Do not use the Supabase Data API or Edge Functions in the initial user request path.",
+      "rationale": "The replacement has only four supported routes, but their paths, same-origin behaviour, Auth0 access-token contract, and response shapes must remain stable. A thin service preserves that boundary without reproducing Mongo-centric Go internals. Supabase still owns the hard data guarantees. Direct Data API/Edge use would require route rewrites or a proxy, a different Auth0 token integration, and separate static hosting. The split keeps a future move to direct Supabase APIs possible after compatibility is no longer required.",
+      "alternatives": [
+        "A. Node.js TypeScript API + Supabase: mature ecosystem, LTS policy, and exact route compatibility, but rejected as the selected runtime because Deno can preserve the same boundary with native TypeScript execution, web-standard APIs, a lockfile, and an explicit runtime permission model. Node compatibility remains available for vetted npm dependencies (https://docs.deno.com/runtime/fundamentals/node/).",
+        "B. Bun TypeScript API + Supabase: attractive startup speed, built-in TypeScript execution, and tooling, but rejected because this low-volume persistent service has no measured runtime bottleneck and Bun still documents incomplete Node API compatibility; the additional runtime variable adds migration and operations risk without user value (https://bun.sh/docs/runtime/nodejs-compat).",
+        "C. Supabase-native Postgres/RLS/Data API/Edge Functions: lowest standalone compute footprint and strong caller-scoped RLS, but rejected for the initial cutover because Data API and function URLs do not preserve /api paths or current envelopes, Edge Functions use a Deno-compatible runtime and separate function URL, static SPA hosting still needs a boundary, and Auth0 third-party access requires an Auth0 role claim and ID-token flow rather than the current API access token (https://supabase.com/docs/guides/auth/third-party/auth0).",
+        "D. Standalone Deno TypeScript API plus Supabase: selected because it preserves the existing public and Auth0 contracts in one small compute boundary while moving durable data rules and row isolation to Supabase. It avoids a second proxy/function layer and keeps the API deployable as a portable OCI container."
+      ],
+      "reversibility": "moderate"
+    },
+    {
+      "id": "ARCH-002",
+      "area": "architecture",
+      "decision": "Run the compatibility service on the latest stable Deno 2 release that has passed the repository test suite, pinned in the container image and lockfile, as an OCI container. Use native web-standard APIs where practical, permit vetted JSR or npm dependencies only through the checked-in lockfile, and run with only the filesystem, network, and environment permissions required by the service. Keep deployment portable and require the eventual managed container target to support an Australian region, managed TLS/custom domain, environment secrets, health checks, structured logs, and rollback. The exact hosting vendor is not selected by this design and requires no application-architecture change.",
+      "rationale": "Deno 2 is a stable TypeScript runtime with Node/npm compatibility, official container images, lockfile integrity checking, and granular runtime permissions (https://docs.deno.com/runtime/fundamentals/stability_and_releases/, https://docs.deno.com/runtime/reference/docker/, https://docs.deno.com/runtime/fundamentals/security/). Pinning the tested release and dependencies prevents an unreviewed runtime update from changing production. Container portability makes the hosting vendor moderately reversible and avoids replacing Heroku with another vendor-specific application API. Australian compute keeps database traffic near the Sydney Supabase project even though the brief strictly requires Australian residency for stored data and managed backups.",
+      "alternatives": [
+        "Node.js 24 LTS: lower dependency-compatibility risk and a conventional production support line, but not selected after the owner chose standalone Deno.",
+        "Track Deno latest at every deploy without pinning: rejected because it weakens reproducibility and makes runtime upgrades implicit.",
+        "Continue on Heroku: allowed only as the rollback source, not the target architecture.",
+        "Select a hosting vendor now: deferred because the container contract isolates vendor choice and production provisioning needs separate authority."
+      ],
+      "reversibility": "moderate"
+    },
+    {
+      "id": "ARCH-003",
+      "area": "architecture",
+      "decision": "The standalone Deno service serves the built React SPA and the four supported API routes from one origin during this migration. Production retains the existing public web origin and /api paths; local development retains separate client and API ports. Frontend hosting may be separated only in a later approved design.",
+      "rationale": "This is the smallest way to preserve Auth0 callback/logout URLs, same-origin API resolution, custom-domain behaviour, and rollback. Static serving is retained for an explicit compatibility reason rather than copied automatically from Go.",
+      "alternatives": [
+        "Separate static host and API origin: operationally clean but requires coordinated DNS, CORS, Auth0 callback, API base URL, and rollback changes during the data migration.",
+        "Supabase Storage as static hosting: rejected because Storage has no approved responsibility and is not needed for this migration."
+      ],
+      "reversibility": "easy"
+    },
+    {
+      "id": "RESP-001",
+      "area": "architecture",
+      "decision": "Existing Go responsibility disposition: KEEP IN APPLICATION CODE — the four browser HTTP route contracts; Auth0 bearer-token verification; verified-sub extraction; optional x-user-id mismatch rejection; CORS enforcement; request orchestration; API-to-database field mapping; normalized response serialization; and initial static SPA delivery. MOVE TO SUPABASE — feelings and weekly-tracker persistence; relational schema and migrations; user-row isolation via RLS; database grants; status/mood/type constraints; the one-tracker-per-user/week guarantee; atomic weekly upsert; server timestamps; deterministic feeling ordering; indexes; generated record IDs; managed backups; and operator data access through provider controls. REPLACE — Go transport/persistence structs with separate TypeScript request/response schemas and database types; Gin routing/listener with a standalone Deno TypeScript HTTP service; handwritten JWKS fetching/cache with a maintained Deno-compatible OIDC/JWT library; permissive Go decoding with strict TypeScript request schemas; Mongo client/bootstrap and startup ping/fatal boot coupling with a least-privilege Deno-compatible pooled Postgres connection plus platform readiness checks; ad-hoc errors with one structured error envelope; default Gin logging/recovery with sanitized structured logs and framework error boundaries; Mongo credentials and Heroku PORT configuration with Deno runtime/Supabase configuration; checked-in Go binary and generated server web assets with reproducible locked builds. REMOVE — chat capability and ingest routes; agent read route; chat/agent shared-token and allowlist middleware; their environment variables; the Heroku worker image declaration; unmatched /api/ping client call and unused PingComponent; all Mongo-specific query/decoding code after release; and any Storage, queue, scheduler, worker, or Edge Function responsibility not backed by an approved requirement.",
+      "rationale": "This classifies every observed Go backend responsibility by its target owner and prevents a file-for-file rewrite. Application code remains only where the compatibility or verified-identity boundary requires it; invariants and durable authorization move down to Postgres; obsolete integrations and accidental code are omitted.",
+      "alternatives": [
+        "Recreate handler/repository/service layers for every Go handler: rejected as unnecessary ceremony for four routes and a one-for-one rewrite risk.",
+        "Move all routes directly to Data API: rejected by ARCH-001 for compatibility and Auth0-token reasons."
+      ],
+      "reversibility": "moderate"
+    },
+    {
+      "id": "DATA-001",
+      "area": "data",
+      "decision": "Create a version-controlled Supabase SQL migration history with a private application schema that is not in the Data API exposed-schema list. Use separate migration-owner and runtime roles; the runtime role must not own tables and must not have BYPASSRLS. Do not place application tables in an anonymously exposed public schema.",
+      "rationale": "A private schema reduces accidental API surface, while native grants and forced RLS provide defense in depth for direct Postgres access. Supabase documents grants plus RLS as the two Data API controls and recommends RLS on exposed objects (https://supabase.com/docs/guides/api/securing-your-api); this design goes further by not exposing the runtime schema at all.",
+      "alternatives": [
+        "Public schema with anon/authenticated grants and Auth0 third-party Data API access: simpler for direct browser access but expands the attack surface and changes the current token/client contract.",
+        "No RLS because only the API connects: rejected because sensitive data and acceptance tests require database-enforced row isolation."
+      ],
+      "reversibility": "hard"
+    },
+    {
+      "id": "DATA-002",
+      "area": "data",
+      "decision": "Model feelings relationally as: id UUID primary key generated by Postgres; legacy_mongo_id text nullable unique for migration idempotency; user_id text not null containing the unchanged Auth0 sub; status smallint not null constrained to 0..4; created_at timestamptz not null; comment text not null default empty; and five not-null boolean activity columns for bow, lift, run, cycle, and swim. Index (user_id, created_at desc, id desc). Map these columns to the existing nested camel-case JSON response and emit status as a string.",
+      "rationale": "Fixed scalar columns encode the actual approved domain better than copying Mongo documents into JSONB. A UUID provides a stable target identity without changing the public API, while legacy_mongo_id supports deterministic reconciliation. The composite index supports the normalized deterministic history order.",
+      "alternatives": [
+        "JSONB activities/document payload: closer to Mongo and easier to extend, but weaker for constraints and unnecessary because new activities are out of scope.",
+        "Expose Mongo ObjectID as the primary key: couples the target permanently to the source and would leak a new public field if used by clients.",
+        "Deduplicate feelings by timestamp/content: rejected because multiple same-time entries are currently legal."
+      ],
+      "reversibility": "hard"
+    },
+    {
+      "id": "DATA-003",
+      "area": "data",
+      "decision": "Model weekly trackers relationally as: id UUID primary key; legacy_mongo_id text nullable unique; user_id text not null; week_of date not null; mood text constrained to rough/low/steady/good/great; tracker_version smallint constrained positive and written as 1; six not-null boolean check columns; three not-null text note columns; and updated_at timestamptz not null set by the database statement. Enforce UNIQUE(user_id, week_of) and index user/week lookup. Use INSERT ... ON CONFLICT(user_id, week_of) DO UPDATE as the single atomic write.",
+      "rationale": "The database, not request timing, must guarantee one tracker per user/week. Explicit columns turn current UI/domain values into enforceable data rules and remove the race possible in a Mongo query-level upsert without a known unique index.",
+      "alternatives": [
+        "JSONB checks and notes: preserves document nesting but weakens explicit constraints for a fixed approved shape.",
+        "Application read-then-write upsert: rejected because it is non-atomic.",
+        "Postgres enum for mood: rejected because a CHECK constraint is easier to evolve or roll back while still strict."
+      ],
+      "reversibility": "hard"
+    },
+    {
+      "id": "DATA-004",
+      "area": "data",
+      "decision": "Use Supabase's pooled Postgres endpoint with TLS for runtime traffic. For an autoscaling container, default to transaction pooling; disable prepared statements if required by the chosen driver. Every request data operation runs inside one explicit transaction. Use the direct connection only for migrations and controlled operator tooling.",
+      "rationale": "Supabase documents transaction pooler mode for serverless/temporary clients and direct connections for migrations or long-lived backends (https://supabase.com/docs/guides/database/connecting-to-postgres). An explicit transaction is also required to bind the verified Auth0 subject safely to RLS for the duration of each operation.",
+      "alternatives": [
+        "Direct runtime connection: viable for a fixed persistent host with IPv6, but less portable across managed container networks.",
+        "Data API: rejected for initial runtime by ARCH-001.",
+        "Supabase service-role client: rejected because it bypasses RLS and gives the compatibility service excessive privilege."
+      ],
+      "reversibility": "moderate"
+    },
+    {
+      "id": "SEC-001",
+      "area": "security",
+      "decision": "Keep the existing Auth0 access-token flow. The Deno service validates RS256 signature through Auth0 OIDC/JWKS discovery, exact issuer, existing API audience, expiry, and non-empty sub using a maintained Deno-compatible JWT/OIDC library with bounded JWKS caching. It derives user_id only from sub. x-user-id remains optional for compatibility and yields 403 when present but unequal; request/body userID is ignored or rejected and never trusted.",
+      "rationale": "This preserves accounts and sessions without an Auth0 Action, ID-token change, or Supabase Auth migration. The existing audience remains until a separately authorized production endpoint/Auth0 configuration change. Library-managed key rotation replaces handwritten certificate handling.",
+      "alternatives": [
+        "Supabase Auth0 third-party integration with Auth0 ID tokens: officially supported, but requires the literal role claim in an Auth0 Action and an ID-token client flow; that is avoidable scope and session risk in this migration (https://supabase.com/docs/guides/auth/third-party/auth0).",
+        "Supabase Auth: explicitly out of scope.",
+        "Trust x-user-id: rejected as a cross-user vulnerability."
+      ],
+      "reversibility": "moderate"
+    },
+    {
+      "id": "SEC-002",
+      "area": "security",
+      "decision": "Enforce row ownership twice. Application SQL always binds user_id from the verified Auth0 sub. Before any table query, the same transaction executes parameterized set_config for a transaction-local request identity (app.auth0_sub). Forced RLS policies for the least-privilege runtime role allow SELECT/INSERT on feelings and SELECT/INSERT/UPDATE on weekly trackers only when user_id equals current_setting('app.auth0_sub', true); WITH CHECK prevents ownership changes. The role receives no DELETE grant and no table-owner or BYPASSRLS capability.",
+      "rationale": "The API filter prevents accidental broad queries, while RLS prevents a missing filter from exposing another row. Transaction-local context avoids identity leakage through pooled connections. Keeping the schema private and credentials server-only prevents an untrusted client from setting the context. This is the main security-sensitive hard-to-reverse design and requires dedicated security and data review.",
+      "alternatives": [
+        "Application filters only: rejected as insufficient defense for sensitive personal data.",
+        "Service-role Supabase client plus application filtering: rejected because service role bypasses RLS.",
+        "Auth0 ID token passed directly to Data API: strong native option but changes the token and routing boundary during compatibility migration."
+      ],
+      "reversibility": "hard"
+    },
+    {
+      "id": "SEC-003",
+      "area": "security",
+      "decision": "Store only server-side database-role credentials, Auth0 verification configuration, allowed origins, and runtime settings in the managed secret/config system. Do not deploy Supabase service-role keys to the application or browser. Operator access occurs only through named cloud-provider administrative accounts and provider controls. Never log tokens, database credentials, raw Auth0 subjects, comments, notes, request bodies, or migrated private content.",
+      "rationale": "This matches the approved operator boundary and minimizes blast radius if the runtime is compromised. A hashed or redacted subject may be used only when needed to correlate authorization events without exposing the raw identity.",
+      "alternatives": [
+        "Application admin route: explicitly prohibited by the brief.",
+        "Service-role secret in Deno: simpler but excessive and capable of bypassing all row policies."
+      ],
+      "reversibility": "hard"
+    },
+    {
+      "id": "IFACE-001",
+      "area": "interface",
+      "decision": "Preserve exactly four public browser routes: GET and POST /api/feelings, and GET and POST /api/weekly-tracker. Preserve Authorization bearer input, optional x-user-id compatibility check, supported request fields, successful status 200, camel-case response fields, bare array for feelings, and {ok, record} weekly envelopes. GET feelings returns deterministic createdAt descending then id descending order and returns [] when empty. GET weekly returns 200 with record:null when absent.",
+      "rationale": "The route surface is the compatibility contract. Deterministic ordering and [] normalize current accidental behaviour without changing React journeys. No new public API version or direct Supabase endpoint is introduced.",
+      "alternatives": [
+        "Direct Data API resource URLs and snake-case fields: rejected because they break the client contract and couple UI to storage.",
+        "Add pagination now: rejected as unapproved product/API scope; history size remains a monitored risk."
+      ],
+      "reversibility": "moderate"
+    },
+    {
+      "id": "IFACE-002",
+      "area": "interface",
+      "decision": "Replace permissive decoding with strict route schemas. Feeling status accepts the supported string values 0..4; createdAt must be RFC3339; comment is a string defaulting empty; known activity booleans default false; and unknown fields are rejected. Weekly weekOf must be YYYY-MM-DD, mood one of five values, known checks booleans default false, known notes strings default empty, and unknown fields are rejected. Normalize failures to JSON {error:{code,message}}: 400 validation, 401 missing/invalid/expired token, 403 identity mismatch, 404 unknown route, and 500 sanitized internal failure. A failed request performs no write.",
+      "rationale": "The owner approved normalization of quirks. Strict schemas and one envelope make behaviour testable and prevent malformed Mongo-era shapes entering Postgres. Supported current React payloads remain valid.",
+      "alternatives": [
+        "Preserve Go error strings and permissive fields: explicitly rejected in the approved brief.",
+        "Return validation implementation details: rejected because it leaks internals and creates a fragile contract."
+      ],
+      "reversibility": "moderate"
+    },
+    {
+      "id": "IFACE-003",
+      "area": "interface",
+      "decision": "CORS is an application responsibility only for local split-origin development and any explicitly configured approved origin. Production is same-origin. Allow only GET/POST/OPTIONS and Authorization, Content-Type, and x-user-id headers; do not carry chat/agent headers. A disallowed origin never reaches a handler and receives standards-compliant failure rather than the current empty 200 quirk.",
+      "rationale": "This preserves local development, minimizes allowed surface, and implements the approved CORS normalization. Bearer-token APIs do not need a broad credentials policy unless the selected Auth0/browser flow proves otherwise in characterization tests.",
+      "alternatives": [
+        "Wildcard origin: rejected for authenticated sensitive data.",
+        "Copy current PUT/DELETE and integration headers: rejected because there are no matching approved routes."
+      ],
+      "reversibility": "easy"
+    },
+    {
+      "id": "IFACE-004",
+      "area": "interface",
+      "decision": "Do not implement GET /api/chat/capabilities, POST /api/chat/feeling, GET /api/agent/feelings, or GET /api/ping. Remove CHAT_INGEST_TOKEN, AGENT_API_TOKEN, AGENT_ALLOWED_USER_IDS, their headers, and the React mount-time ping request. Unknown retired paths receive the normalized 404 envelope.",
+      "rationale": "The accountable owner confirmed the OpenClaw instance is gone and approved retirement. Omitting these paths removes broad shared-secret cross-user access instead of recreating it.",
+      "alternatives": [
+        "410 Gone: more descriptive but creates an intentional compatibility surface for callers confirmed not to exist.",
+        "Temporary forwarding stubs: rejected because they preserve secrets and unapproved access."
+      ],
+      "reversibility": "easy"
+    },
+    {
+      "id": "BUS-001",
+      "area": "business-rule",
+      "decision": "Keep only approved domain rules: feelings are append-only; browser mood is 0..4; activities are the five known booleans; user identity is verified Auth0 sub; weekly mood/check/note values use the approved fixed sets; weekly tracker version is 1; one tracker exists per user/week; updated_at is database-generated UTC; and no update/delete/export API is introduced. History/chart aggregation, labels, filters, polling, and weekly completion stay in React.",
+      "rationale": "This avoids pulling presentation logic into the backend and avoids inventing services. Database constraints own durable invariants; application code owns only input normalization and response mapping.",
+      "alternatives": [
+        "Move charts and summaries to SQL/API: rejected because current client behaviour is sufficient and no performance requirement justifies it.",
+        "Add feeling update/delete: explicitly out of scope."
+      ],
+      "reversibility": "moderate"
+    },
+    {
+      "id": "UI-001",
+      "area": "ui",
+      "decision": "Keep the React user journeys and Auth0 provider flow. Change only integration plumbing required by the design: remove ping/unused components, keep the existing Auth0 access-token acquisition and optional x-user-id header, keep production same-origin and local API base behaviour, and accept normalized API errors. Do not switch the browser to supabase-js or expose database credentials/keys.",
+      "rationale": "The backend migration should not make the frontend a database client or alter login/session behaviour. The existing browser token remains compatible with the Deno validation boundary.",
+      "alternatives": [
+        "Direct supabase-js from React: rejected because it requires Auth0 third-party ID-token changes and exposes a new storage-level interface.",
+        "Frontend rewrite: explicitly out of scope."
+      ],
+      "reversibility": "easy"
+    },
+    {
+      "id": "OPS-001",
+      "area": "operations",
+      "decision": "Implement a separate idempotent TypeScript migration CLI, not an API endpoint. It profiles MongoDB without logging private content, maps source _id to legacy_mongo_id, validates every source shape, writes with a privileged migration role over a direct TLS connection, records counts and non-content field hashes by collection/user, and can be rerun without duplicate target rows. It emits an exception manifest containing identifiers and reasons but no note/comment text; Vinicius Delascio must approve every cleanup, transformation, quarantine, or exclusion.",
+      "rationale": "Migration privilege and dependencies do not belong in the request-serving process. Stable legacy keys and deterministic reports provide reconciliation even though the public API never exposed Mongo IDs.",
+      "alternatives": [
+        "Application startup migration: rejected because it couples availability to privileged one-off work.",
+        "Manual dashboard copy: rejected because it is not repeatable or reconcilable.",
+        "Mongo dump imported without validation: rejected because the source is schema-flexible."
+      ],
+      "reversibility": "hard"
+    },
+    {
+      "id": "OPS-002",
+      "area": "operations",
+      "decision": "Use a rehearsed single-writer cutover, not permanent dual write: complete a dry run; deploy the target dark; temporarily suspend user writes; take the final Mongo checkpoint/export; run the idempotent migration; reconcile 100 percent of records or owner-approved exceptions; run contract/RLS/React smoke tests; switch the public origin to the Deno target; then resume writes. Mongo is authoritative before the cutover commit point; Supabase is authoritative after writes resume.",
+      "rationale": "There is one user and temporary downtime is approved. A write freeze is safer and simpler than dual-write consistency, outboxes, and repair logic for two different databases.",
+      "alternatives": [
+        "Dual write and live backfill: rejected because it adds failure ordering and reconciliation complexity without a zero-downtime requirement.",
+        "Big-bang untested import: rejected because it provides no rehearsal or rollback evidence."
+      ],
+      "reversibility": "hard"
+    },
+    {
+      "id": "OPS-003",
+      "area": "operations",
+      "decision": "Define a cutover commit point and two rollback modes. Before writes resume, rollback restores Heroku traffic with Mongo unchanged. After Supabase accepts writes, rollback first suspends writes and runs an approved, idempotent target-to-Mongo reconciliation for target-only rows before restoring Heroku; no acknowledged write may be discarded. Keep Go/Heroku, Mongo credentials, source backup/checkpoint, migration tools, and domain rollback configuration through Review and Release. Removing them is a later separately authorized release action.",
+      "rationale": "A retained binary is not a safe rollback if its database is stale. Explicit authority and reconciliation are required after the source of truth changes. The write pause makes this feasible for the sole user without continuous replication.",
+      "alternatives": [
+        "Rollback compute only: rejected because Go reads Mongo and would lose post-cutover writes.",
+        "Keep dual writes for an indefinite soak: rejected by OPS-002.",
+        "No rollback after commit: rejected by the approved migration-safety outcome."
+      ],
+      "reversibility": "hard"
+    },
+    {
+      "id": "OPS-004",
+      "area": "operations",
+      "decision": "Use sanitized structured JSON logs with request ID, route template, method, status, duration, deployment version, and coarse failure code. Record startup dependency failure and migration/reconciliation counts. Do not log bodies or private fields. Use managed container and Supabase logs/metrics/default alerts initially; document health, readiness, rollback, backup, restore, operator audit, and breach-response procedures before Release. No custom monitoring stack is required for the sole-user pilot.",
+      "rationale": "This is enough to diagnose contract and dependency failures without exposing sensitive content or adding an unapproved operational platform. Unknown traffic/SLA expectations remain nonblocking and can trigger stronger monitoring if discovery contradicts the sole-user assumption.",
+      "alternatives": [
+        "Log full requests for debugging: rejected due to sensitive comments and tokens.",
+        "Add a custom observability vendor now: rejected without a requirement."
+      ],
+      "reversibility": "easy"
+    },
+    {
+      "id": "OPS-005",
+      "area": "operations",
+      "decision": "Create the Supabase project in the specific Sydney region ap-southeast-2 and verify the selected plan's managed backup residency and defaults before any data is loaded. Force any future Supabase regional function invocation to Sydney, although no Edge Function is part of this design. Operator inspection uses Supabase administrative controls only.",
+      "rationale": "Supabase lists Oceania/Sydney ap-southeast-2 as a specific project region (https://supabase.com/docs/guides/platform/regions), satisfying the approved Australian residency requirement. Selecting project region is hard to reverse after data exists.",
+      "alternatives": [
+        "General APAC region: rejected because it does not guarantee Australia.",
+        "Singapore: technically close but conflicts with the approved residency decision.",
+        "Globally nearest Edge execution: not applicable initially and would require explicit Sydney invocation if later introduced (https://supabase.com/docs/guides/functions/regional-invocation)."
+      ],
+      "reversibility": "hard"
+    },
+    {
+      "id": "DATA-005",
+      "area": "data",
+      "decision": "Retain feelings and weekly trackers indefinitely. Grant the runtime no DELETE capability and implement no deletion/export endpoint. Database migrations must be additive or explicitly reversible during the migration; irreversible cleanup or source deletion requires separate human authority.",
+      "rationale": "This directly encodes the approved retention and safety policy. Removing DELETE privilege makes accidental application deletion harder while preserving provider-level operator recovery and approved administration.",
+      "alternatives": [
+        "Automated retention window: rejected by the approved brief.",
+        "Soft-delete columns: rejected because there is no delete capability or requirement."
+      ],
+      "reversibility": "hard"
+    },
+    {
+      "id": "TEST-001",
+      "area": "other",
+      "decision": "Verification has five layers: characterize the current four routes and React payloads before replacement; run target contract tests for success, empty, validation, error, and CORS behaviour; run RLS/grant tests with at least two synthetic Auth0 subjects and direct database attempts; run repeatable forward and rollback migration tests with valid/invalid/duplicate fixtures and reconciliation reports; and run React end-to-end smoke journeys against both rollback source and target. The current Go CORS tests are historical evidence, not the target contract where normalization was approved.",
+      "rationale": "Existing tests do not protect auth, persistence, response contracts, or migration. Layered evidence maps directly to acceptance criteria and prevents a passing unit suite from being mistaken for behavioural or data equivalence.",
+      "alternatives": [
+        "Only unit-test TypeScript handlers: rejected because it cannot prove RLS, migration, or React compatibility.",
+        "Only manual production verification: rejected because it is non-repeatable and unsafe."
+      ],
+      "reversibility": "easy"
+    }
+  ],
+  "coverage": [
+    {
+      "ac_id": "AC-1",
+      "design_refs": ["IFACE-001", "SEC-001", "SEC-002", "DATA-002", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-2",
+      "design_refs": ["IFACE-001", "IFACE-002", "SEC-001", "SEC-002", "DATA-002", "BUS-001", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-3",
+      "design_refs": ["IFACE-001", "SEC-002", "DATA-003", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-4",
+      "design_refs": ["IFACE-001", "IFACE-002", "DATA-003", "SEC-002", "BUS-001", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-5",
+      "design_refs": ["SEC-001", "SEC-002", "IFACE-002", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-6",
+      "design_refs": ["IFACE-004", "RESP-001", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-7",
+      "design_refs": ["IFACE-004", "SEC-003", "RESP-001", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-8",
+      "design_refs": ["ARCH-003", "SEC-001", "UI-001", "IFACE-001", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-9",
+      "design_refs": ["IFACE-001", "IFACE-002", "IFACE-003", "IFACE-004", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-10",
+      "design_refs": ["DATA-002", "DATA-003", "OPS-001", "OPS-002", "OPS-005", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-11",
+      "design_refs": ["DATA-001", "SEC-001", "SEC-002", "SEC-003", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-12",
+      "design_refs": ["OPS-001", "OPS-002", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-13",
+      "design_refs": ["OPS-002", "OPS-003", "TEST-001"]
+    },
+    {
+      "ac_id": "AC-14",
+      "design_refs": ["ARCH-002", "OPS-003", "OPS-004", "OPS-005", "DATA-005", "SEC-003"]
+    }
+  ],
+  "risk_triggers": [
+    "Auth0 production tokens are not RS256, do not contain a stable non-empty sub, or no longer validate against the documented issuer/audience; stop security design and obtain Auth0 owner review.",
+    "A proposed implementation requires an Auth0 Action, ID-token flow, Supabase Auth migration, account relink, or forced sign-in; return to Design and product approval.",
+    "The Supabase plan cannot guarantee the approved Sydney project location or Australian managed-backup residency; stop before project creation or data loading and obtain privacy/data approval.",
+    "Any application design introduces a service-role key, BYPASSRLS role, table ownership, public-schema exposure, or browser database credential; require security and architecture re-review.",
+    "RLS cannot be forced for the runtime role, transaction-local Auth0 identity leaks across pooled requests, or two-subject authorization tests expose or mutate another user's row; block implementation/release.",
+    "Production profiling finds mixed status/date/user types, missing Auth0 subjects, duplicate weekly trackers, non-ObjectID identifiers, unknown activity/check/note fields, or other malformed records; create an exception report and stop affected transformation until Vinicius Delascio approves handling.",
+    "Repository or production evidence shows any current OpenClaw/chat/agent caller; stop route retirement and return to Define for access/scope decisions.",
+    "The complete feeling history is too large for acceptable memory, latency, or response size; return to Define before adding pagination because that changes the public contract.",
+    "A selected Deno hosting platform lacks Australian compute, OCI deployment, same-origin custom-domain routing, managed TLS, secret storage, health checks, structured logs, or rollback; require architecture/operations review before selection.",
+    "A required HTTP, Auth0/JWT, PostgreSQL, validation, migration, or test dependency does not run correctly under the pinned Deno release, requires unsafe lifecycle scripts or native addons, or needs materially broader Deno permissions than designed; reconsider the library or return to Design for runtime review.",
+    "A cutover plan accepts writes in both MongoDB and Supabase without an idempotent reconciliation design, or attempts rollback after target writes without target-to-Mongo reconciliation; block release.",
+    "Migration reconciliation is less than 100 percent except for source records explicitly approved by Vinicius Delascio, or reports contain private note/comment content; block data and privacy review.",
+    "Any irreversible production migration, data cleanup, endpoint change, traffic switch, environment change, deployment, database replacement, or Heroku/Mongo deletion is proposed without the separate authority required by AGENTS.md; stop the action.",
+    "Frontend hosting separation, direct Supabase browser access, Edge Functions, Node.js, Bun, new background jobs, Storage, deletion/export, or new API routes enter implementation scope; return to Design and, where behaviour changes, Define."
+  ],
+  "required_reviews": [
+    "architecture",
+    "security",
+    "privacy",
+    "data",
+    "operations"
+  ],
+  "unresolved_questions": [
+    {
+      "question": "Which Australian managed container provider will host the portable Deno service while meeting the ARCH-002 contract?",
+      "blocking": false,
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "question": "What are the measured production record count, response size, request rate, latency, and error baseline used to set alert thresholds and confirm that unpaginated GET /api/feelings remains safe?",
+      "blocking": false,
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "question": "Which concrete Deno-compatible HTTP framework, schema validator, PostgreSQL driver, test runner, and build process best satisfy this design without changing its boundaries?",
+      "blocking": false,
+      "owner": "Implementation planner"
+    }
+  ],
+  "approval": {
+    "status": "approved",
+    "by": "Vinicius Delascio",
+    "at": "2026-08-13",
+    "reason": "Vinicius Delascio approved the complete technical design, including the standalone Deno/Supabase boundary, pinned runtime and permission model, private relational schema, custom transaction-scoped Auth0-sub RLS model, Sydney project placement, single-writer cutover, and rollback reconciliation design."
+  }
+}
