@@ -1,0 +1,196 @@
+{
+  "work_id": "backend-migration",
+  "title": "Incrementally migrate the Steady backend from Go and Heroku to TypeScript and Supabase",
+  "outcome": "Steady's existing authenticated users can continue to use the service without unintended behavioural, identity, authorization, or data changes while durable backend responsibilities move from the Go/Heroku/MongoDB implementation to a TypeScript-based backend and Supabase through a reversible, evidence-backed migration, and the unused legacy chat and agent APIs are safely retired after their lack of active callers is verified.",
+  "users": [
+    "The sole authenticated Steady owner-user who records feelings, reviews history and trends, and maintains weekly trackers",
+    "Operators and accountable owners responsible for data integrity, access control, cutover, rollback, and production support"
+  ],
+  "scope": {
+    "in": [
+      "Characterize and preserve the supported externally observable contracts of the four Auth0-protected browser routes, including methods, paths, authentication requirements, supported request fields, successful response envelopes, JSON field names, and user-ownership behaviour",
+      "Normalize accidental browser API quirks by returning an empty array for an empty feeling history, using consistent structured errors and appropriate failure statuses, rejecting malformed or unsupported inputs without writes, and applying standards-compliant CORS behaviour",
+      "Omit verified-unused code and compatibility surfaces from the replacement, including the unmatched /api/ping client request and the retired chat and agent APIs",
+      "Preserve the existing React application's supported feeling journal, history and trend, weekly tracker, sign-in, sign-out, and session-continuity behaviours during the migration",
+      "Retain Auth0 as the authentication provider for this migration and preserve existing Auth0 accounts, subject identifiers, and supported session behaviour without requiring account re-registration or relinking",
+      "Implement the replacement backend responsibilities in TypeScript, with the runtime and deployment topology selected only after Design evaluates the allowed compute options",
+      "Migrate durable feeling and weekly-tracker data from MongoDB Atlas to Supabase Postgres with explicit schema, constraints, indexes, migration history, reconciliation evidence, and Auth0 subject identifiers preserved as the user-ownership key",
+      "Define and enforce least-privilege row ownership for authenticated browser users using an approved combination of verified identity and Supabase authorization controls",
+      "Treat feelings and weekly reflections as sensitive private personal data: normal access is through the owner's authenticated Auth0 application session, while authorized operator access is available only through the cloud provider's administrative data controls",
+      "Retain all existing migrated feelings and weekly reflections and all records created after migration indefinitely unless a separately approved future policy changes that requirement",
+      "Host the Supabase project and its managed data backups in an Australian cloud region",
+      "Use and document the target cloud provider's managed defaults for backup, restore, operator auditing, and breach response without adding custom operational mechanisms",
+      "Use the repository inventory and accountable-owner confirmation that the retired OpenClaw instance no longer exists and the legacy chat capability, chat ingest, and agent read APIs have no active callers, then omit those APIs and their shared-secret dependencies from the replacement",
+      "Create characterization, contract, authorization, data-migration, and rollback evidence sufficient to compare the replacement with the approved current behaviour",
+      "Support an incremental cutover in which the existing Go/Heroku implementation remains recoverable until the replacement has passed Review and Release and separate production-change authority has been granted",
+      "Document configuration and secret dependencies without storing secret values in source, specifications, logs, tests, commits, or responses"
+    ],
+    "out": [
+      "Choosing Node, Bun, Supabase Edge Functions, a standalone TypeScript API runtime, frontend hosting, or a final deployment topology during Define",
+      "A greenfield redesign of the Steady product, user interface, mood model, weekly tracker, or integration capabilities",
+      "New user-facing features, new API capabilities, or new file/object-storage functionality",
+      "Adding user-facing data deletion or export features",
+      "Custom backup, restore, operator-audit, or breach-response systems beyond the target cloud provider's managed defaults",
+      "Reproducing accidental implementation quirks or migrating code that has no verified supported user or integration responsibility",
+      "Replacing or retiring Auth0, migrating users to Supabase Auth, or changing current login methods and user accounts",
+      "Preserving or redesigning the legacy /api/chat/* and /api/agent/* APIs in the replacement after their retirement was approved",
+      "Unapproved changes to access rules, data classification, retention, or deletion policy",
+      "Removal of the existing Go/Heroku implementation before Review and Release approval",
+      "Production infrastructure creation or modification, production data migration, production environment-variable changes, frontend production API endpoint changes, traffic switching, irreversible database changes, Heroku resource deletion, database replacement, or production deployment without separate explicit authority"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "given": "an authenticated Steady user with existing feeling records and a valid supported Auth0 session",
+      "when": "the user loads the journal and the client requests GET /api/feelings through the migrated service",
+      "then": "the request applies the approved authentication and same-user isolation rules and returns that user's complete approved feeling history as a JSON array, including an empty array when no records exist, with the approved field names, value representations, and timestamp semantics and without exposing another user's records"
+    },
+    {
+      "id": "AC-2",
+      "given": "an authenticated Steady user submits a feeling using the currently supported mood, date, note, and activity inputs",
+      "when": "the client sends POST /api/feelings through the migrated service",
+      "then": "exactly one feeling is durably associated with the verified user identity, the caller cannot assign it to another user through a body or header value, the approved success response is returned, and a subsequent supported history read exposes the saved record"
+    },
+    {
+      "id": "AC-3",
+      "given": "an authenticated Steady user selects a week with no existing weekly tracker",
+      "when": "the client sends GET /api/weekly-tracker with the supported weekOf parameter",
+      "then": "the migrated service returns the approved successful no-record representation and does not expose another user's tracker"
+    },
+    {
+      "id": "AC-4",
+      "given": "an authenticated Steady user creates or edits a weekly tracker using supported mood, checklist, and note fields",
+      "when": "the client sends POST /api/weekly-tracker and subsequently reads the same user and week",
+      "then": "the service applies the approved upsert, tracker-version, ownership, timestamp, field-name, and response semantics and returns the saved tracker without creating an unintended duplicate"
+    },
+    {
+      "id": "AC-5",
+      "given": "a caller does not present a valid supported end-user credential or presents a user header that conflicts with its verified identity",
+      "when": "the caller accesses a browser-facing feelings or weekly-tracker route",
+      "then": "access is denied with the approved status and response behaviour, no protected record is disclosed or changed, and no client-controlled identity overrides the verified identity"
+    },
+    {
+      "id": "AC-6",
+      "given": "retirement of GET /api/chat/capabilities, POST /api/chat/feeling, and GET /api/agent/feelings is proposed",
+      "when": "the repository route/configuration inventory and owner confirmation are reviewed before implementation and again before release",
+      "then": "the evidence confirms the former OpenClaw integration no longer exists and no active caller depends on the routes; if contrary evidence or a caller appears, retirement stops and the contract returns for explicit scope and access decisions"
+    },
+    {
+      "id": "AC-7",
+      "given": "production evidence confirms the legacy chat and agent APIs have no active callers and their retirement remains approved",
+      "when": "the replacement backend is built and its configuration and route inventory are tested",
+      "then": "the replacement exposes none of the three retired integration routes, requires none of their shared-secret or allowlist environment variables, and retains no privileged compatibility path that can read or write a caller-selected user's data"
+    },
+    {
+      "id": "AC-8",
+      "given": "the React client is running in each supported local and deployed configuration",
+      "when": "a user signs in, signs out, reloads an existing session, saves a feeling, views history and trends, changes weekly tracker weeks, and saves a weekly tracker",
+      "then": "the supported user journeys complete using Auth0 without account relinking, re-registration, or an unapproved forced sign-in, URL change, payload change, or loss of the current same-origin/local-development behaviour"
+    },
+    {
+      "id": "AC-9",
+      "given": "the current implementation exhibits accidental quirks in empty results, CORS handling, error bodies and statuses, permissive validation, and the unmatched /api/ping client request",
+      "when": "the replacement contract and React journeys are tested",
+      "then": "supported inputs and user journeys remain compatible, empty feeling history is an empty array, malformed or unsupported requests fail without writes using consistent structured errors and appropriate failure statuses, disallowed CORS origins cannot invoke protected handlers, and neither the client nor replacement backend contains the unused /api/ping compatibility call or route"
+    },
+    {
+      "id": "AC-10",
+      "given": "a non-production export representative of the production MongoDB collections and identity keys",
+      "when": "the approved migration process is dry-run into the Supabase Postgres schema",
+      "then": "every source record is accounted for as migrated or as an explicitly classified exception approved by the repository owner/requester, ownership and timestamps are preserved according to the approved mapping, duplicate or malformed data is reported without silent loss, reconciliation can be repeated deterministically without creating duplicate target records, and the target project and managed backups are verified to reside in Australia"
+    },
+    {
+      "id": "AC-11",
+      "given": "two or more users and records created through each approved writer path",
+      "when": "authorization tests exercise direct data access and every migrated API path using valid, missing, expired, mismatched, and unauthorized credentials",
+      "then": "each application user can access only their own authorized rows, privileged credentials are never exposed to untrusted clients, retired machine routes cannot bypass user ownership, all cross-user application attempts are denied, and any authorized operator data access occurs only through the cloud provider's administrative controls rather than an application API"
+    },
+    {
+      "id": "AC-12",
+      "given": "the replacement has completed its non-production data migration and behavioural verification",
+      "when": "the reconciliation and contract suites compare source and target behaviour",
+      "then": "all approved acceptance cases pass, all record-count and field-level reconciliation checks meet their approved thresholds, and every remaining discrepancy is documented with an accountable approval before any production cutover is proposed"
+    },
+    {
+      "id": "AC-13",
+      "given": "a pre-production cutover rehearsal has temporarily suspended user writes and switched supported traffic to the replacement",
+      "when": "the documented rollback trigger is exercised",
+      "then": "the service returns to the existing recoverable implementation using the documented procedure, every write acknowledged before or during the rehearsal is accounted for before writes resume, and Auth0 user-access boundaries remain intact"
+    },
+    {
+      "id": "AC-14",
+      "given": "the replacement is proposed for production release",
+      "when": "Review and Release assess its evidence",
+      "then": "the Go/Heroku implementation has not been removed, migration and rollback procedures have named owners, secret and environment dependencies are documented without values, the selected cloud-provider managed backup, restore, operator-audit, and breach-response defaults are documented and verified, operational support and monitoring responsibilities are recorded, and no deployment, data migration, environment change, traffic switch, irreversible migration, or resource deletion occurs without separate explicit human authority"
+    }
+  ],
+  "constraints": [
+    "This is an incremental migration, not a greenfield rewrite; externally observable behaviour is preserved unless a named accountable human explicitly approves a difference",
+    "The replacement backend implementation language is TypeScript",
+    "Auth0 remains the authentication provider for this migration; replacing Auth0 with Supabase Auth is deferred and out of scope",
+    "Existing Auth0 subject identifiers remain the canonical user-ownership key through this migration and must be preserved unchanged in migrated records",
+    "The legacy chat and agent APIs may be retired, but uncertain usage must be resolved with production evidence and accountable-owner confirmation before their removal",
+    "Verified-unused code and accidental implementation quirks are not migration requirements; normalization must retain supported React user journeys and security boundaries",
+    "Supabase is the target for Postgres data services and is a candidate for RLS, Storage, and Edge Functions only where approved scope and Design support the responsibility",
+    "Define must not choose Node, Bun, Supabase Edge Functions, a standalone API compute model, or the final deployment topology",
+    "The existing Go/Heroku implementation remains available until the replacement has passed Review and Release",
+    "Zero-downtime cutover and a formal maintenance window are not required because there is one owner-user; a temporary service interruption is acceptable, but every acknowledged write must be accounted for before service resumes",
+    "Feelings and weekly reflections are sensitive private personal data; application access is limited to the owning Auth0 identity and authorized operator access is permitted only through cloud-provider administrative data controls",
+    "The replacement must not introduce an application-level support, impersonation, service-token, or operator bypass for reading or writing another identity's rows",
+    "Feelings and weekly reflections are retained indefinitely; this migration does not add user-facing deletion or export capabilities",
+    "The Supabase project and its managed data backups must use an Australian cloud region; the exact supported region is selected during Design",
+    "The target cloud provider's managed defaults are sufficient for backup, restore, operator auditing, and breach response; custom mechanisms are not required by this migration",
+    "The repository owner/requester is the accountable human who may approve cleanup, transformation, quarantine, or exclusion of malformed, legacy, orphaned, or duplicate source records; no such handling may occur without that explicit approval",
+    "The production dependency boundary is limited to the repository-defined Heroku web application, MongoDB Atlas, and Auth0; the former OpenClaw integration no longer exists and there are no active workers, schedulers, relevant add-ons or triggers, external API consumers, or chat/agent callers",
+    "Structural validation, readiness validation, and human approval are separate gates; validation never authorizes deployment or destructive operations",
+    "Production infrastructure, data, environment, frontend endpoint, traffic, irreversible database, Heroku deletion, database replacement, and deployment actions require explicit human approval",
+    "No product behaviour, access rule, identity mapping, data-policy exception, risk acceptance, waiver, or release approval may be inferred",
+    "Secret values and private note content must not appear in specifications, logs, commits, tests, reconciliation reports, or responses",
+    "The migration must support evidence-based rollback and must not make MongoDB or Heroku removal a prerequisite for proving the replacement"
+  ],
+  "dependencies": [
+    "Current-state evidence in specs/backend-migration/current-state.md",
+    "Read-only production inventory from MongoDB Atlas covering collection counts, BSON field types, missing or malformed values, duplicate weekly trackers, indexes, validators, database users, backup posture, region, and network dependencies without exposing note content or credentials",
+    "Auth0 tenant inventory covering enabled identity providers, issuer and audience, token signing algorithm, Actions or rules, claims, callbacks, logout URLs, refresh-token/session behaviour, user count, and accountable ownership",
+    "Repository-defined Heroku web deployment inventory covering config variable names, domains and certificates, deployment pipeline, traffic and availability signals, logging, rollback, and accountable ownership",
+    "Accountable-owner confirmation, recorded on 2026-08-12, that the former OpenClaw instance no longer exists and GET /api/chat/capabilities, POST /api/chat/feeling, and GET /api/agent/feelings have no active callers",
+    "A verified one-to-one mapping that preserves existing Auth0 subject identifiers from MongoDB documents in target Postgres ownership fields",
+    "Documentation and verification of the selected cloud-provider managed defaults for backup, restore, operator auditing, and breach response",
+    "Supabase support for a suitable Australian project region and Australian residency for its managed backups",
+    "Cloud-provider administrative access controls sufficient for authorized operator inspection without creating a privileged application route",
+    "A test environment and sanitized or access-controlled representative dataset suitable for repeatable migration, authorization, contract, cutover, and rollback rehearsals",
+    "Design-stage evaluation of TypeScript compute, API boundary, Auth0 JWT integration with Supabase authorization, RLS policy model, frontend hosting, data migration, observability, and rollback options"
+  ],
+  "risks": [
+    "Auth0 subject strings may be represented or interpreted incorrectly in Postgres or Supabase authorization policies, causing orphaned, merged, or cross-user data",
+    "Mood notes and weekly reflections contain sensitive private personal information; cloud-provider managed backup, restore, audit, and breach-response defaults may vary by region or plan and must be verified before release",
+    "The required Australian residency may constrain Supabase project, backup, or disaster-recovery options and must be verified before architecture approval",
+    "Schema-flexible MongoDB data may contain legacy, malformed, missing, mixed-type, or duplicate records that do not fit a strict Postgres schema",
+    "Sparse automated coverage may allow supported route, validation, error, CORS, ordering, polling, or response-contract behaviour to regress while quirks are normalized",
+    "If the confirmed-retired OpenClaw integration or another undisclosed caller reappears, omitting chat and agent routes could break it; retaining a hidden compatibility path would preserve broad shared-secret cross-user access",
+    "Heroku hostnames are embedded in the Auth0 audience, CORS defaults, client token acquisition, and deployment assumptions, requiring coordinated configuration changes",
+    "Parallel MongoDB and Postgres operation may cause lost, duplicated, reordered, or unreconciled writes without an approved source-of-truth and idempotency strategy",
+    "The API does not expose stable feeling record IDs, complicating deterministic backfill reconciliation and dual-write idempotency",
+    "Production configuration may drift from the confirmed repository-defined dependency boundary and must be checked before release",
+    "Removing same-origin SPA/API hosting or changing Auth/session behaviour may create user-visible outages even if individual replacement endpoints work",
+    "Normalizing quirks without characterization tests may accidentally change a supported React journey or conceal a caller dependency",
+    "A rollback that ignores writes accepted after cutover could restore service while losing or duplicating user data"
+  ],
+  "unresolved_questions": [
+    {
+      "question": "What production traffic volume, data volume, latency, availability, monitoring, alerting, and support expectations must the replacement satisfy?",
+      "blocking": false
+    },
+    {
+      "question": "Will frontend hosting remain coupled to the backend and production origin during this migration, or may Design propose a separate hosting boundary while preserving approved URLs and rollback?",
+      "blocking": false
+    }
+  ],
+  "approval": {
+    "status": "approved",
+    "by": "Vinicius Delascio",
+    "at": "2026-08-12",
+    "reason": "Vinicius Delascio explicitly approved this Define brief on 2026-08-12 after resolving all blocking scope, behaviour, identity, access, data-policy, dependency, cutover, and cleanup decisions."
+  }
+}
