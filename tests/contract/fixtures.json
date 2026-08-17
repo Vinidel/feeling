@@ -1,0 +1,36 @@
+{
+  "syntheticUsers": {
+    "owner": "auth0|characterization-user-a",
+    "other": "auth0|characterization-user-b"
+  },
+  "feeling": {
+    "status": "3",
+    "createdAt": "2026-01-02T03:04:05Z",
+    "comment": "synthetic feeling",
+    "activities": {
+      "bow": true,
+      "lift": false,
+      "run": true,
+      "cycle": false,
+      "swim": false
+    }
+  },
+  "weeklyTracker": {
+    "weekOf": "2026-01-05",
+    "mood": "good",
+    "trackerVersion": 1,
+    "checks": {
+      "cardio": true,
+      "strength": true,
+      "mobility": false,
+      "build": false,
+      "archery": false,
+      "hunt": false
+    },
+    "notes": {
+      "win": "synthetic win",
+      "challenge": "synthetic challenge",
+      "nextWeek": "synthetic focus"
+    }
+  }
+}

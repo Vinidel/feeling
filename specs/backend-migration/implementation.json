@@ -1,0 +1,164 @@
+{
+  "work_id": "backend-migration",
+  "source_plan": "specs/backend-migration/plan.json",
+  "stages": [
+    {
+      "id": "STAGE-01",
+      "status": "complete",
+      "files_changed": [
+        "server/api_characterization_test.go",
+        "server/go.mod",
+        "client/src/apiContract.test.js",
+        "tests/contract/fixtures.json",
+        "tests/contract/run.mjs",
+        "tests/contract/README.md",
+        "specs/backend-migration/characterization.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/server:/work -w /work golang:1.23 go test ./...",
+          "result": "pass",
+          "details": "Untouched pre-change Go baseline passed in the official Go 1.23 container. The host has no Go executable, so the container is the reproducible test runtime."
+        },
+        {
+          "command": "cd client && npm test -- --watchAll=false",
+          "result": "pass",
+          "details": "Untouched pre-change React baseline passed: 1 suite and 1 test. It emitted the existing TitleComponent componentWillMount warning."
+        },
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/server:/work -w /work golang:1.23 go test -count=1 -v ./...",
+          "result": "pass",
+          "details": "Final uncached source characterization passed. It covers real JWT/JWKS middleware for missing, malformed, valid, matching, mismatched, expired, wrong-audience, and missing-subject credentials; feelings and weekly success/empty/invalid/identity/query/upsert behavior through real Gin handlers with Mongo wire mocks; and legacy CORS plus unmatched ping behavior."
+        },
+        {
+          "command": "cd client && npm test -- --watchAll=false",
+          "result": "pass",
+          "details": "Final React suite passed: 2 suites and 3 tests. New tests verify current Auth0 audience, bearer and x-user-id headers, routes, query parameters, and feelings/weekly request payloads. The pre-existing TitleComponent lifecycle warning remains characterized and unchanged."
+        },
+        {
+          "command": "node --check tests/contract/run.mjs",
+          "result": "pass",
+          "details": "The base-URL-driven source/target smoke runner is syntactically valid. It requires explicit CONTRACT_BASE_URL and optional isolated test credentials at execution time and embeds no credentials."
+        },
+        {
+          "command": "python3 -m json.tool tests/contract/fixtures.json >/dev/null",
+          "result": "pass",
+          "details": "Runtime-neutral contract fixtures are valid JSON and contain only synthetic identities and content."
+        },
+        {
+          "command": "python3 .ai-os/validate.py specs/backend-migration/plan.json .ai-os/schemas/plan.schema.json --ready",
+          "result": "pass",
+          "details": "The source plan remained structurally valid, ready, and approved while Stage 1 was implemented."
+        }
+      ],
+      "notes": "Stage 1 changed tests, test-only module metadata, fixtures, and migration documentation only; server/main.go, server/handlers.go, and runtime React behavior were not modified. Characterized source quirks include null empty feelings, unsorted feeling reads, permissive/inconsistent validation errors, empty-200 CORS rejection, and an unmatched client ping. The replacement must follow the approved normalized design rather than copy those quirks. Repository search plus Vinicius Delascio's Define-stage confirmation provides the current evidence that the OpenClaw/chat/agent routes have no caller; no production logs, secrets, private data, or external systems were accessed."
+    },
+    {
+      "id": "STAGE-02",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Next runnable stage: establish the pinned standalone Deno foundation. Not started."
+    },
+    {
+      "id": "STAGE-03",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Depends on STAGE-02 and requires separate authorization before creating non-production cloud infrastructure."
+    },
+    {
+      "id": "STAGE-04",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Depends on STAGE-03. Not started."
+    },
+    {
+      "id": "STAGE-05",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Depends on STAGE-04. No data access or migration has occurred."
+    },
+    {
+      "id": "STAGE-06",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Depends on STAGE-02 and STAGE-04. Not started."
+    },
+    {
+      "id": "STAGE-07",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Depends on STAGE-05 and STAGE-06. Not started."
+    },
+    {
+      "id": "STAGE-08",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Depends on STAGE-07. Not started."
+    },
+    {
+      "id": "STAGE-09",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Depends on STAGE-08. Not started."
+    },
+    {
+      "id": "STAGE-10",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Depends on STAGE-09. Retired source routes and ping remain untouched until this approved stage."
+    },
+    {
+      "id": "STAGE-11",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Depends on STAGE-05 and STAGE-10. Not started."
+    },
+    {
+      "id": "STAGE-12",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Depends on STAGE-11 and requires separate infrastructure/rehearsal authorization."
+    },
+    {
+      "id": "STAGE-13",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Depends on STAGE-12. Not started."
+    },
+    {
+      "id": "STAGE-14",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Production cutover is not authorized and has not started."
+    },
+    {
+      "id": "STAGE-15",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Production observation has not started."
+    },
+    {
+      "id": "STAGE-16",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Heroku and Mongo decommissioning is not authorized; all legacy resources remain available."
+    }
+  ],
+  "unresolved_questions": []
+}
