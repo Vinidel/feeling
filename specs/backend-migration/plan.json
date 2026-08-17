@@ -69,15 +69,15 @@
       "acceptance_criteria": [],
       "tests": [
         "Before creating cloud infrastructure, record the separate explicit human authorization required by AGENTS.md; plan approval alone is insufficient.",
-        "Verify the project reports Sydney ap-southeast-2 and confirm the chosen plan's managed backup data remains in Australia before loading any representative data.",
-        "Verify direct TLS connectivity for migrations and the candidate pooled/runtime connection mode from the intended test environment without printing credentials.",
+        "Verify the project reports Sydney ap-southeast-2 and record the chosen plan's backup behavior; for Free, document the approved manual backup/restore process and require an Australian encrypted destination before loading representative data.",
+        "Verify the preferred direct TLS migration path when the test network supports the project's IPv6 endpoint; otherwise verify the approved TLS Supavisor session fallback from the IPv4-only environment. Verify the candidate pooled/runtime connection mode without printing credentials.",
         "Verify the application schema is absent from the Data API exposed-schema list and that no browser or service-role secret is introduced.",
         "Run the current Supabase CLI help/version discovery and scan the current Supabase changelog for relevant breaking changes before locking provisioning commands."
       ],
       "definition_of_done": [
         "A separately authorized, empty, non-production Sydney project is available and identified only by non-secret configuration references.",
-        "Managed backup residency/defaults, restore access, provider audit controls, and operator access are documented without secret values.",
-        "Direct and runtime connection choices are verified against the selected container network; prepared statements are disabled if transaction pooling is retained.",
+        "Managed backup availability or absence, the approved manual fallback where needed, restore access, provider audit controls, and operator access are documented without secret values.",
+        "Migration and runtime connection choices are verified against the selected container network; the TLS session fallback is used where direct IPv6 is unavailable, and prepared statements are disabled for transaction-pooled runtime traffic.",
         "No production infrastructure, data, environment, endpoint, or traffic has changed."
       ]
     },
@@ -447,7 +447,7 @@
   "approval": {
     "status": "approved",
     "by": "Vinicius Delascio",
-    "at": "2026-08-13",
-    "reason": "Vinicius Delascio approved the execution plan, including the staged Deno/Supabase vertical slices and accepted migration complexity. This approval permits progression to implementation but does not authorize any production infrastructure, data, environment, deployment, traffic, irreversible migration, or deletion action; those remain separately gated."
+    "at": "2026-08-17",
+    "reason": "Vinicius Delascio approved the execution plan on 2026-08-13, including the staged Deno/Supabase vertical slices and accepted migration complexity. On 2026-08-17 he selected the Free-plan manual-backup posture and approved DATA-004's TLS Supavisor session migration fallback for IPv4-only environments; STAGE-03 verification wording was reconciled accordingly. This approval permits progression to implementation but does not authorize any production infrastructure, data, environment, deployment, traffic, irreversible migration, or deletion action; those remain separately gated."
   }
 }

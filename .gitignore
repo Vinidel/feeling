@@ -1,2 +1,5 @@
 /.idea/
 /server/web/
+/api/.env
+/api/.env.*
+!/api/.env.example

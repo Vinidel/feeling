@@ -137,10 +137,78 @@
     },
     {
       "id": "STAGE-03",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Depends on STAGE-02 and requires separate authorization before creating non-production cloud infrastructure."
+      "status": "complete",
+      "files_changed": [
+        ".gitignore",
+        "api/.env.example",
+        "supabase/.gitignore",
+        "supabase/config.toml",
+        "specs/backend-migration/stage-03-supabase.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "python3 .ai-os/validate.py specs/backend-migration/plan.json .ai-os/schemas/plan.schema.json --ready",
+          "result": "pass",
+          "details": "The approved source plan remained structurally valid and ready before Stage 3 provisioning began."
+        },
+        {
+          "command": "supabase --version; supabase --help; supabase projects create --help; Supabase changelog and current region, connection, backup, Data API, and audit documentation review",
+          "result": "pass",
+          "details": "CLI discovery was performed before commands were locked. Homebrew Supabase CLI was upgraded from 2.75.0 to current 2.114.0. The breaking-change scan confirmed explicit Data API grants for new tables and supports the private-schema/no-Data-API design."
+        },
+        {
+          "command": "supabase projects create Steady non-prod --org-id <non-secret-org-id> --region ap-southeast-2 (database password generated into Keychain; value omitted)",
+          "result": "pass",
+          "details": "After Vinicius Delascio's separate explicit authorization, the empty Free project was created in SuperVin Systems. It reports ACTIVE_HEALTHY in Sydney ap-southeast-2; no production resource was changed."
+        },
+        {
+          "command": "supabase init --yes; supabase link --project-ref qzsdmhptclzqndzsqpax --password <Keychain reference> --yes",
+          "result": "pass",
+          "details": "The versioned Supabase workspace was initialized and linked. Temporary link metadata is ignored, and no credential or connection URL is tracked."
+        },
+        {
+          "command": "supabase ssl-enforcement update --project-ref qzsdmhptclzqndzsqpax --enable-db-ssl-enforcement --experimental --yes; supabase ssl-enforcement get ...",
+          "result": "pass",
+          "details": "Hosted external database SSL enforcement was enabled and the provider returned database=true."
+        },
+        {
+          "command": "supabase backups list --project-ref qzsdmhptclzqndzsqpax --output json",
+          "result": "pass",
+          "details": "The Free project reports Sydney region, WAL-G enabled, no physical backups, and PITR disabled. Vinicius accepted a manual process; an encrypted Australian backup destination and restore rehearsal are required before representative data is loaded."
+        },
+        {
+          "command": "docker run --rm -e DATABASE_URL=<Keychain-composed-transaction-pooler-url> --entrypoint /usr/bin/deno feeling-api:stage-2 eval --cached-only <TLS probe>",
+          "result": "pass",
+          "details": "The pinned Deno 2.9.4 container connected through the Sydney Supavisor transaction endpoint using postgres.js 3.4.9, TLS, max one connection, and prepare=false. The sanitized query reported database postgres, role postgres, and ssl=true. The privileged bootstrap role is not a runtime credential and will be replaced by the Stage 4 least-privilege role."
+        },
+        {
+          "command": "docker run --rm -e DATABASE_URL=<Keychain-composed-direct-url> --entrypoint /usr/bin/deno feeling-api:stage-2 eval --cached-only <TLS probe>; dig AAAA/A; route -n get -inet6 default",
+          "result": "fail",
+          "details": "The direct endpoint has an IPv6 AAAA record but the host and local container network have no IPv6 default route, so direct DNS/transport could not be completed. Project TLS enforcement is verified, but the approved direct migration path still needs an IPv6-capable execution environment or a separately approved connection-design adjustment."
+        },
+        {
+          "command": "supabase db query --linked --output json <sanitized schema/TLS metadata queries>",
+          "result": "pass",
+          "details": "Management-API database queries confirmed TLS is active, no app or steady schema exists, and no explicit authenticator pgrst.db_schemas override exists. The project remains empty of application objects."
+        },
+        {
+          "command": "Authenticated Supabase Dashboard: Integrations > Data API > Overview > Enable Data API",
+          "result": "pass",
+          "details": "After Vinicius Delascio disabled and saved the hosted Data API, the Dashboard showed the switch off and the authoritative warning that no schemas can be queried and /rest/v1/ returns errors. No service-role or browser database credential was introduced."
+        },
+        {
+          "command": "docker run --rm -e DATABASE_URL=<Keychain-composed-session-pooler-url> --entrypoint /usr/bin/deno feeling-api:stage-2 eval --cached-only <TLS probe>",
+          "result": "pass",
+          "details": "The pinned Deno container connected successfully over TLS through the Sydney Supavisor session endpoint on the IPv4-only local network. On 2026-08-17 Vinicius Delascio explicitly approved this migration fallback while retaining direct TLS as preferred from IPv6-capable environments."
+        },
+        {
+          "command": "python3 .ai-os/validate.py specs/backend-migration/{design,plan,implementation}.json .ai-os/schemas/<matching>.schema.json [--ready where applicable]",
+          "result": "pass",
+          "details": "After recording the approved DATA-004 amendment and reconciling the Stage 3 verification contract, the design and plan passed structural plus readiness validation and the implementation evidence passed structural validation."
+        }
+      ],
+      "notes": "Stage 3 is complete. The separately authorized empty Free project is active in Sydney; hosted and local Data APIs are disabled; database TLS enforcement is enabled; transaction-pooled runtime and session-pooled migration paths were verified from the pinned Deno container without credential output; and non-secret configuration, secret references, backup/restore posture, audit controls, and operator access are documented. The direct endpoint remains preferred but is IPv6-only; Vinicius approved TLS Supavisor session mode for migrations from IPv4-only environments. No application schema, representative data, production resource, environment, endpoint, or traffic was changed. The encrypted Australian manual-backup destination remains a required decision before Stage 5 loads representative data."
     },
     {
       "id": "STAGE-04",
@@ -235,6 +303,11 @@
     }
   ],
   "unresolved_questions": [
+    {
+      "question": "Which encrypted Australian destination should hold manual logical backups while the Supabase project remains on the Free plan? This must be resolved before representative data is loaded.",
+      "blocking": false,
+      "owner": "Vinicius Delascio"
+    },
     {
       "question": "Before Release, which of the legacy React dependency audit findings reported by the rollback-image build are reachable in the retained application, and should remediation occur within this migration or be tracked as separately approved work?",
       "blocking": false,

@@ -89,10 +89,11 @@
     {
       "id": "DATA-004",
       "area": "data",
-      "decision": "Use Supabase's pooled Postgres endpoint with TLS for runtime traffic. For an autoscaling container, default to transaction pooling; disable prepared statements if required by the chosen driver. Every request data operation runs inside one explicit transaction. Use the direct connection only for migrations and controlled operator tooling.",
-      "rationale": "Supabase documents transaction pooler mode for serverless/temporary clients and direct connections for migrations or long-lived backends (https://supabase.com/docs/guides/database/connecting-to-postgres). An explicit transaction is also required to bind the verified Auth0 subject safely to RLS for the duration of each operation.",
+      "decision": "Use Supabase's pooled Postgres endpoint with TLS for runtime traffic. For an autoscaling container, default to transaction pooling; disable prepared statements if required by the chosen driver. Every request data operation runs inside one explicit transaction. For migrations and controlled operator tooling, prefer the direct TLS connection when the execution network supports the project's IPv6 endpoint; on IPv4-only networks, the Supavisor session endpoint with TLS is an approved fallback. Do not use transaction pooling for migration tooling.",
+      "rationale": "Supabase documents transaction pooler mode for serverless/temporary clients, direct connections for migrations or long-lived backends, and Supavisor session mode as the IPv4-compatible alternative when the direct endpoint is unavailable (https://supabase.com/docs/guides/database/connecting-to-postgres). Stage 3 verified that the Free project's direct endpoint is IPv6-only, the selected local container network has no IPv6 route, and both Supavisor transaction and session modes negotiate TLS successfully. An explicit application transaction is also required to bind the verified Auth0 subject safely to RLS for the duration of each runtime operation.",
       "alternatives": [
         "Direct runtime connection: viable for a fixed persistent host with IPv6, but less portable across managed container networks.",
+        "Require direct connections for all migration environments: rejected after Stage 3 because it would require an IPv6-capable runner or paid IPv4 add-on despite Supabase providing a TLS session-pooler path for IPv4 networks.",
         "Data API: rejected for initial runtime by ARCH-001.",
         "Supabase service-role client: rejected because it bypasses RLS and gives the compatibility service excessive privilege."
       ],
@@ -381,7 +382,7 @@
   "approval": {
     "status": "approved",
     "by": "Vinicius Delascio",
-    "at": "2026-08-13",
-    "reason": "Vinicius Delascio approved the complete technical design, including the standalone Deno/Supabase boundary, pinned runtime and permission model, private relational schema, custom transaction-scoped Auth0-sub RLS model, Sydney project placement, single-writer cutover, and rollback reconciliation design."
+    "at": "2026-08-17",
+    "reason": "Vinicius Delascio approved the complete technical design on 2026-08-13, including the standalone Deno/Supabase boundary, pinned runtime and permission model, private relational schema, custom transaction-scoped Auth0-sub RLS model, Sydney project placement, single-writer cutover, and rollback reconciliation design. On 2026-08-17 he explicitly approved DATA-004's TLS Supavisor session fallback for migrations from IPv4-only environments while retaining direct connections as preferred where IPv6 is available."
   }
 }
