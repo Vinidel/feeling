@@ -56,10 +56,84 @@
     },
     {
       "id": "STAGE-02",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Next runnable stage: establish the pinned standalone Deno foundation. Not started."
+      "status": "complete",
+      "files_changed": [
+        ".dockerignore",
+        "api/Dockerfile",
+        "api/README.md",
+        "api/deno.json",
+        "api/deno.lock",
+        "api/src/app.ts",
+        "api/src/config.ts",
+        "api/src/log.ts",
+        "api/src/main.ts",
+        "api/tests/app_test.ts",
+        "api/tests/compatibility_test.ts",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "docker run --rm --entrypoint /usr/bin/deno denoland/deno:debian-2.9.4 --version",
+          "result": "pass",
+          "details": "Pinned runtime reports Deno 2.9.4 stable, V8 15.0.245.2-rusty, and TypeScript 6.0.3. The official image resolves to denoland/deno@sha256:c777b4b225501a61074837e90a826a58f99124837824023cd60334b1e2374498."
+        },
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/api:/app -w /app denoland/deno:debian-2.9.4 task fmt:check",
+          "result": "pass",
+          "details": "Deno formatter checked all eight Stage 2 source, test, configuration, and documentation files with no differences."
+        },
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/api:/app -w /app denoland/deno:debian-2.9.4 task lint",
+          "result": "pass",
+          "details": "Deno lint checked all six TypeScript source and test files with no findings."
+        },
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/api:/app -w /app denoland/deno:debian-2.9.4 task check",
+          "result": "pass",
+          "details": "Frozen dependency resolution and TypeScript checking passed for src/main.ts and all tests."
+        },
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/api:/app -w /app denoland/deno:debian-2.9.4 task test",
+          "result": "pass",
+          "details": "Seven tests passed. They verify the health-only HTTP surface, absence of business and retired routes, strict Zod schemas, JOSE signing/verification and remote-JWKS support, lazy TLS postgres.js compatibility with prepared statements disabled, strict runtime configuration, and log field redaction."
+        },
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/api:/app:ro -w /app --entrypoint /usr/bin/deno denoland/deno:debian-2.9.4 audit",
+          "result": "pass",
+          "details": "Deno reported no known vulnerabilities in the lockfile. The lock contains only the three explicit zero-transitive-dependency packages: Zod 4.4.3, JOSE 6.2.9, and postgres.js 3.4.9."
+        },
+        {
+          "command": "docker build --no-cache -f api/Dockerfile -t feeling-api:stage-2 .",
+          "result": "pass",
+          "details": "A clean OCI build passed from the digest-pinned official Deno image using deno ci --prod, the frozen integrity lockfile, and an in-image type check. No lifecycle scripts, node_modules directory, native addons, or unpinned base tag are required."
+        },
+        {
+          "command": "curl --fail --silent --show-error --dump-header - http://127.0.0.1:18082/healthz",
+          "result": "pass",
+          "details": "The final local container returned HTTP 200, cache-control no-store, application/json, and {\"status\":\"ok\"}."
+        },
+        {
+          "command": "docker exec feeling-api-stage2-final id",
+          "result": "pass",
+          "details": "The final image ran as uid/gid 1993 (deno)."
+        },
+        {
+          "command": "docker inspect --format '{{json .Config.Cmd}}' feeling-api-stage2-final",
+          "result": "pass",
+          "details": "The final command uses frozen cached dependencies, no prompts, environment access only for DEPLOYMENT_VERSION/HOST/PORT, ignored ambient PG* reads, and network permission only to listen on 0.0.0.0:8080; no filesystem, subprocess, FFI, system, or broad environment permission is granted."
+        },
+        {
+          "command": "docker stop --timeout 10 feeling-api-stage2-final",
+          "result": "pass",
+          "details": "SIGTERM produced sanitized server_shutdown_started and server_shutdown_complete JSON events and the ephemeral container exited cleanly. Startup and health request logs contained only allowlisted operational fields."
+        },
+        {
+          "command": "docker build -f Dockerfile -t feeling-go:stage-2-regression .",
+          "result": "pass",
+          "details": "The unchanged legacy Go API and React production image still builds after adding the root .dockerignore, preserving the rollback source. Its existing npm dependency installation reported 82 audit findings (15 low, 17 moderate, 42 high, and 8 critical); Stage 2 did not alter or waive them."
+        }
+      ],
+      "notes": "Stage 2 selects native Deno.serve rather than an HTTP framework, native Deno.test with node:assert/strict, Zod 4.4.3, JOSE 6.2.9, and postgres.js 3.4.9. Deno config-file permission sets were evaluated but not retained because Deno 2.9 still marks them experimental; stable explicit CLI permissions provide the approved least-privilege boundary. postgres.js probes conventional PG* environment names even with an explicit URL, so those reads are explicitly ignored rather than granted. The foundation exposes only GET /healthz and structured allowlisted logs. Auth0 middleware, real database connectivity, feelings, weekly tracker, Data API, Edge Functions, Storage, jobs, and operator behavior remain unimplemented. No Supabase resource, cloud infrastructure, credential, production data, environment, endpoint, or traffic was accessed or changed."
     },
     {
       "id": "STAGE-03",
@@ -160,5 +234,11 @@
       "notes": "Heroku and Mongo decommissioning is not authorized; all legacy resources remain available."
     }
   ],
-  "unresolved_questions": []
+  "unresolved_questions": [
+    {
+      "question": "Before Release, which of the legacy React dependency audit findings reported by the rollback-image build are reachable in the retained application, and should remediation occur within this migration or be tracked as separately approved work?",
+      "blocking": false,
+      "owner": "Vinicius Delascio"
+    }
+  ]
 }

@@ -1,0 +1,6 @@
+.git
+.idea
+client/build
+client/node_modules
+server/main
+server/web
