@@ -212,10 +212,75 @@
     },
     {
       "id": "STAGE-04",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Depends on STAGE-03. Not started."
+      "status": "complete",
+      "files_changed": [
+        "supabase/config.toml",
+        "supabase/migrations/20260817053317_create_private_feelings_and_weekly_schema.sql",
+        "supabase/seed.sql",
+        "supabase/tests/stage_04_schema_test.sql",
+        "supabase/tests/stage_04_rollback.sql",
+        "supabase/tests/stage_04_remote_runtime_test.ts",
+        "specs/backend-migration/stage-04-database.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Supabase current CLI help, changelog, database migration, RLS, role, pooling, and advisor documentation review",
+          "result": "pass",
+          "details": "Stage 4 used Supabase CLI 2.114.0 and PostgreSQL 17. The breaking-change scan confirmed explicit Data API grants for new objects; the migration instead uses a private schema, blocks anon/authenticated/service_role, and keeps the hosted Data API disabled. Current RLS and Postgres guidance informed forced RLS, optimized transaction-local identity lookup, constraints, composite indexes, and least-privilege roles."
+        },
+        {
+          "command": "supabase db reset --local; psql -v ON_ERROR_STOP=1 < supabase/tests/stage_04_schema_test.sql",
+          "result": "pass",
+          "details": "A zero-state PostgreSQL 17 rebuild applied the single versioned migration and the transaction-wrapped SQL suite passed. It verifies exact schema metadata, UUID/default behavior, status/mood/version constraints, legacy uniqueness, query index, atomic weekly upsert, timestamps, grants, five RLS policies, two Auth0 subjects, missing identity, cross-subject insertion, ownership reassignment, delete denial, and forced-RLS behavior for the owner. All fixtures rolled back."
+        },
+        {
+          "command": "psql -v ON_ERROR_STOP=1 < supabase/tests/stage_04_rollback.sql; metadata absence query; supabase db reset --local; Stage 4 SQL suite",
+          "result": "pass",
+          "details": "The disposable local rollback removed exactly the steady schema and both Stage 4 roles; the absence query returned false for all three objects. A fresh reset then recreated them solely from migration history and the full SQL suite passed again. No hosted rollback was performed."
+        },
+        {
+          "command": "supabase db advisors --local --type all --level info --fail-on warn --output json",
+          "result": "pass",
+          "details": "Local performance and security advisors reported no issues after the clean rebuild. An initial RLS init-plan warning was corrected by placing current_setting inside a scalar select; the final migration contains the optimized policy expression."
+        },
+        {
+          "command": "supabase migration list --db-url <Keychain session URL>; empty-target metadata query; supabase db push --db-url <Keychain session URL> --dry-run",
+          "result": "pass",
+          "details": "Before the authorized non-production change, the Sydney project had no steady schema, no non-platform tables, and no remote migration. The dry run listed exactly 20260817053317_create_private_feelings_and_weekly_schema.sql with no seeds or role files."
+        },
+        {
+          "command": "supabase db push --db-url <Keychain session URL> --yes",
+          "result": "pass",
+          "details": "Under Vinicius Delascio's explicit Stage 4 authorization, the one reviewed migration was applied to the empty Steady non-prod project. No representative or production data, production database, endpoint, environment variable, traffic, or Heroku resource was accessed or changed."
+        },
+        {
+          "command": "ALTER ROLE through admin TLS session; macOS Keychain credential storage; sanitized migration-owner and runtime connection probes",
+          "result": "pass",
+          "details": "Independent generated passwords and composed URLs were stored only in Keychain. The migration-owner authenticated over the Sydney Supavisor TLS session endpoint and the runtime role over the TLS transaction endpoint. Both reported ssl=on and saw zero rows without app.auth0_sub; no secret value was logged or committed."
+        },
+        {
+          "command": "deno fmt/check/lint supabase/tests/stage_04_remote_runtime_test.ts; Deno rollback-only remote smoke test using the Keychain runtime URL",
+          "result": "pass",
+          "details": "The pinned Deno 2.9.4/postgres.js 3.4.9 client connected with prepare=false through Supavisor transaction mode. It proved generated/default values, atomic weekly upsert, same-user visibility, cross-user invisibility, and cross-user insert rejection. The enclosing transaction intentionally rolled back all synthetic rows."
+        },
+        {
+          "command": "Remote sanitized metadata query; supabase db advisors --linked --type all --level info --fail-on warn; supabase migration list --db-url <Keychain session URL>",
+          "result": "pass",
+          "details": "Post-validation counts were zero in both tables. Both custom roles are non-superuser/non-owner-bypass roles, forced RLS is active on both tables, Data API roles lack schema usage, destructive runtime grants are absent, advisors reported no issues, and local/remote migration version 20260817053317 matches."
+        },
+        {
+          "command": "docker run ... denoland/deno:debian-2.9.4 task fmt:check/lint/check/test; docker run ... golang:1.23 go test -count=1 ./...",
+          "result": "pass",
+          "details": "The replacement Deno foundation remained formatted, lint-clean, type-safe, and 7/7 tests passed. The unchanged legacy Go API characterization suite also passed, preserving the active rollback implementation."
+        },
+        {
+          "command": "AI-OS design/plan readiness validation; implementation structural validation; git diff --check; repository secret-pattern scan; supabase stop --project-id steady-backend-migration --no-backup",
+          "result": "pass",
+          "details": "The approved design and plan remain ready, implementation.json is structurally valid, JSON parsing and patch whitespace checks pass, and no credential, database URL, private key, or JWT pattern was found in Stage 4 files. Housekeeping stopped only the disposable steady-backend-migration local stack without a backup; it can be recreated entirely from versioned migrations."
+        }
+      ],
+      "notes": "Stage 4 is complete. The private steady schema reproduces only the retained feelings and weekly-tracker responsibilities with durable constraints, deterministic indexes, generated UUIDs, nullable unique legacy IDs, and atomic weekly upserts. The runtime role has only the approved operations and forced RLS uses transaction-local app.auth0_sub; application-level transaction wiring remains Stage 6/7 work. Local ports were moved from 5432x to 5532x to coexist with the user's unrelated running car-chronicle Supabase project, which was not modified. The hosted project remains empty, Data API remains disabled, and the Go/Heroku source remains available. The encrypted Australian manual-backup destination and restore rehearsal remain required before Stage 5 loads representative data."
     },
     {
       "id": "STAGE-05",

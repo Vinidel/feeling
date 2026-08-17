@@ -1,0 +1,2 @@
+-- Stage 4 intentionally has no seed data. Database behavior is verified with
+-- transaction-scoped synthetic fixtures under supabase/tests/.
