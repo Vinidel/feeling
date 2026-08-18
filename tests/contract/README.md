@@ -10,6 +10,15 @@ directly against an ephemeral target HTTP server. The Go suite exercises the
 same shared synthetic fixture and URL cases against an ephemeral source HTTP
 server backed by Mongo wire mocks.
 
+`weekly.mjs` is the reusable Stage 9 URL-level contract. It covers missing and
+malformed auth, no-record and populated reads, create and edit, database-owned
+timestamps, header identity mismatch, two-subject isolation, and the approved
+strict-mood normalization. The Deno and Go suites execute equivalent synthetic
+URL cases against their real HTTP handlers; the Go test uses Mongo wire mocks
+and the Deno test uses an isolated in-memory service boundary. Separate Deno
+integration tests exercise the real PostgreSQL mapper, forced RLS, rollback,
+unique key, and concurrent `INSERT ... ON CONFLICT` behavior.
+
 Stage 8 captures the same source and target observations from isolated real
 transport/persistence combinations: Gin handlers with Mongo wire mocks and the
 Deno handler with a disposable least-privilege Postgres database.

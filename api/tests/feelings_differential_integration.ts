@@ -41,6 +41,10 @@ const handler = createHandler({
   },
   database,
   feelings: createFeelingsService(database),
+  weeklyTrackers: {
+    get: () => Promise.resolve(null),
+    upsert: () => Promise.reject(new Error("unexpected weekly upsert")),
+  },
   deploymentVersion: "stage-8-differential",
   logger: () => undefined,
 });

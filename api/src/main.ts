@@ -4,6 +4,7 @@ import { readRuntimeConfig } from "./config.ts";
 import { createDatabase } from "./database.ts";
 import { createFeelingsService } from "./feelings.ts";
 import { logEvent } from "./log.ts";
+import { createWeeklyTrackersService } from "./weekly.ts";
 
 export async function run(): Promise<void> {
   const config = readRuntimeConfig();
@@ -13,6 +14,7 @@ export async function run(): Promise<void> {
     issuer: config.auth0Issuer,
   });
   const feelings = createFeelingsService(database);
+  const weeklyTrackers = createWeeklyTrackersService(database);
   const server = Deno.serve(
     {
       hostname: config.hostname,
@@ -30,6 +32,7 @@ export async function run(): Promise<void> {
       authenticate,
       database,
       feelings,
+      weeklyTrackers,
       deploymentVersion: config.deploymentVersion,
     }),
   );

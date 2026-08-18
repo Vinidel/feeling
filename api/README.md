@@ -1,8 +1,9 @@
 # Standalone Deno API
 
-Stage 7 enables the feelings vertical slice on the shared authentication,
-authorization, database, and HTTP boundary. Weekly tracker, chat, agent, and
-ping routes remain disabled and return the normalized `404` envelope.
+Stages 7 and 9 enable the feelings and weekly-tracker vertical slices on the
+shared authentication, authorization, database, and HTTP boundary. Chat,
+agent, and ping routes remain disabled and return the normalized `404`
+envelope.
 
 ## Feelings slice
 
@@ -17,6 +18,21 @@ ping routes remain disabled and return the normalized `404` envelope.
 - Unknown fields, client-selected identity, malformed timestamps, and status
   outside `0` through `4` return the normalized `400 invalid_request` envelope
   without calling persistence.
+
+## Weekly-tracker slice
+
+- `GET /api/weekly-tracker?weekOf=YYYY-MM-DD` returns
+  `{ "ok": true, "record": null }` when the verified subject has no tracker
+  for that week, or the existing camel-case/nested record when present.
+- `POST /api/weekly-tracker` accepts the existing React payload, applies neutral
+  check/note defaults, fixes `trackerVersion` at `1`, and atomically creates or
+  edits the verified subject's one row for that week with `INSERT ... ON
+  CONFLICT`.
+- PostgreSQL generates `updatedAt`; the unique `(user_id, week_of)` constraint,
+  explicit application predicates, and forced RLS provide database-enforced
+  ownership and one-row-per-week guarantees.
+- Invalid dates, moods, versions, unknown fields, and client-selected identity
+  return `400 invalid_request` before persistence is called.
 
 ## Security boundary
 
@@ -95,16 +111,20 @@ deno task test
 ```
 
 The regular suite uses a controlled loopback JWKS server and synthetic signed
-tokens. It also invokes the reusable URL-level feelings contract against an
-ephemeral Deno server. `tests/database_integration.ts` and
-`tests/feelings_integration.ts` are separately authorized hosted tests: provide
+tokens. It also invokes reusable URL-level feelings and weekly contracts against
+an ephemeral Deno server. `tests/database_integration.ts`,
+`tests/feelings_integration.ts`, and `tests/weekly_integration.ts` are separately
+authorized hosted tests: provide
 the runtime-only `DATABASE_URL` through an operator secret mechanism and grant
 Deno network access only to that database host. Both keep synthetic writes in
 intentionally rolled-back transactions. Together they prove two-subject
 isolation, denied ownership reassignment and DELETE, explicit application
 predicates, transaction-local identity replacement, feeling mapping, exactly one
 insert, subsequent reads, deterministic ordering, and absence of pool identity
-leakage.
+leakage. The weekly integration keeps create/edit writes inside an intentional
+rollback. `tests/weekly_concurrency_integration.ts` is local-only and proves
+that simultaneous writes produce exactly one user/week row; destroy its
+disposable local database after the run.
 
 `tests/feelings_differential_integration.ts` is Stage 8-only verification for a
 disposable local Postgres instance. It runs the same URL contract through the
@@ -115,7 +135,7 @@ after comparison with the Go observation.
 Build the portable OCI image from the repository root:
 
 ```bash
-docker build -f api/Dockerfile -t feeling-api:stage-7 .
+docker build -f api/Dockerfile -t feeling-api:stage-9 .
 ```
 
 The image remains based on the digest-pinned official Deno 2.9.4 image, runs as

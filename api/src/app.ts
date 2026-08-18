@@ -3,7 +3,12 @@ import type { Database } from "./database.ts";
 import { errorResponse, HttpError } from "./errors.ts";
 import type { FeelingsService } from "./feelings.ts";
 import { logEvent } from "./log.ts";
-import { feelingRequestSchema } from "./schemas.ts";
+import {
+  feelingRequestSchema,
+  weeklyTrackerQuerySchema,
+  weeklyTrackerRequestSchema,
+} from "./schemas.ts";
+import type { WeeklyTrackersService } from "./weekly.ts";
 
 export type RequestLogger = typeof logEvent;
 
@@ -12,6 +17,7 @@ export type HandlerOptions = Readonly<{
   authenticate: AuthenticateRequest;
   database: Pick<Database, "checkReadiness">;
   feelings: FeelingsService;
+  weeklyTrackers: WeeklyTrackersService;
   deploymentVersion: string;
   logger?: RequestLogger;
 }>;
@@ -89,7 +95,37 @@ function routeTemplate(request: Request, pathname: string): string {
     (request.method === "GET" || request.method === "POST") &&
     pathname === "/api/feelings"
   ) return "/api/feelings";
+  if (
+    (request.method === "GET" || request.method === "POST") &&
+    pathname === "/api/weekly-tracker"
+  ) return "/api/weekly-tracker";
   return "unmatched";
+}
+
+async function parseWeeklyTrackerRequest(request: Request) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    throw new HttpError(400, "invalid_request", "Request body is invalid");
+  }
+  const result = weeklyTrackerRequestSchema.safeParse(body);
+  if (!result.success) {
+    throw new HttpError(400, "invalid_request", "Request body is invalid");
+  }
+  return result.data;
+}
+
+function parseWeeklyTrackerQuery(url: URL) {
+  const entries = [...url.searchParams.entries()];
+  const query = Object.fromEntries(entries);
+  const result = entries.length === 1 && entries[0][0] === "weekOf"
+    ? weeklyTrackerQuerySchema.safeParse(query)
+    : { success: false as const };
+  if (!result.success) {
+    throw new HttpError(400, "invalid_request", "Query is invalid");
+  }
+  return result.data;
 }
 
 async function parseFeelingRequest(request: Request) {
@@ -165,6 +201,21 @@ export function createHandler(
             await options.feelings.create(userId, feeling),
             200,
           );
+        }
+      } else if (template === "/api/weekly-tracker") {
+        const { userId } = await options.authenticate(request);
+        if (request.method === "GET") {
+          const query = parseWeeklyTrackerQuery(url);
+          response = jsonResponse({
+            ok: true,
+            record: await options.weeklyTrackers.get(userId, query.weekOf),
+          }, 200);
+        } else {
+          const tracker = await parseWeeklyTrackerRequest(request);
+          response = jsonResponse({
+            ok: true,
+            record: await options.weeklyTrackers.upsert(userId, tracker),
+          }, 200);
         }
       } else {
         throw new HttpError(404, "not_found", "Route not found");

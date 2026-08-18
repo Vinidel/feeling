@@ -48,6 +48,10 @@ function handlerFor(feelings: FeelingsService) {
     },
     database: { checkReadiness: () => Promise.resolve() },
     feelings,
+    weeklyTrackers: {
+      get: () => Promise.resolve(null),
+      upsert: () => Promise.reject(new Error("unexpected weekly upsert")),
+    },
     deploymentVersion: "stage-7-test",
     logger: () => undefined,
   });

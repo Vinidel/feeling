@@ -611,10 +611,58 @@
     },
     {
       "id": "STAGE-09",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Depends on STAGE-08. Not started."
+      "status": "complete",
+      "files_changed": [
+        "api/README.md",
+        "api/src/app.ts",
+        "api/src/main.ts",
+        "api/src/weekly.ts",
+        "api/tests/app_test.ts",
+        "api/tests/feelings_app_test.ts",
+        "api/tests/feelings_contract_test.ts",
+        "api/tests/feelings_differential_integration.ts",
+        "api/tests/weekly_app_test.ts",
+        "api/tests/weekly_concurrency_integration.ts",
+        "api/tests/weekly_contract_test.ts",
+        "api/tests/weekly_integration.ts",
+        "server/weekly_contract_test.go",
+        "tests/contract/README.md",
+        "tests/contract/weekly.mjs",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Pinned Deno 2.9.4 fmt/check, lint, type-check, and loopback-only API test suite",
+          "result": "pass",
+          "details": "All 24 API and shared-contract files are formatted, 23 TypeScript files are lint-clean and type-safe, and all 24 regular tests pass. Weekly cases cover null/existing GET envelopes, exact user/week arguments, complete supported fields, neutral defaults, create/edit responses, strict invalid and unknown-field rejection with no persistence call, two authenticated subjects, mismatch rejection, and the reusable target URL contract. Existing Auth0, CORS, readiness, feelings, schemas, and log-sanitization regressions remain green."
+        },
+        {
+          "command": "Run api/tests/weekly_integration.ts through the Keychain-held steady_runtime TLS transaction-pooler URL with exact Deno env/network permissions",
+          "result": "pass",
+          "details": "The hosted Sydney non-production rollback-only test used the real SQL mapper and least-privilege forced-RLS transaction boundary. It proved no-record read, create, edit of the same user/week, complete field mapping, tracker version 1, database-generated parseable updatedAt, subsequent read equality, exactly one row, two-subject isolation, and absence of both synthetic subjects after rollback. No credential or migrated private content was printed."
+        },
+        {
+          "command": "Disposable local Supabase start; 12 concurrent weekly service upserts through steady_runtime; count/read assertions; supabase stop --no-backup",
+          "result": "pass",
+          "details": "Twelve simultaneous writes for one synthetic subject and week completed through independent least-privilege transactions. The UNIQUE(user_id, week_of) key plus INSERT ON CONFLICT produced exactly one row whose final complete value matched one submitted write. The isolated steady-backend-migration stack and its synthetic row were then stopped and destroyed without backup; the unrelated car-chronicle stack was not touched."
+        },
+        {
+          "command": "Cached Go 1.23 container gofmt and go test -count=1 ./...",
+          "result": "pass",
+          "details": "The complete Go characterization suite passes. The new weekly source contract exercises missing/malformed auth, null read, create, populated read, edit, header mismatch, permissive invalid mood, and second-subject isolation through the real Gin handlers with Mongo wire mocks and the shared synthetic fixture. Go handlers and production code remain unchanged."
+        },
+        {
+          "command": "CI=true npm test -- --runInBand",
+          "result": "pass",
+          "details": "All 3 React suites and 5 tests pass, including both API contract tests and the feelings journey. The current weekly GET query, POST payload, Auth0 audience/token acquisition, bearer header, optional x-user-id, checks, notes, mood, and trackerVersion require no frontend change. The pre-existing TitleComponent lifecycle warning remains unchanged."
+        },
+        {
+          "command": "Pinned Deno dependency audit; Node contract syntax; JSON parse; git diff --check; AI-OS design/plan readiness and implementation structural validation",
+          "result": "pass",
+          "details": "Deno reports no known vulnerability in the unchanged integrity lock. The reusable weekly module parses, implementation.json is valid JSON, patches contain no whitespace error, the approved design and plan remain ready, and the implementation hand-off is structurally valid. Overall implementation --ready correctly remains unavailable because Stages 10 through 16 and a pre-existing Stage 3 environment probe are not complete; Stage 9 does not claim authority to advance directly to Review."
+        }
+      ],
+      "notes": "Stage 9 is complete. The Deno service now enables GET/POST /api/weekly-tracker with retained Auth0 identity, strict React-compatible validation, private Postgres persistence, database-generated timestamps, forced-RLS ownership, and atomic one-row-per-user/week upsert. The intentional source quirk allowing arbitrary mood is retained only in comparison evidence and normalized to a target 400 with no write. The hosted test rolled back all synthetic work and the disposable local database was destroyed. Retired routes remain disabled; Go/Heroku/Mongo remain intact and runnable; no deployment, production environment, endpoint, traffic, data, Auth0 tenant, Heroku, or MongoDB change occurred."
     },
     {
       "id": "STAGE-10",

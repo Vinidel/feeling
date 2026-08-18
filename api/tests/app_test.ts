@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import { createHandler } from "../src/app.ts";
 import type { FeelingsService } from "../src/feelings.ts";
 import type { LogRecord } from "../src/log.ts";
+import type { WeeklyTrackersService } from "../src/weekly.ts";
 
 function testHandler(
   options: {
     ready?: () => Promise<void>;
     feelings?: FeelingsService;
+    weeklyTrackers?: WeeklyTrackersService;
   } = {},
 ) {
   const records: LogRecord[] = [];
@@ -24,6 +26,15 @@ function testHandler(
       list: () => Promise.resolve([]),
       create: (_userId, feeling) =>
         Promise.resolve({ ...feeling, userID: "auth0|test" }),
+    },
+    weeklyTrackers: options.weeklyTrackers ?? {
+      get: () => Promise.resolve(null),
+      upsert: (_userId, tracker) =>
+        Promise.resolve({
+          ...tracker,
+          userID: "auth0|test",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        }),
     },
     deploymentVersion: "test-version",
     logger: (level, event, fields) => {
@@ -83,12 +94,11 @@ Deno.test("readiness dependency failures are sanitized", async () => {
   assert.equal(records[0].failureCode, "dependency_unavailable");
 });
 
-Deno.test("weekly and retired routes remain disabled", async () => {
+Deno.test("retired routes remain disabled", async () => {
   const { handler, authenticationCalls } = testHandler();
 
   for (
     const path of [
-      "/api/weekly-tracker",
       "/api/chat/capabilities",
       "/api/agent/feelings",
     ]
