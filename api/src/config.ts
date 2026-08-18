@@ -21,6 +21,7 @@ const runtimeConfigSchema = z.object({
     value.startsWith("https://") && value.endsWith("/")
   ),
   CORS_ORIGINS: z.string().default("http://localhost:3000"),
+  DATABASE_SSL_MODE: z.enum(["require", "disable"]).default("require"),
   DATABASE_URL: z.string().trim().url().refine((value) =>
     value.startsWith("postgres://") || value.startsWith("postgresql://")
   ),
@@ -33,6 +34,7 @@ export type RuntimeConfig = {
   allowedOrigins: ReadonlySet<string>;
   auth0Audience: string;
   auth0Issuer: string;
+  databaseSslMode: "require" | "disable";
   databaseUrl: string;
   deploymentVersion: string;
   hostname: string;
@@ -57,6 +59,7 @@ export function parseRuntimeConfig(
     allowedOrigins: parseOrigins(parsed.CORS_ORIGINS),
     auth0Audience: parsed.AUTH0_AUDIENCE,
     auth0Issuer: parsed.AUTH0_ISSUER,
+    databaseSslMode: parsed.DATABASE_SSL_MODE,
     databaseUrl: parsed.DATABASE_URL,
     deploymentVersion: parsed.DEPLOYMENT_VERSION,
     hostname: parsed.HOST,
@@ -69,6 +72,7 @@ export function readRuntimeConfig(): RuntimeConfig {
     AUTH0_AUDIENCE: Deno.env.get("AUTH0_AUDIENCE"),
     AUTH0_ISSUER: Deno.env.get("AUTH0_ISSUER"),
     CORS_ORIGINS: Deno.env.get("CORS_ORIGINS"),
+    DATABASE_SSL_MODE: Deno.env.get("DATABASE_SSL_MODE"),
     DATABASE_URL: Deno.env.get("DATABASE_URL"),
     DEPLOYMENT_VERSION: Deno.env.get("DEPLOYMENT_VERSION"),
     HOST: Deno.env.get("HOST"),

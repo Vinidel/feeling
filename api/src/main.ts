@@ -8,7 +8,10 @@ import { createWeeklyTrackersService } from "./weekly.ts";
 
 export async function run(): Promise<void> {
   const config = readRuntimeConfig();
-  const database = createDatabase({ databaseUrl: config.databaseUrl });
+  const database = createDatabase({
+    databaseUrl: config.databaseUrl,
+    ssl: config.databaseSslMode,
+  });
   const authenticate = createAuth0Authenticator({
     audience: config.auth0Audience,
     issuer: config.auth0Issuer,

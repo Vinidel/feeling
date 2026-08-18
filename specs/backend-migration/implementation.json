@@ -728,10 +728,76 @@
     },
     {
       "id": "STAGE-11",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Depends on STAGE-05 and STAGE-10. Not started."
+      "status": "complete",
+      "files_changed": [
+        "api/.env.example",
+        "api/Dockerfile",
+        "api/README.md",
+        "api/deno.json",
+        "api/src/config.ts",
+        "api/src/main.ts",
+        "api/tests/compatibility_test.ts",
+        "client/src/config.js",
+        "client/src/config.test.js",
+        "client/src/weeklyJourney.test.js",
+        "tests/e2e/reverse-proxy.mjs",
+        "specs/backend-migration/stage-10-api-inventory.md",
+        "specs/backend-migration/stage-11-verification.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Fresh read-only mongoexport; hosted migration reconcile; clean local import twice; final hosted reconcile after integration tests",
+          "result": "pass",
+          "details": "The fresh source contained 114 feelings and 2 weekly trackers. All 116 records were accepted with zero exception. Hosted reconciliation matched 114/2 with zero insert or target-only row before and after the integration suite. A clean local first import inserted all 116; the identical second import inserted zero, matched all 116, and retained equal keyed structural hashes. Exactly two previously approved Go-zero-to-ObjectId timestamp transformations were reported."
+        },
+        {
+          "command": "Real Auth0 browser journey against split-origin React and Deno API on disposable local Supabase",
+          "result": "pass",
+          "details": "An existing retained Auth0 account signed in without re-registration or relinking. The browser loaded all migrated history and trends, saved a synthetic feeling, refreshed history, saved a weekly tracker, retained the authenticated session and persisted records across reload, and used only the disposable local database."
+        },
+        {
+          "command": "REACT_APP_API_URL=same-origin production build; local static reverse proxy; real Auth0 browser read/save/reload/sign-out journey",
+          "result": "pass",
+          "details": "The optimized React build used same-origin API URLs through the dependency-free local proxy. Auth0 session, feeling history/trends, feeling save, weekly read/edit/save, persisted reload, and sign-out all worked. No public URL, Auth0 tenant configuration, frontend production endpoint, or production traffic changed."
+        },
+        {
+          "command": "CI=true npm test -- --runInBand; REACT_APP_API_URL=same-origin npm run build; node --check tests/e2e/reverse-proxy.mjs",
+          "result": "pass",
+          "details": "All 5 React suites and 9 tests pass. They protect API behavior, split-origin/default/explicit/same-origin URL resolution, feeling save/history/trends/remount, and selected-week load/edit/save/remount. The optimized same-origin build compiles and the proxy module parses. Only the pre-existing outdated caniuse-lite notice remains."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 API fmt, lint, check, audit and complete regular test suite",
+          "result": "pass",
+          "details": "All 26 API/documentation files are formatted, 24 TypeScript files are lint-clean and type-safe, all 26 regular tests pass, and the integrity-locked jose, postgres.js, and Zod dependency set has no known vulnerability. Strict database TLS remains the default; disable is accepted only as an explicit disposable-local setting."
+        },
+        {
+          "command": "Hosted rollback-only database, feelings, and weekly integrations through steady_runtime; local Stage 4 schema/RLS suite; 12-write concurrent weekly test",
+          "result": "pass",
+          "details": "The hosted runtime tests proved transaction-local identity, two-subject isolation, denied operations, mapping, ordering, create/edit behavior, and rollback. The complete SQL suite passed grants, constraints, five policies, forced RLS, and isolation. Twelve local concurrent weekly upserts produced exactly one user/week row. Final full reconciliation proved no hosted synthetic row remained."
+        },
+        {
+          "command": "Go 1.23 full suite with fresh synthetic source snapshots; local Deno/Postgres snapshots; compare-feelings.mjs; compare-weekly.mjs",
+          "result": "pass",
+          "details": "The legacy rollback suite passes. Eight feelings and nine weekly URL cases compared with zero unexplained difference. Only the approved empty-array, equivalent timestamp serialization, database timestamp, strict status, and strict mood normalizations differ."
+        },
+        {
+          "command": "Pinned migration helper fmt/lint/check/6 tests; backup helper fmt/lint/3 tests; local and linked Supabase advisors",
+          "result": "pass",
+          "details": "The migration and authenticated-backup tools remain formatted, lint-clean, type-safe, and fully green. Local and Sydney linked security/performance advisors reported no issue."
+        },
+        {
+          "command": "Build and inspect feeling-api:stage-11 from digest-pinned Deno 2.9.4 image; health/readiness probes; non-root identity check",
+          "result": "pass",
+          "details": "The image builds and type-checks with frozen production dependencies, runs as UID/GID 1993, exposes only eight strict environment names, and limits network permission to the listener, retained Auth0 JWKS host, and Sydney Supavisor. The disposable API returned healthy and ready against local Supabase."
+        },
+        {
+          "command": "Owner-only scratch cleanup; local service shutdown; lifecycle validation; JSON, secret-pattern, and patch checks",
+          "result": "pass",
+          "details": "The browser, proxy, API, local Supabase stack, fresh Mongo exports, keyed reports, synthetic snapshots, and ephemeral report keys were removed after durable sanitized evidence was recorded. The approved design/plan remain ready, implementation evidence validates structurally, patches are clean, and no secret value or private source content was committed."
+        }
+      ],
+      "notes": "Stage 11 is complete. Full non-production migration and reconciliation are 100 percent with zero exception or target-only row; the only two source transformations were explicitly approved. Real retained-Auth0 React journeys pass in split-origin and same-origin deployment shapes, and every contract, Go rollback, Deno, Postgres/RLS, migration, backup, React, advisor, and image check is green. There is no unapproved discrepancy. No production endpoint, traffic, data, environment, deployment, Auth0 configuration, Heroku resource, MongoDB record, or backup object changed. Stage 12 requires separate infrastructure and rehearsal authorization."
     },
     {
       "id": "STAGE-12",

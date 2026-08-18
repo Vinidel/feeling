@@ -1,14 +1,13 @@
 # Standalone Deno API
 
 Stages 7, 9, and 10 enable the feelings and weekly-tracker vertical slices on
-the shared authentication, authorization, database, and HTTP boundary, then
-lock the replacement to exactly those four browser method/path combinations.
-Chat, agent, ping, and operator routes remain absent and return the normalized
-`404` envelope.
+the shared authentication, authorization, database, and HTTP boundary, then lock
+the replacement to exactly those four browser method/path combinations. Chat,
+agent, ping, and operator routes remain absent and return the normalized `404`
+envelope.
 
 The complete route, configuration, and intentionally absent responsibility
-inventory is recorded in
-`specs/backend-migration/stage-10-api-inventory.md`.
+inventory is recorded in `specs/backend-migration/stage-10-api-inventory.md`.
 
 ## Feelings slice
 
@@ -27,11 +26,12 @@ inventory is recorded in
 ## Weekly-tracker slice
 
 - `GET /api/weekly-tracker?weekOf=YYYY-MM-DD` returns
-  `{ "ok": true, "record": null }` when the verified subject has no tracker
-  for that week, or the existing camel-case/nested record when present.
+  `{ "ok": true, "record": null }` when the verified subject has no tracker for
+  that week, or the existing camel-case/nested record when present.
 - `POST /api/weekly-tracker` accepts the existing React payload, applies neutral
   check/note defaults, fixes `trackerVersion` at `1`, and atomically creates or
-  edits the verified subject's one row for that week with `INSERT ... ON
+  edits the verified subject's one row for that week with
+  `INSERT ... ON
   CONFLICT`.
 - PostgreSQL generates `updatedAt`; the unique `(user_id, week_of)` constraint,
   explicit application predicates, and forced RLS provide database-enforced
@@ -88,6 +88,7 @@ example file contains names only and no secret values.
 | Variable             | Required | Classification and owner                                                                                                                            |
 | -------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DATABASE_URL`       | Yes      | Secret; deployment operator; `steady_runtime` transaction-pooler TLS URL only                                                                       |
+| `DATABASE_SSL_MODE`  | No       | `require` by default; `disable` is permitted only for disposable local Supabase verification                                                        |
 | `AUTH0_ISSUER`       | Yes      | Non-secret security configuration; must retain the existing `https://dev-vin.au.auth0.com/` issuer                                                  |
 | `AUTH0_AUDIENCE`     | Yes      | Non-secret security configuration; must retain the existing `https://stormy-cliffs-52671.herokuapp.com/api` API identifier until separately changed |
 | `CORS_ORIGINS`       | No       | Non-secret deployment configuration; comma-separated exact origins; defaults to `http://localhost:3000`                                             |
@@ -98,6 +99,10 @@ example file contains names only and no secret values.
 `MIGRATION_DATABASE_URL`, database-owner credentials, Supabase API keys, Auth0
 client secrets, MongoDB credentials, and retired chat/agent tokens are not API
 runtime variables.
+
+Production and hosted non-production deployments must retain
+`DATABASE_SSL_MODE=require`. The opt-out exists only because the local Supabase
+CLI database does not terminate TLS.
 
 The container's outbound permission list is limited to the existing Auth0 JWKS
 host and the Steady Sydney Supavisor transaction endpoint. Changing either host
@@ -118,18 +123,18 @@ deno task test
 The regular suite uses a controlled loopback JWKS server and synthetic signed
 tokens. It also invokes reusable URL-level feelings and weekly contracts against
 an ephemeral Deno server. `tests/database_integration.ts`,
-`tests/feelings_integration.ts`, and `tests/weekly_integration.ts` are separately
-authorized hosted tests: provide
-the runtime-only `DATABASE_URL` through an operator secret mechanism and grant
-Deno network access only to that database host. Both keep synthetic writes in
-intentionally rolled-back transactions. Together they prove two-subject
-isolation, denied ownership reassignment and DELETE, explicit application
-predicates, transaction-local identity replacement, feeling mapping, exactly one
-insert, subsequent reads, deterministic ordering, and absence of pool identity
-leakage. The weekly integration keeps create/edit writes inside an intentional
-rollback. `tests/weekly_concurrency_integration.ts` is local-only and proves
-that simultaneous writes produce exactly one user/week row; destroy its
-disposable local database after the run.
+`tests/feelings_integration.ts`, and `tests/weekly_integration.ts` are
+separately authorized hosted tests: provide the runtime-only `DATABASE_URL`
+through an operator secret mechanism and grant Deno network access only to that
+database host. Both keep synthetic writes in intentionally rolled-back
+transactions. Together they prove two-subject isolation, denied ownership
+reassignment and DELETE, explicit application predicates, transaction-local
+identity replacement, feeling mapping, exactly one insert, subsequent reads,
+deterministic ordering, and absence of pool identity leakage. The weekly
+integration keeps create/edit writes inside an intentional rollback.
+`tests/weekly_concurrency_integration.ts` is local-only and proves that
+simultaneous writes produce exactly one user/week row; destroy its disposable
+local database after the run.
 
 `tests/feelings_differential_integration.ts` and
 `tests/weekly_differential_integration.ts` are disposable-local verification.

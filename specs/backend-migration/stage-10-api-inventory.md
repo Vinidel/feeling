@@ -27,6 +27,7 @@ services.
 | `AUTH0_AUDIENCE` | Exact retained Auth0 API audience. |
 | `AUTH0_ISSUER` | Exact retained Auth0 HTTPS issuer. |
 | `CORS_ORIGINS` | Comma-separated exact development origins. |
+| `DATABASE_SSL_MODE` | Defaults to `require`; `disable` is local-verification-only. |
 | `DATABASE_URL` | Server-only least-privilege `steady_runtime` URL. |
 | `DEPLOYMENT_VERSION` | Non-secret release identifier. |
 | `HOST` | Container listener address. |
@@ -34,7 +35,8 @@ services.
 
 The strict configuration parser rejects unknown variables supplied through its
 configuration contract. The replacement image grants environment access only
-to the seven names above.
+to the eight names above. Hosted environments must use the default TLS-required
+mode; the disable option exists solely for disposable local Supabase CLI stacks.
 
 ## Intentionally absent responsibilities
 

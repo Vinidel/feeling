@@ -14,4 +14,4 @@ ENV PORT=8080
 ENV DEPLOYMENT_VERSION=stage-10
 EXPOSE 8080
 
-CMD ["run", "--frozen", "--cached-only", "--no-prompt", "--allow-env=AUTH0_AUDIENCE,AUTH0_ISSUER,CORS_ORIGINS,DATABASE_URL,DEPLOYMENT_VERSION,HOST,PORT", "--ignore-env=PG*", "--allow-net=0.0.0.0:8080,dev-vin.au.auth0.com:443,aws-0-ap-southeast-2.pooler.supabase.com:6543", "src/main.ts"]
+CMD ["run", "--frozen", "--cached-only", "--no-prompt", "--allow-env=AUTH0_AUDIENCE,AUTH0_ISSUER,CORS_ORIGINS,DATABASE_SSL_MODE,DATABASE_URL,DEPLOYMENT_VERSION,HOST,PORT", "--ignore-env=PG*", "--allow-net=0.0.0.0:8080,dev-vin.au.auth0.com:443,aws-0-ap-southeast-2.pooler.supabase.com:6543", "src/main.ts"]

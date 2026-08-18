@@ -60,6 +60,7 @@ Deno.test("runtime configuration is strict and defaults to the permitted contain
       allowedOrigins: new Set(["http://localhost:3000"]),
       auth0Audience: "https://audience.example/api",
       auth0Issuer: "https://issuer.example/",
+      databaseSslMode: "require",
       databaseUrl: "postgres://runtime:synthetic@127.0.0.1:5432/steady",
       deploymentVersion: "development",
       hostname: "0.0.0.0",
@@ -73,6 +74,14 @@ Deno.test("runtime configuration is strict and defaults to the permitted contain
   };
   assert.throws(() => parseRuntimeConfig({ ...base, PORT: "0" }));
   assert.throws(() => parseRuntimeConfig({ ...base, PORT: "not-a-port" }));
+  assert.equal(
+    parseRuntimeConfig({ ...base, DATABASE_SSL_MODE: "disable" })
+      .databaseSslMode,
+    "disable",
+  );
+  assert.throws(() =>
+    parseRuntimeConfig({ ...base, DATABASE_SSL_MODE: "prefer" })
+  );
   assert.throws(() => parseRuntimeConfig({ ...base, UNKNOWN: "not-allowed" }));
   for (
     const retired of [
