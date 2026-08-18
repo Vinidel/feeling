@@ -35,6 +35,7 @@ func TestReusableWeeklyContractAgainstGoHTTP(t *testing.T) {
 
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	mt.Run("source URL contract", func(mt *mtest.T) {
+		observations := make(map[string]any)
 		updatedAt := time.Date(2026, time.January, 6, 7, 8, 9, 0, time.UTC)
 		edited := fixtures.WeeklyTracker
 		edited.Mood = "great"
@@ -123,12 +124,22 @@ func TestReusableWeeklyContractAgainstGoHTTP(t *testing.T) {
 
 		if response, _ := request(http.MethodGet, "", "", nil); response.StatusCode != http.StatusUnauthorized {
 			t.Fatalf("missing token status = %d", response.StatusCode)
+		} else {
+			observations["missingStatus"] = response.StatusCode
 		}
 		if response, _ := request(http.MethodGet, "not-a-token", "", nil); response.StatusCode != http.StatusUnauthorized {
 			t.Fatalf("malformed token status = %d", response.StatusCode)
+		} else {
+			observations["malformedStatus"] = response.StatusCode
 		}
 		if response, body := request(http.MethodGet, "stage9-token-a", fixtures.SyntheticUsers.Owner, nil); response.StatusCode != http.StatusOK || string(body) != `{"ok":true,"record":null}` {
 			t.Fatalf("empty response = %d %q", response.StatusCode, body)
+		} else {
+			var emptyBody any
+			if err := json.Unmarshal(body, &emptyBody); err != nil {
+				t.Fatalf("decode empty observation: %v", err)
+			}
+			observations["emptyBody"] = emptyBody
 		}
 
 		response, body := request(http.MethodPost, "stage9-token-a", fixtures.SyntheticUsers.Owner, fixtures.WeeklyTracker)
@@ -139,6 +150,11 @@ func TestReusableWeeklyContractAgainstGoHTTP(t *testing.T) {
 		if response.StatusCode != http.StatusOK || json.Unmarshal(body, &created) != nil || !created.OK || created.Record.UserID != fixtures.SyntheticUsers.Owner || created.Record.TrackerVersion != 1 || created.Record.UpdatedAt.IsZero() {
 			t.Fatalf("unexpected created tracker: status=%d body=%q", response.StatusCode, body)
 		}
+		var createdBody any
+		if err := json.Unmarshal(body, &createdBody); err != nil {
+			t.Fatalf("decode created observation: %v", err)
+		}
+		observations["createdBody"] = createdBody
 
 		response, body = request(http.MethodGet, "stage9-token-a", fixtures.SyntheticUsers.Owner, nil)
 		var populated struct {
@@ -148,21 +164,53 @@ func TestReusableWeeklyContractAgainstGoHTTP(t *testing.T) {
 		if response.StatusCode != http.StatusOK || json.Unmarshal(body, &populated) != nil || populated.Record.Mood != fixtures.WeeklyTracker.Mood || populated.Record.UserID != fixtures.SyntheticUsers.Owner {
 			t.Fatalf("unexpected populated tracker: status=%d body=%q", response.StatusCode, body)
 		}
+		var populatedBody any
+		if err := json.Unmarshal(body, &populatedBody); err != nil {
+			t.Fatalf("decode populated observation: %v", err)
+		}
+		observations["populatedBody"] = populatedBody
 
-		if response, _ := request(http.MethodPost, "stage9-token-a", fixtures.SyntheticUsers.Owner, edited); response.StatusCode != http.StatusOK {
+		if response, body := request(http.MethodPost, "stage9-token-a", fixtures.SyntheticUsers.Owner, edited); response.StatusCode != http.StatusOK {
 			t.Fatalf("edit status = %d", response.StatusCode)
+		} else {
+			var editedBody any
+			if err := json.Unmarshal(body, &editedBody); err != nil {
+				t.Fatalf("decode edited observation: %v", err)
+			}
+			observations["editedBody"] = editedBody
 		}
 		if response, _ := request(http.MethodGet, "stage9-token-a", fixtures.SyntheticUsers.Other, nil); response.StatusCode != http.StatusForbidden {
 			t.Fatalf("mismatch status = %d", response.StatusCode)
+		} else {
+			observations["mismatchStatus"] = response.StatusCode
 		}
 
 		invalid := fixtures.WeeklyTracker
 		invalid.Mood = "amazing"
 		if response, _ := request(http.MethodPost, "stage9-token-a", fixtures.SyntheticUsers.Owner, invalid); response.StatusCode != http.StatusOK {
 			t.Fatalf("source permissive mood status = %d", response.StatusCode)
+		} else {
+			observations["invalidMoodStatus"] = response.StatusCode
 		}
 		if response, body := request(http.MethodGet, "stage9-token-b", fixtures.SyntheticUsers.Other, nil); response.StatusCode != http.StatusOK || string(body) != `{"ok":true,"record":null}` {
 			t.Fatalf("other-user response = %d %q", response.StatusCode, body)
+		} else {
+			var otherBody any
+			if err := json.Unmarshal(body, &otherBody); err != nil {
+				t.Fatalf("decode other-user observation: %v", err)
+			}
+			observations["otherBody"] = otherBody
+		}
+
+		if snapshotPath := os.Getenv("WEEKLY_CONTRACT_SNAPSHOT"); snapshotPath != "" {
+			encoded, err := json.MarshalIndent(observations, "", "  ")
+			if err != nil {
+				t.Fatalf("encode weekly observations: %v", err)
+			}
+			encoded = append(encoded, '\n')
+			if err := os.WriteFile(snapshotPath, encoded, 0o600); err != nil {
+				t.Fatalf("write weekly observations: %v", err)
+			}
 		}
 	})
 }

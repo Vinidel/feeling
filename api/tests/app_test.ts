@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createHandler } from "../src/app.ts";
+import { createHandler, publicBrowserRoutes } from "../src/app.ts";
 import type { FeelingsService } from "../src/feelings.ts";
 import type { LogRecord } from "../src/log.ts";
 import type { WeeklyTrackersService } from "../src/weekly.ts";
@@ -98,18 +98,49 @@ Deno.test("retired routes remain disabled", async () => {
   const { handler, authenticationCalls } = testHandler();
 
   for (
-    const path of [
-      "/api/chat/capabilities",
-      "/api/agent/feelings",
+    const [method, path] of [
+      ["GET", "/api/chat/capabilities"],
+      ["POST", "/api/chat/feeling"],
+      ["GET", "/api/agent/feelings"],
+      ["GET", "/api/ping"],
+      ["GET", "/api/operator/feelings"],
     ]
   ) {
-    const response = await handler(new Request(`http://localhost${path}`));
+    const response = await handler(
+      new Request(`http://localhost${path}`, { method }),
+    );
     assert.equal(response.status, 404, path);
     assert.deepEqual(await response.json(), {
       error: { code: "not_found", message: "Route not found" },
     });
   }
   assert.equal(authenticationCalls(), 0);
+});
+
+Deno.test("replacement exposes exactly four authenticated browser routes", () => {
+  assert.deepEqual(publicBrowserRoutes, [
+    "GET /api/feelings",
+    "POST /api/feelings",
+    "GET /api/weekly-tracker",
+    "POST /api/weekly-tracker",
+  ]);
+});
+
+Deno.test("unexpected service failures return a sanitized 500", async () => {
+  const privateMessage = "private database row and credential";
+  const { handler, records } = testHandler({
+    feelings: {
+      list: () => Promise.reject(new Error(privateMessage)),
+      create: () => Promise.reject(new Error(privateMessage)),
+    },
+  });
+
+  const response = await handler(new Request("http://localhost/api/feelings"));
+  assert.equal(response.status, 500);
+  assert.deepEqual(await response.json(), {
+    error: { code: "internal_error", message: "Internal server error" },
+  });
+  assert.equal(JSON.stringify(records).includes(privateMessage), false);
 });
 
 Deno.test("CORS permits only configured origins, methods, and headers", async () => {

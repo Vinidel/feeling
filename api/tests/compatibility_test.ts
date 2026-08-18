@@ -74,6 +74,17 @@ Deno.test("runtime configuration is strict and defaults to the permitted contain
   assert.throws(() => parseRuntimeConfig({ ...base, PORT: "0" }));
   assert.throws(() => parseRuntimeConfig({ ...base, PORT: "not-a-port" }));
   assert.throws(() => parseRuntimeConfig({ ...base, UNKNOWN: "not-allowed" }));
+  for (
+    const retired of [
+      "CHAT_INGEST_TOKEN",
+      "AGENT_API_TOKEN",
+      "AGENT_ALLOWED_USER_IDS",
+    ]
+  ) {
+    assert.throws(() =>
+      parseRuntimeConfig({ ...base, [retired]: "must-not-be-accepted" })
+    );
+  }
   assert.throws(() =>
     parseRuntimeConfig({ ...base, AUTH0_ISSUER: "http://issuer.example/" })
   );

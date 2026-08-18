@@ -666,10 +666,65 @@
     },
     {
       "id": "STAGE-10",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Depends on STAGE-09. Retired source routes and ping remain untouched until this approved stage."
+      "status": "complete",
+      "files_changed": [
+        "api/Dockerfile",
+        "api/README.md",
+        "api/src/app.ts",
+        "api/tests/app_test.ts",
+        "api/tests/compatibility_test.ts",
+        "api/tests/weekly_differential_integration.ts",
+        "client/src/App.js",
+        "client/src/App.test.js",
+        "client/src/components/PingComponent.js (removed)",
+        "client/src/components/TitleComponent.js (removed)",
+        "server/weekly_contract_test.go",
+        "tests/contract/README.md",
+        "tests/contract/compare-feelings.mjs",
+        "tests/contract/compare-weekly.mjs",
+        "tests/contract/feelings.mjs",
+        "tests/contract/run.mjs",
+        "specs/backend-migration/stage-10-api-inventory.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Capture isolated Go/Mongo-mock and Deno/disposable-Postgres feelings and weekly observations; run compare-feelings.mjs and compare-weekly.mjs",
+          "result": "pass",
+          "details": "All 17 supported source/target cases passed with zero unexplained difference: 8 feelings cases and 9 weekly cases. Approved differences are limited to empty feelings null-to-array, timestamp-equivalent canonical/database serialization, strict feeling-status validation, and strict weekly-mood validation. The target used the real Deno handler, mapper, least-privilege role, forced RLS, and Postgres. The exact four owner-only synthetic observation files and disposable local database were destroyed after comparison."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 fmt/check, lint, type-check, and loopback-only API/contract test suite",
+          "result": "pass",
+          "details": "All 31 API/shared-contract files are formatted, 24 TypeScript files are lint-clean and type-safe, and all 26 regular tests pass. The suite proves malformed supported requests return structured 400 without persistence, auth failure 401, identity mismatch 403, unknown/retired/operator paths 404 without authentication, internal failures sanitized 500, disallowed CORS blocked before handlers, and exactly four registered browser method/path combinations. Existing Auth0, feelings, weekly, readiness, and logging regressions remain green."
+        },
+        {
+          "command": "CI=true npm test -- --runInBand; npm run build; replacement source static retirement scan",
+          "result": "pass",
+          "details": "All 3 React suites and 5 tests pass and the optimized production build compiles. App mount makes no retired ping request; TitleComponent and PingComponent are removed; supported feelings and weekly journeys and payloads are unchanged. A scoped scan found no ping, PingComponent, chat/agent/operator route, retired header, or retired secret name in client/src, api/src, api/Dockerfile, api/.env.example, or api/deno.json. The only build notice is the pre-existing outdated caniuse-lite advisory."
+        },
+        {
+          "command": "Build feeling-api:stage-10 from the digest-pinned Deno image; inspect image environment/command; Deno audit",
+          "result": "pass",
+          "details": "The clean replacement image installed only the three integrity-locked dependencies and type-checked in-image. Inspection shows only HOST, PORT, and DEPLOYMENT_VERSION defaults and exact permission names for Auth0, CORS, runtime database, deployment version, host, and port; network permission is limited to the listener, Auth0 JWKS, and Sydney Supavisor. No retired secret/header, Data API, Edge Function, Storage, queue, scheduler, worker, job, operator, service-role, or Mongo compatibility path exists. Deno reports no known dependency vulnerability."
+        },
+        {
+          "command": "Go 1.23 container gofmt and go test -count=1 ./... with both synthetic source snapshots enabled",
+          "result": "pass",
+          "details": "The complete legacy Go characterization and source contracts pass while producing the equivalent feelings and weekly observations used by the differential comparators. Go handlers, Heroku configuration, MongoDB behavior, and retired rollback routes remain intact and runnable; no replacement dependency on them was introduced."
+        },
+        {
+          "command": "Repository caller/configuration inventory and accountable-owner retirement evidence review",
+          "result": "pass",
+          "details": "No active caller evidence appeared. Repository search still finds no client, worker, scheduler, or integration caller for chat/agent routes, and Vinicius Delascio's Define-stage confirmation that the OpenClaw instance no longer exists remains the accountable evidence. The replacement inventory records exactly four browser routes, seven runtime configuration names, separate health/readiness probes, intentionally absent responsibilities, operator-only backup Storage, and the untouched rollback boundary."
+        },
+        {
+          "command": "JSON and Node syntax; git diff --check; ignored-scratch absence; AI-OS design/plan readiness and implementation structural validation",
+          "result": "pass",
+          "details": "The lifecycle JSON and reusable comparison modules parse, patches contain no whitespace error, the exact Stage 10 scratch directory is absent, the approved design and plan remain ready, and implementation.json is structurally valid. Overall implementation readiness is intentionally deferred because Stages 11 through 16 and their human gates remain incomplete; Stage 10 does not advance to Review automatically."
+        }
+      ],
+      "notes": "Stage 10 is complete. Every supported browser API behavior is equal to the source or differs only by an approved normalization. The Deno replacement is mechanically restricted to GET/POST feelings and GET/POST weekly tracker, with structured 400/401/403/404/500 behavior and constrained CORS. The dead React ping request and both ping-only components are removed. Retired chat/agent/ping/operator routes, headers, secrets, and privileged compatibility paths are absent from the replacement and remain only in the untouched Go/Heroku rollback source. No active retired caller appeared. No hosted data, production deployment, environment, endpoint, traffic, Auth0 tenant, Heroku, or MongoDB resource was changed."
     },
     {
       "id": "STAGE-11",

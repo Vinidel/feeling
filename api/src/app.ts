@@ -12,6 +12,16 @@ import type { WeeklyTrackersService } from "./weekly.ts";
 
 export type RequestLogger = typeof logEvent;
 
+export const publicBrowserRoutes = Object.freeze(
+  [
+    "GET /api/feelings",
+    "POST /api/feelings",
+    "GET /api/weekly-tracker",
+    "POST /api/weekly-tracker",
+  ] as const,
+);
+const publicBrowserRouteSet = new Set<string>(publicBrowserRoutes);
+
 export type HandlerOptions = Readonly<{
   allowedOrigins: ReadonlySet<string>;
   authenticate: AuthenticateRequest;
@@ -91,14 +101,9 @@ function verifyCors(
 function routeTemplate(request: Request, pathname: string): string {
   if (request.method === "GET" && pathname === "/healthz") return "/healthz";
   if (request.method === "GET" && pathname === "/readyz") return "/readyz";
-  if (
-    (request.method === "GET" || request.method === "POST") &&
-    pathname === "/api/feelings"
-  ) return "/api/feelings";
-  if (
-    (request.method === "GET" || request.method === "POST") &&
-    pathname === "/api/weekly-tracker"
-  ) return "/api/weekly-tracker";
+  if (publicBrowserRouteSet.has(`${request.method} ${pathname}`)) {
+    return pathname;
+  }
   return "unmatched";
 }
 

@@ -1,9 +1,14 @@
 # Standalone Deno API
 
-Stages 7 and 9 enable the feelings and weekly-tracker vertical slices on the
-shared authentication, authorization, database, and HTTP boundary. Chat,
-agent, and ping routes remain disabled and return the normalized `404`
-envelope.
+Stages 7, 9, and 10 enable the feelings and weekly-tracker vertical slices on
+the shared authentication, authorization, database, and HTTP boundary, then
+lock the replacement to exactly those four browser method/path combinations.
+Chat, agent, ping, and operator routes remain absent and return the normalized
+`404` envelope.
+
+The complete route, configuration, and intentionally absent responsibility
+inventory is recorded in
+`specs/backend-migration/stage-10-api-inventory.md`.
 
 ## Feelings slice
 
@@ -126,16 +131,17 @@ rollback. `tests/weekly_concurrency_integration.ts` is local-only and proves
 that simultaneous writes produce exactly one user/week row; destroy its
 disposable local database after the run.
 
-`tests/feelings_differential_integration.ts` is Stage 8-only verification for a
-disposable local Postgres instance. It runs the same URL contract through the
-real Deno handler and SQL mapper, commits only synthetic local rows, writes an
-owner-only observation file, and requires destruction of that local database
-after comparison with the Go observation.
+`tests/feelings_differential_integration.ts` and
+`tests/weekly_differential_integration.ts` are disposable-local verification.
+They run both URL contracts through the real Deno handler and SQL mappers,
+commit only synthetic local rows, write owner-only observation files, and
+require destruction of that local database and the observation files after
+comparison with equivalent Go observations.
 
 Build the portable OCI image from the repository root:
 
 ```bash
-docker build -f api/Dockerfile -t feeling-api:stage-9 .
+docker build -f api/Dockerfile -t feeling-api:stage-10 .
 ```
 
 The image remains based on the digest-pinned official Deno 2.9.4 image, runs as
