@@ -562,10 +562,52 @@
     },
     {
       "id": "STAGE-08",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Depends on STAGE-07. Not started."
+      "status": "complete",
+      "files_changed": [
+        "api/README.md",
+        "api/tests/feelings_contract_test.ts",
+        "api/tests/feelings_differential_integration.ts",
+        "client/src/feelingsJourney.test.js",
+        "server/feelings_contract_test.go",
+        "tests/contract/README.md",
+        "tests/contract/compare-feelings.mjs",
+        "tests/contract/feelings.mjs",
+        "specs/backend-migration/stage-08-differential-verification.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Current Supabase breaking-change changelog scan; Supabase CLI 2.114.0 discovery; disposable supabase start/db reset/stop --no-backup",
+          "result": "pass",
+          "details": "No current breaking change affects the private-schema direct-Postgres differential or reconciliation path. A disposable local Supabase Postgres stack rebuilt solely from the two versioned migrations, received only synthetic Stage 8 rows through the least-privilege runtime login and forced RLS, and was stopped and removed without backup after comparison."
+        },
+        {
+          "command": "Capture isolated Go/Mongo-mock and Deno/Postgres URL observations; node tests/contract/compare-feelings.mjs <source> <target>",
+          "result": "pass",
+          "details": "The same eight synthetic HTTP cases ran through real Go Gin handlers with Mongo wire mocks and the real Deno handler/schema/Postgres mapper with a disposable database. The comparator found zero unexplained differences. It allowed only null-to-empty-array, equivalent canonical RFC3339 millisecond serialization, and strict out-of-range status rejection. Auth failures, saved/read fields, identity mismatch, isolation, status, comments, activities, and timestamp instants otherwise matched."
+        },
+        {
+          "command": "Fresh owner-only mongoexport 100.17.0; pinned migration CLI reconcile through Keychain-held migration TLS session URL; sanitized report inspection",
+          "result": "pass",
+          "details": "The fresh read-only source contained 114 feelings and 2 weekly trackers. Reconcile accepted all 116, rejected zero, inserted zero, matched 114/114 feelings and 2/2 weekly trackers exactly, and found zero target-only rows. Exact matching covers legacy ID, owner, normalized timestamp, status, complete comment, and all activity booleans; safe aggregates and the two approved Go-zero timestamp transformations are recorded in the Stage 8 report."
+        },
+        {
+          "command": "CI=true npm test -- --watchAll=false --runInBand",
+          "result": "pass",
+          "details": "All 3 React suites and 5 tests pass. The new parameterized journey runs against configurable Go-null and Deno-empty-array endpoint profiles and proves save, authenticated headers, automatic history refresh, success feedback, history and trend/chart rendering, remount/reload, and persisted readback. The pre-existing TitleComponent lifecycle warning remains unchanged."
+        },
+        {
+          "command": "Pinned Deno API fmt/lint/check/test; pinned migration test; full Go go test -count=1 ./... after target shutdown; hosted Supabase advisors",
+          "result": "pass",
+          "details": "Twenty API files are formatted, 18 TypeScript files are lint-clean and type-safe, all 19 API tests pass, all 6 migration tests pass, and the complete Go characterization/contract suite passes after the ephemeral Deno service and local target were disabled. Hosted Supabase security and performance advisors reported no issue."
+        },
+        {
+          "command": "Owner-only scratch verification and exact cleanup; JSON/Node syntax and patch checks; AI-OS design/plan readiness and implementation structural validation",
+          "result": "pass",
+          "details": "Plaintext Mongo exports, export logs, ephemeral HMAC report and key, exception manifest, and synthetic source/target observation files were removed from the exact ignored Stage 8 scratch directory after safe evidence capture. No raw subject, private content, credential, token, or connection URL entered repository artifacts. Lifecycle artifacts remain valid, and no deployment or production mutation occurred."
+        }
+      ],
+      "notes": "Stage 8 is complete. Isolated HTTP differential testing found no unexplained feelings behavior difference, fresh source-to-target reconciliation matched every one of 114 feelings with zero exception or target-only row, and the React save/history/trend/reload journey passes against both source and target response profiles. The only accepted differences are the approved empty-array and strict-validation normalizations plus timestamp-equivalent canonical RFC3339 serialization. The Deno test target was disabled and destroyed while the complete Go rollback source remained runnable. No hosted write, deployment, production endpoint, traffic, environment, Auth0, MongoDB, Heroku, or backup change occurred."
     },
     {
       "id": "STAGE-09",

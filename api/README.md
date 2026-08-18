@@ -106,6 +106,12 @@ predicates, transaction-local identity replacement, feeling mapping, exactly one
 insert, subsequent reads, deterministic ordering, and absence of pool identity
 leakage.
 
+`tests/feelings_differential_integration.ts` is Stage 8-only verification for a
+disposable local Postgres instance. It runs the same URL contract through the
+real Deno handler and SQL mapper, commits only synthetic local rows, writes an
+owner-only observation file, and requires destruction of that local database
+after comparison with the Go observation.
+
 Build the portable OCI image from the repository root:
 
 ```bash

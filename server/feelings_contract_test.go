@@ -35,6 +35,7 @@ func TestReusableFeelingsContractAgainstGoHTTP(t *testing.T) {
 
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	mt.Run("source URL contract", func(mt *mtest.T) {
+		observations := make(map[string]any)
 		mt.AddMockResponses(
 			mtest.CreateCursorResponse(0, "feeling.feelings", mtest.FirstBatch),
 			mtest.CreateSuccessResponse(bson.E{Key: "n", Value: 1}),
@@ -109,14 +110,19 @@ func TestReusableFeelingsContractAgainstGoHTTP(t *testing.T) {
 
 		if response, _ := request(http.MethodGet, "", "", nil); response.StatusCode != http.StatusUnauthorized {
 			t.Fatalf("missing token status = %d", response.StatusCode)
+		} else {
+			observations["missingStatus"] = response.StatusCode
 		}
 		if response, _ := request(http.MethodGet, "not-a-token", "", nil); response.StatusCode != http.StatusUnauthorized {
 			t.Fatalf("malformed token status = %d", response.StatusCode)
+		} else {
+			observations["malformedStatus"] = response.StatusCode
 		}
 		response, body := request(http.MethodGet, "stage7-token-a", fixtures.SyntheticUsers.Owner, nil)
 		if response.StatusCode != http.StatusOK || string(body) != "null" {
 			t.Fatalf("source empty response = %d %q", response.StatusCode, body)
 		}
+		observations["emptyBody"] = nil
 
 		response, body = request(http.MethodPost, "stage7-token-a", fixtures.SyntheticUsers.Owner, fixtures.Feeling)
 		if response.StatusCode != http.StatusOK {
@@ -126,27 +132,54 @@ func TestReusableFeelingsContractAgainstGoHTTP(t *testing.T) {
 		if err := json.Unmarshal(body, &created); err != nil || created.UserID != fixtures.SyntheticUsers.Owner || created.Status != fixtures.Feeling.Status {
 			t.Fatalf("unexpected created feeling: %#v error=%v", created, err)
 		}
+		var createdBody any
+		if err := json.Unmarshal(body, &createdBody); err != nil {
+			t.Fatalf("decode created observation: %v", err)
+		}
+		observations["savedBody"] = createdBody
 
 		response, body = request(http.MethodGet, "stage7-token-a", fixtures.SyntheticUsers.Owner, nil)
 		var history []Feeling
 		if response.StatusCode != http.StatusOK || json.Unmarshal(body, &history) != nil || len(history) != 1 || history[0].UserID != fixtures.SyntheticUsers.Owner {
 			t.Fatalf("unexpected owner history: status=%d body=%q", response.StatusCode, body)
 		}
+		var historyBody any
+		if err := json.Unmarshal(body, &historyBody); err != nil {
+			t.Fatalf("decode history observation: %v", err)
+		}
+		observations["historyBody"] = historyBody
 		if response, _ := request(http.MethodGet, "stage7-token-a", fixtures.SyntheticUsers.Other, nil); response.StatusCode != http.StatusForbidden {
 			t.Fatalf("mismatch status = %d", response.StatusCode)
+		} else {
+			observations["mismatchStatus"] = response.StatusCode
 		}
 
 		invalid := fixtures.Feeling
 		invalid.Status = "5"
 		if response, _ := request(http.MethodPost, "stage7-token-a", fixtures.SyntheticUsers.Owner, invalid); response.StatusCode != http.StatusOK {
 			t.Fatalf("source permissive status = %d", response.StatusCode)
+		} else {
+			observations["invalidStatus"] = response.StatusCode
 		}
 		if response, body := request(http.MethodGet, "stage7-token-b", fixtures.SyntheticUsers.Other, nil); response.StatusCode != http.StatusOK || string(body) != "null" {
 			t.Fatalf("other-user history = %d %q", response.StatusCode, body)
+		} else {
+			observations["otherBody"] = nil
 		}
 
 		if !fixtures.Feeling.CreatedAt.Equal(time.Date(2026, time.January, 2, 3, 4, 5, 0, time.UTC)) {
 			t.Fatalf("shared fixture timestamp changed: %s", fixtures.Feeling.CreatedAt)
+		}
+
+		if snapshotPath := os.Getenv("FEELINGS_CONTRACT_SNAPSHOT"); snapshotPath != "" {
+			encoded, err := json.MarshalIndent(observations, "", "  ")
+			if err != nil {
+				t.Fatalf("encode source observations: %v", err)
+			}
+			encoded = append(encoded, '\n')
+			if err := os.WriteFile(snapshotPath, encoded, 0o600); err != nil {
+				t.Fatalf("write source observations: %v", err)
+			}
 		}
 	})
 }

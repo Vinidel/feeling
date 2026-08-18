@@ -21,6 +21,14 @@ export async function runFeelingsContract({
   otherUserId,
   mode,
 }) {
+  const observations = {};
+  const expectedFeeling = {
+    ...feelingFixture,
+    createdAt: mode === 'target'
+      ? new Date(feelingFixture.createdAt).toISOString()
+      : feelingFixture.createdAt,
+    userID: userId,
+  };
   const request = (options = {}) => fetch(new URL('/api/feelings', baseUrl), {
     redirect: 'manual',
     ...options,
@@ -31,14 +39,17 @@ export async function runFeelingsContract({
     'x-user-id': subject,
   });
 
-  assert.equal((await request()).status, 401);
-  assert.equal((await request({
+  observations.missingStatus = (await request()).status;
+  assert.equal(observations.missingStatus, 401);
+  observations.malformedStatus = (await request({
     headers: { authorization: 'Bearer not-a-token' },
-  })).status, 401);
+  })).status;
+  assert.equal(observations.malformedStatus, 401);
 
   const empty = await request({ headers: headers(accessToken, userId) });
   assert.equal(empty.status, 200);
-  assert.deepEqual(await empty.json(), mode === 'source' ? null : []);
+  observations.emptyBody = await empty.json();
+  assert.deepEqual(observations.emptyBody, mode === 'source' ? null : []);
 
   const saved = await request({
     method: 'POST',
@@ -46,31 +57,36 @@ export async function runFeelingsContract({
     body: JSON.stringify(feelingFixture),
   });
   assert.equal(saved.status, 200);
-  assert.deepEqual(await saved.json(), { ...feelingFixture, userID: userId });
+  observations.savedBody = await saved.json();
+  assert.deepEqual(observations.savedBody, expectedFeeling);
 
   const history = await request({ headers: headers(accessToken, userId) });
   assert.equal(history.status, 200);
-  assert.deepEqual(await history.json(), [{ ...feelingFixture, userID: userId }]);
+  observations.historyBody = await history.json();
+  assert.deepEqual(observations.historyBody, [expectedFeeling]);
 
   const mismatch = await request({
     headers: headers(accessToken, otherUserId),
   });
-  assert.equal(mismatch.status, 403);
+  observations.mismatchStatus = mismatch.status;
+  assert.equal(observations.mismatchStatus, 403);
 
   const invalid = await request({
     method: 'POST',
     headers: headers(accessToken, userId),
     body: JSON.stringify({ ...feelingFixture, status: '5' }),
   });
-  assert.equal(invalid.status, mode === 'source' ? 200 : 400);
+  observations.invalidStatus = invalid.status;
+  assert.equal(observations.invalidStatus, mode === 'source' ? 200 : 400);
 
   const otherHistory = await request({
     headers: headers(otherAccessToken, otherUserId),
   });
   assert.equal(otherHistory.status, 200);
-  const otherBody = await otherHistory.json();
-  assert.ok(otherBody === null || Array.isArray(otherBody));
-  assert.equal(otherBody?.some((feeling) => feeling.userID === userId) ?? false, false);
+  observations.otherBody = await otherHistory.json();
+  assert.ok(observations.otherBody === null || Array.isArray(observations.otherBody));
+  assert.equal(observations.otherBody?.some((feeling) => feeling.userID === userId) ?? false, false);
+  return observations;
 }
 
 if (import.meta.main) {

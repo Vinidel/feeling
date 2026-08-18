@@ -10,6 +10,14 @@ directly against an ephemeral target HTTP server. The Go suite exercises the
 same shared synthetic fixture and URL cases against an ephemeral source HTTP
 server backed by Mongo wire mocks.
 
+Stage 8 captures the same source and target observations from isolated real
+transport/persistence combinations: Gin handlers with Mongo wire mocks and the
+Deno handler with a disposable least-privilege Postgres database.
+`compare-feelings.mjs` rejects every difference except the approved empty-array,
+canonical RFC3339 timestamp, and strict status-validation normalizations. The
+observation files contain synthetic data only and are temporary test evidence,
+not repository artifacts.
+
 Run unauthenticated and route checks against a local or isolated deployment:
 
 ```bash

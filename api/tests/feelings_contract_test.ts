@@ -16,7 +16,11 @@ Deno.test("reusable feelings contract passes against the Deno HTTP boundary", as
   const feelings: FeelingsService = {
     list: (userId) => Promise.resolve(stored.get(userId) ?? []),
     create: (userId, feeling) => {
-      const saved = { ...feeling, userID: userId };
+      const saved = {
+        ...feeling,
+        createdAt: new Date(feeling.createdAt).toISOString(),
+        userID: userId,
+      };
       stored.set(userId, [saved, ...(stored.get(userId) ?? [])]);
       return Promise.resolve(saved);
     },
@@ -70,7 +74,11 @@ Deno.test("reusable feelings contract passes against the Deno HTTP boundary", as
       mode: "target",
     });
     assert.deepEqual(stored.get("auth0|stage7-contract-a"), [
-      { ...feelingFixture, userID: "auth0|stage7-contract-a" },
+      {
+        ...feelingFixture,
+        createdAt: new Date(feelingFixture.createdAt).toISOString(),
+        userID: "auth0|stage7-contract-a",
+      },
     ]);
   } finally {
     await server.shutdown();
