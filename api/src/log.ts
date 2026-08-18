@@ -11,9 +11,11 @@ export type LogRecord =
 const allowedFields = new Set([
   "deploymentVersion",
   "durationMs",
+  "failureCode",
   "host",
   "method",
   "port",
+  "requestId",
   "routeTemplate",
   "signal",
   "status",

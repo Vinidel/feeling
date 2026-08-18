@@ -50,14 +50,36 @@ Deno.test("postgres.js creates a lazy TLS-capable client without native addons o
 });
 
 Deno.test("runtime configuration is strict and defaults to the permitted container listener", () => {
-  assert.deepEqual(parseRuntimeConfig({}), {
-    deploymentVersion: "development",
-    hostname: "0.0.0.0",
-    port: 8080,
-  });
-  assert.throws(() => parseRuntimeConfig({ PORT: "0" }));
-  assert.throws(() => parseRuntimeConfig({ PORT: "not-a-port" }));
-  assert.throws(() => parseRuntimeConfig({ UNKNOWN: "not-allowed" }));
+  assert.deepEqual(
+    parseRuntimeConfig({
+      AUTH0_AUDIENCE: "https://audience.example/api",
+      AUTH0_ISSUER: "https://issuer.example/",
+      DATABASE_URL: "postgres://runtime:synthetic@127.0.0.1:5432/steady",
+    }),
+    {
+      allowedOrigins: new Set(["http://localhost:3000"]),
+      auth0Audience: "https://audience.example/api",
+      auth0Issuer: "https://issuer.example/",
+      databaseUrl: "postgres://runtime:synthetic@127.0.0.1:5432/steady",
+      deploymentVersion: "development",
+      hostname: "0.0.0.0",
+      port: 8080,
+    },
+  );
+  const base = {
+    AUTH0_AUDIENCE: "https://audience.example/api",
+    AUTH0_ISSUER: "https://issuer.example/",
+    DATABASE_URL: "postgres://runtime:synthetic@127.0.0.1:5432/steady",
+  };
+  assert.throws(() => parseRuntimeConfig({ ...base, PORT: "0" }));
+  assert.throws(() => parseRuntimeConfig({ ...base, PORT: "not-a-port" }));
+  assert.throws(() => parseRuntimeConfig({ ...base, UNKNOWN: "not-allowed" }));
+  assert.throws(() =>
+    parseRuntimeConfig({ ...base, AUTH0_ISSUER: "http://issuer.example/" })
+  );
+  assert.throws(() =>
+    parseRuntimeConfig({ ...base, CORS_ORIGINS: "https://example.com/path" })
+  );
 });
 
 Deno.test("structured logging discards unapproved fields", () => {

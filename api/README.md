@@ -1,67 +1,100 @@
-# Standalone Deno API foundation
+# Standalone Deno API
 
-Stage 2 establishes the replacement runtime without implementing feelings,
-weekly tracker, Auth0 middleware, database access, or other business behavior.
+Stage 6 establishes the shared authentication, authorization, database, and HTTP
+boundary. It deliberately does not enable feelings, weekly tracker, chat, or
+agent routes; those paths still return the normalized `404` envelope.
 
-## Pinned toolchain and dependencies
+## Security boundary
 
-- Deno `2.9.4`, from the active Deno 2.9 LTS line
-- Native `Deno.serve` HTTP server and `Deno.test` runner
-- Zod `4.4.3` for strict request/configuration schemas
-- JOSE `6.2.9` for standards-based JWT and remote JWKS support
-- postgres.js `3.4.9` for direct PostgreSQL access with TLS and prepared
-  statements disabled when required by transaction pooling
-- Native JSON logging wrapper with an explicit field allowlist
+- Auth0 access tokens are verified with JOSE `6.2.9` against the tenant's remote
+  JWKS. Verification requires RS256, exact issuer, exact API audience, expiry,
+  and a non-empty canonical `sub`.
+- `user_id` comes only from the verified `sub`. An optional `x-user-id` must
+  match exactly. Strict request schemas reject `userID` and every other unknown
+  field, so body data cannot select an identity.
+- The runtime connects with only the `steady_runtime` PostgreSQL role through
+  Supavisor transaction mode. postgres.js uses `prepare: false`, a four-client
+  application pool, bounded connection lifetime/timeouts, TLS, and short
+  transactions.
+- Every user transaction parameterizes
+  `set_config('app.auth0_sub', <verified-sub>, true)` before data access. Query
+  callers must also bind `transaction.userId` in an explicit `user_id`
+  predicate. Forced RLS remains the second authorization layer.
+- The runtime contains no migration credential, Supabase service-role key,
+  browser database credential, operator API, or impersonation path.
 
-All versions are explicit in `deno.json` and integrity-pinned in `deno.lock`.
-`nodeModulesDir` is disabled, so npm lifecycle scripts are not run and no native
-addon installation path exists.
+JOSE bounds remote JWKS requests with a three-second timeout, a 30-second
+cooldown, and a one-hour in-memory cache maximum. Auth0 documents that custom
+API access tokens must be validated by audience and standard JWT checks, and
+that the tenant JWKS contains the public keys used for RS256 verification:
+<https://auth0.com/docs/secure/tokens/access-tokens/validate-access-tokens> and
+<https://auth0.com/docs/secure/tokens/json-web-tokens/json-web-key-sets>.
 
-## Commands
+## HTTP boundary
 
-From `api/`, using Deno 2.9.4:
+- `GET /healthz` is a liveness check and does not contact dependencies.
+- `GET /readyz` performs a minimal PostgreSQL readiness query and returns `503`
+  with a sanitized error when unavailable.
+- Errors use `{ "error": { "code": "...", "message": "..." } }` and
+  `cache-control: no-store`.
+- Each response receives a server-generated `x-request-id`.
+- Logs contain only allowlisted operational fields: request ID, route template,
+  method, status, duration, deployment version, and coarse failure code. Tokens,
+  raw subjects, URLs, bodies, comments, notes, and credentials are discarded.
+- CORS accepts only exact configured origins, `GET`/`POST`/`OPTIONS`, and the
+  `Authorization`, `Content-Type`, and `x-user-id` headers. It does not enable
+  credentialed CORS or any retired integration header.
+
+## Server-only configuration contract
+
+Populate these variables through the eventual managed container provider. The
+example file contains names only and no secret values.
+
+| Variable             | Required | Classification and owner                                                                                                                            |
+| -------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`       | Yes      | Secret; deployment operator; `steady_runtime` transaction-pooler TLS URL only                                                                       |
+| `AUTH0_ISSUER`       | Yes      | Non-secret security configuration; must retain the existing `https://dev-vin.au.auth0.com/` issuer                                                  |
+| `AUTH0_AUDIENCE`     | Yes      | Non-secret security configuration; must retain the existing `https://stormy-cliffs-52671.herokuapp.com/api` API identifier until separately changed |
+| `CORS_ORIGINS`       | No       | Non-secret deployment configuration; comma-separated exact origins; defaults to `http://localhost:3000`                                             |
+| `DEPLOYMENT_VERSION` | No       | Non-secret release identifier; defaults to `development`                                                                                            |
+| `HOST`               | No       | Non-secret listener configuration; defaults to `0.0.0.0`                                                                                            |
+| `PORT`               | No       | Non-secret listener configuration; defaults to `8080`                                                                                               |
+
+`MIGRATION_DATABASE_URL`, database-owner credentials, Supabase API keys, Auth0
+client secrets, MongoDB credentials, and retired chat/agent tokens are not API
+runtime variables.
+
+The container's outbound permission list is limited to the existing Auth0 JWKS
+host and the Steady Sydney Supavisor transaction endpoint. Changing either host
+requires a reviewed image-permission update rather than silently expanding
+network access.
+
+## Verification
+
+From `api/`, using pinned Deno `2.9.4`:
 
 ```bash
-deno ci --prod
 deno task fmt:check
 deno task lint
 deno task check
 deno task test
-deno task start
 ```
+
+The regular suite uses a controlled loopback JWKS server and synthetic signed
+tokens. `tests/database_integration.ts` is a separately authorized hosted test:
+provide the runtime-only `DATABASE_URL` through an operator secret mechanism and
+grant Deno network access only to that database host. It inserts synthetic rows
+inside an intentionally rolled-back transaction, proves two-subject isolation,
+ownership-reassignment and DELETE denial, explicit application predicates,
+transaction-local identity replacement, and absence of pool identity leakage.
 
 Build the portable OCI image from the repository root:
 
 ```bash
-docker build -f api/Dockerfile -t feeling-api:stage-2 .
+docker build -f api/Dockerfile -t feeling-api:stage-6 .
 ```
 
-The image is pinned to the official multi-platform Deno base-image digest
-`sha256:c777b4b225501a61074837e90a826a58f99124837824023cd60334b1e2374498`. It
-listens on port `8080` and exposes only `GET /healthz`; every business or
-retired API path returns `404`.
-
-## Runtime permissions
-
-The container starts with explicit stable permission flags and `--no-prompt`:
-
-- environment reads: `HOST`, `PORT`, and `DEPLOYMENT_VERSION` only;
-- conventional ambient `PG*` reads attempted by postgres.js return `undefined`
-  rather than receiving access;
-- network: listen on `0.0.0.0:8080` only;
-- filesystem reads/writes: none granted;
-- subprocess, FFI, system information, and dynamic-import permissions: none
-  granted.
-
-Auth0 and PostgreSQL network hosts are intentionally not granted in Stage 2.
-Their exact outbound permissions and server-only environment names are added
-only when the corresponding approved implementation stages introduce those
-responsibilities.
-
-## Compatibility result
-
-The test suite proves that Zod, JOSE/JWKS, and postgres.js load and perform
-their non-network responsibilities under Deno without lifecycle scripts, native
-addons, or broad permissions. PostgreSQL connection behavior is tested with a
-lazy, non-connecting TLS client; real database connectivity belongs to the
-authorized Supabase stages.
+The image remains based on the digest-pinned official Deno 2.9.4 image, runs as
+the non-root `deno` user, installs only integrity-locked production
+dependencies, and starts with frozen cached dependencies and explicit
+permissions.

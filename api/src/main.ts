@@ -1,20 +1,35 @@
 import { createHandler } from "./app.ts";
+import { createAuth0Authenticator } from "./auth.ts";
 import { readRuntimeConfig } from "./config.ts";
+import { createDatabase } from "./database.ts";
 import { logEvent } from "./log.ts";
 
 export async function run(): Promise<void> {
   const config = readRuntimeConfig();
-  const server = Deno.serve({
-    hostname: config.hostname,
-    port: config.port,
-    onListen: ({ hostname, port }) => {
-      logEvent("info", "server_started", {
-        deploymentVersion: config.deploymentVersion,
-        host: hostname,
-        port,
-      });
+  const database = createDatabase({ databaseUrl: config.databaseUrl });
+  const authenticate = createAuth0Authenticator({
+    audience: config.auth0Audience,
+    issuer: config.auth0Issuer,
+  });
+  const server = Deno.serve(
+    {
+      hostname: config.hostname,
+      port: config.port,
+      onListen: ({ hostname, port }) => {
+        logEvent("info", "server_started", {
+          deploymentVersion: config.deploymentVersion,
+          host: hostname,
+          port,
+        });
+      },
     },
-  }, createHandler({ deploymentVersion: config.deploymentVersion }));
+    createHandler({
+      allowedOrigins: config.allowedOrigins,
+      authenticate,
+      database,
+      deploymentVersion: config.deploymentVersion,
+    }),
+  );
 
   let shuttingDown = false;
   const shutdown = async (signal: string): Promise<void> => {
@@ -39,9 +54,17 @@ export async function run(): Promise<void> {
     if (Deno.build.os !== "windows") {
       Deno.removeSignalListener("SIGTERM", onSigterm);
     }
+    await database.close();
   }
 }
 
 if (import.meta.main) {
-  await run();
+  try {
+    await run();
+  } catch {
+    logEvent("error", "startup_failed", {
+      failureCode: "configuration_or_dependency",
+    });
+    Deno.exit(1);
+  }
 }

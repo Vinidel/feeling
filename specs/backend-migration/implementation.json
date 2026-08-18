@@ -446,10 +446,66 @@
     },
     {
       "id": "STAGE-06",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Depends on STAGE-02 and STAGE-04. Not started."
+      "status": "complete",
+      "files_changed": [
+        "api/.env.example",
+        "api/Dockerfile",
+        "api/README.md",
+        "api/deno.json",
+        "api/src/app.ts",
+        "api/src/auth.ts",
+        "api/src/config.ts",
+        "api/src/database.ts",
+        "api/src/errors.ts",
+        "api/src/log.ts",
+        "api/src/main.ts",
+        "api/src/schemas.ts",
+        "api/tests/app_test.ts",
+        "api/tests/auth_test.ts",
+        "api/tests/compatibility_test.ts",
+        "api/tests/database_integration.ts",
+        "api/tests/schemas_test.ts",
+        "specs/backend-migration/stage-06-security-boundary.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Approved Design/Plan review; current Supabase breaking-change scan; Auth0 access-token/JWKS and JOSE remote-JWKS documentation review; Supabase connection, prepared-statement, short-transaction, least-privilege, and RLS guidance review",
+          "result": "pass",
+          "details": "Stage 6 dependencies were complete and the approved boundary required the existing Auth0 access-token contract, a standalone Deno verifier, private direct PostgreSQL access, explicit application predicates, forced RLS, sanitized HTTP behavior, and no business route. No current Supabase breaking change affects this private-schema direct-Postgres design. The pinned JOSE API supports exact issuer/audience/algorithm/required-claim verification and bounded remote JWKS caching."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 fmt --check; lint; check src/main.ts tests/; test with loopback-only network; audit",
+          "result": "pass",
+          "details": "All 15 API files are formatted, 13 TypeScript files are lint-clean and type-safe, 13 tests pass, and Deno reports no known dependency vulnerability. Tests cover controlled RS256/JWKS verification and cache reuse; missing, malformed, expired, wrong-signature, wrong-issuer, wrong-audience, missing-expiry, missing-subject, blank-subject, matching-header, and mismatching-header cases; strict body/query schemas and client-identity rejection; liveness/readiness; normalized errors; CORS allow/deny behavior; no business or retired routes; and structured-log field sanitization."
+        },
+        {
+          "command": "Run api/tests/database_integration.ts through the Keychain-held steady_runtime TLS transaction-pooler URL with exact Deno env/network permissions",
+          "result": "pass",
+          "details": "The hosted rollback-only test proved readiness, parameterized transaction-local app.auth0_sub, explicit user_id predicates, same-user visibility, cross-user insert rejection, ownership-reassignment rejection, DELETE rejection, transaction rollback, and identity replacement across user A, user B, then user A pooled transactions. No synthetic write committed and no credential or raw production identity was printed."
+        },
+        {
+          "command": "Hosted transaction-wrapped Stage 4 schema/RLS suite; least-permission owner count probe; supabase db advisors --linked --type all --level warn --fail-on warn",
+          "result": "pass",
+          "details": "The complete hosted grants, constraints, forced-RLS, two-subject isolation, ownership-reassignment, DELETE-denial, and rollback suite passed after Stage 6. The target remained exactly 114 feelings and 2 weekly trackers. Supabase reported no security or performance advisor issue."
+        },
+        {
+          "command": "docker build --no-cache -f api/Dockerfile -t feeling-api:stage-6 .; run local smoke container with authorized runtime credential; health/readiness/CORS/disabled-route/log/user assertions; remove container",
+          "result": "pass",
+          "details": "The clean digest-pinned image installed only the unchanged locked dependencies and type-checked in-image. It ran as non-root deno with exact environment and network permissions. Liveness and hosted-database readiness returned 200, a disallowed origin returned 403 before dependency handling, and /api/feelings remained disabled with 404. Logs contained no database URL, token, raw Auth0 subject, comment, note, or connection-string pattern. The exact disposable smoke container and response files were removed."
+        },
+        {
+          "command": "docker run golang:1.23 go test -count=1 ./...; npm test -- --watchAll=false --runInBand src/apiContract.test.js",
+          "result": "pass",
+          "details": "The unchanged Go/Auth0/Mongo characterization suite passes and remains the active rollback implementation. Both React API contract tests pass, confirming current feelings and weekly payloads, Auth0 access-token acquisition, bearer header, and optional x-user-id remain compatible with the strict Stage 6 schemas."
+        },
+        {
+          "command": "AI-OS approved design/plan readiness validation; implementation structural validation; JSON parse; git diff --check; temporary-probe cleanup; generic credential-pattern scan with documented synthetic fixture exclusion; exact non-disclosing Keychain-value scan",
+          "result": "pass",
+          "details": "The approved design and plan remain structurally valid and ready, implementation.json is structurally valid, JSON and whitespace checks pass, and the temporary owner count probe is absent. No operator Keychain secret occurs in any tracked or unignored file. The generic scan is clean after excluding only the pre-existing compatibility test's intentional localhost PostgreSQL fixture URL."
+        }
+      ],
+      "notes": "Stage 6 is complete. The shared Deno boundary now provides strict server-only configuration, RS256 Auth0/JWKS verification with exact retained issuer/audience/expiry/sub, matching optional x-user-id enforcement, strict request/query schemas that reject client-selected identity, normalized errors and CORS, sanitized request logging, separate liveness/readiness, and a least-privilege postgres.js transaction wrapper that parameterizes transaction-local app.auth0_sub before tagged SQL. Hosted rollback-only tests prove explicit ownership predicates, forced-RLS isolation, denied ownership reassignment and DELETE, and no pooled identity leak. The migrated target remains 114/2 and advisors are clean. No business or retired route is enabled, no secret value is committed, and no deployment, production environment, endpoint, traffic, Auth0 tenant, MongoDB, or Heroku change occurred."
     },
     {
       "id": "STAGE-07",
