@@ -1,0 +1,30 @@
+[
+  {
+    "_id": { "$oid": "65a000000000000000000001" },
+    "userid": "auth0|synthetic-alpha",
+    "status": "4",
+    "createdat": { "$date": "2026-07-01T08:15:30.000Z" },
+    "comment": "PRIVATE-FEELING-SENTINEL-ALPHA",
+    "activities": {
+      "bow": true,
+      "lift": false,
+      "run": true,
+      "cycle": false,
+      "swim": false
+    }
+  },
+  {
+    "_id": { "$oid": "65a000000000000000000002" },
+    "userid": "auth0|synthetic-alpha",
+    "status": "2",
+    "createdat": { "$date": "2026-07-02T09:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65a000000000000000000003" },
+    "userid": "auth0|synthetic-beta",
+    "status": "0",
+    "createdat": { "$date": "2026-07-03T10:45:00.000Z" },
+    "comment": "PRIVATE-FEELING-SENTINEL-BETA",
+    "activities": { "swim": true }
+  }
+]

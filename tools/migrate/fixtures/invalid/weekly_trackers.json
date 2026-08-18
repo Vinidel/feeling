@@ -1,0 +1,30 @@
+[
+  {
+    "_id": { "$oid": "65d000000000000000000001" },
+    "userid": "auth0|synthetic-alpha",
+    "weekof": "2026-07-99",
+    "mood": "good",
+    "updatedat": { "$date": "2026-07-06T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65d000000000000000000002" },
+    "userid": "auth0|synthetic-alpha",
+    "weekof": "2026-07-06",
+    "mood": "excellent",
+    "updatedat": { "$date": "2026-07-06T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65d000000000000000000003" },
+    "userid": "auth0|synthetic-beta",
+    "weekof": "2026-07-06",
+    "mood": "steady",
+    "updatedat": { "$date": "2026-07-06T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65d000000000000000000004" },
+    "userid": "auth0|synthetic-beta",
+    "weekof": "2026-07-06",
+    "mood": "great",
+    "updatedat": { "$date": "2026-07-07T00:00:00.000Z" }
+  }
+]

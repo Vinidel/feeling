@@ -29,6 +29,14 @@ begin
     raise exception 'a Stage 4 role has a forbidden role attribute';
   end if;
 
+  if not pg_has_role(
+    'steady_migration_owner',
+    'steady_runtime',
+    'member'
+  ) then
+    raise exception 'migration owner cannot explicitly assume the RLS runtime role';
+  end if;
+
   if (select data_type from information_schema.columns
       where table_schema = 'steady' and table_name = 'feelings' and column_name = 'id') <> 'uuid'
     or (select data_type from information_schema.columns

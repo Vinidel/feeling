@@ -284,13 +284,31 @@
     },
     {
       "id": "STAGE-05",
-      "status": "in_progress",
+      "status": "complete",
       "files_changed": [
         ".gitignore",
+        "supabase/migrations/20260818040229_allow_migration_owner_to_assume_runtime.sql",
+        "supabase/tests/stage_04_rollback.sql",
+        "supabase/tests/stage_04_schema_test.sql",
         "specs/backend-migration/stage-05-data-migration.md",
         "specs/backend-migration/implementation.json",
         "tools/backup/crypto.ts",
-        "tools/backup/crypto_test.ts"
+        "tools/backup/crypto_test.ts",
+        "tools/migrate/README.md",
+        "tools/migrate/database.ts",
+        "tools/migrate/deno.json",
+        "tools/migrate/deno.lock",
+        "tools/migrate/fixtures/conflict/feelings.json",
+        "tools/migrate/fixtures/invalid/feelings.json",
+        "tools/migrate/fixtures/invalid/weekly_trackers.json",
+        "tools/migrate/fixtures/valid/feelings.json",
+        "tools/migrate/fixtures/valid/weekly_trackers.json",
+        "tools/migrate/hashing.ts",
+        "tools/migrate/main.ts",
+        "tools/migrate/parse.ts",
+        "tools/migrate/report.ts",
+        "tools/migrate/tests/migration_test.ts",
+        "tools/migrate/types.ts"
       ],
       "test_evidence": [
         {
@@ -342,9 +360,89 @@
           "command": "dropdb stage5_restore; supabase stop --project-id steady-backend-migration --no-backup; remove exact ignored Stage 5 scratch directory; inspect retained Storage object metadata",
           "result": "pass",
           "details": "The disposable restore database and local containers were removed. All plaintext SQL, decrypted archives, downloaded copies, and local encrypted copies were permanently removed from the exact scratch directory. The private Sydney Storage object remains available with the expected path, size, and application/octet-stream content type."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 deno install/fmt/lint/check/test for tools/migrate; least-permission valid and invalid CLI dry-runs",
+          "result": "pass",
+          "details": "The integrity lock contains only postgres.js 3.4.9. Five unit tests pass for strict relaxed Extended JSON mapping/defaults, complete classification of malformed/orphaned/mixed-type/unknown/duplicate records, deterministic non-content reports, private sentinel and raw-subject exclusion, exact report-key length, and rejection of existing output before database configuration is read. The valid CLI dry-run returned 0 with five accepted records; the invalid run returned 2 with ten source records mapped to ten sanitized exceptions. Both outputs are reserved mode 0600 before database writes, incomplete outputs are removed on failure, and scans found no raw Auth0 subject, comment/note sentinel, database URL, or migration secret name."
+        },
+        {
+          "command": "Apply migrations to disposable local PostgreSQL 17; run synthetic import twice; insert two forced-RLS target-only rows; run reconcile; run conflicting repeat import",
+          "result": "pass",
+          "details": "The first migration-owner import explicitly assumed steady_runtime and inserted 3 feelings plus 2 weekly trackers; the identical second import inserted zero, matched all five, retained stable structural hashes, and produced no duplicate legacy IDs. Reconcile inserted zero and reported one synthetic target-only row per collection. A changed comment under an existing legacy ID returned 2 with one sanitized target_conflict and the transaction rolled back; zero conflicting values persisted. Reports contained no private fixture content, raw subject, or connection string."
+        },
+        {
+          "command": "supabase db reset --local; Stage 4 SQL suite; local rollback plus absence assertions; reset/reapply plus SQL suite; local advisors",
+          "result": "pass",
+          "details": "Both migrations rebuilt from zero. The updated suite verifies the NOINHERIT/no-BYPASSRLS migration owner can explicitly assume steady_runtime and retains all schema, constraint, privilege, forced-RLS, and two-subject isolation guarantees. Rollback revoked the membership and removed exactly the steady schema and two roles; counts were zero before a clean reapply and second passing suite. Local advisors found no issue."
+        },
+        {
+          "command": "supabase db push --db-url <Keychain admin TLS session URL> --dry-run then --yes; linked metadata query; linked advisors; migration list",
+          "result": "pass",
+          "details": "The dry run listed only reversible migration 20260818040229, then it was applied to the authorized empty Steady non-prod project. Hosted metadata confirms the migration owner is a member of steady_runtime, remains without BYPASSRLS, and both application tables still contain zero rows. Local and remote migration history match both versions and hosted advisors found no issue. No representative or production data was read or written."
+        },
+        {
+          "command": "Pinned Deno migration dependency audit; API foundation 7-test regression; backup crypto 3-test regression; unchanged Go characterization regression",
+          "result": "pass",
+          "details": "Deno reported no known vulnerability in the migration lockfile. The standalone API remained formatted, lint-clean, type-safe, and 7/7 tests passed; backup encryption remained 3/3; and the unchanged Go API characterization suite passed. The active Go/Heroku rollback source remains available."
+        },
+        {
+          "command": "AI-OS design/plan readiness validation; implementation structural validation; JSON parsing; git diff --check; scoped secret-pattern scan; supabase stop --no-backup",
+          "result": "pass",
+          "details": "The approved design and plan remain structurally valid and ready, implementation evidence is structurally valid, all new JSON parses, patch whitespace checks pass, and no local test password, credential-bearing PostgreSQL URL, JWT, or private key pattern exists in the Stage 5 migration files or artifacts. Housekeeping removed only the disposable local steady-backend-migration stack without a backup; it contains no retained data and can be rebuilt from migrations."
+        },
+        {
+          "command": "Vinicius Delascio read-only source authorization; authenticated Heroku metadata/config-name lookup; Atlas collection/count query; owner-only relaxed Extended JSON export; real-source CLI dry-run",
+          "result": "pass",
+          "details": "The current Sydney Atlas source contains only 114 feelings and 2 weekly_trackers; no retired chat or agent collection exists. The dry-run accounted for all 116 records: 112 feelings plus both weekly trackers accepted and two feelings rejected because createdat is the canonical BSON representation of Go zero time. Five pseudonymous identities exist; the dominant identity has 104 accepted feelings, both weekly trackers, and both exceptions, while four low-volume identities have 2, 1, 3, and 2 accepted feelings. No record body or raw identity was printed or committed, and the ignored owner-only plaintext export and reports were removed after capturing sanitized evidence."
+        },
+        {
+          "command": "Vinicius Delascio production credential-rotation approval; Atlas database-user password update; heroku config:set DB_PASS; Atlas count probe; Heroku dyno and HTTP verification; pending-secret cleanup",
+          "result": "pass",
+          "details": "A mongoexport connection error exposed the prior database credential in private task output, so it was treated as compromised. After explicit approval, a new random value was applied to Atlas and Heroku without display. Atlas reads returned the unchanged 114/2 counts, Heroku matched the pending value, both web and worker dynos restarted to up, and the production root returned HTTP 200. The pending file, pending Keychain item, and clipboard state were removed; the verified replacement is retained only in Atlas, Heroku, and the named operator Keychain entry. No database record was changed. The pre-existing application user still has broad atlasAdmin@admin access and requires a separately scoped least-privilege decision."
+        },
+        {
+          "command": "Vinicius Delascio representative identity-scope decision",
+          "result": "pass",
+          "details": "Vinicius explicitly directed the migration to include all data. All five pseudonymous identities and all 116 source records remain in scope; the eight feelings belonging to four low-volume identities must not be excluded or quarantined solely because of identity distribution. The two zero-time records remain in scope but still require an explicit timestamp transformation decision before import."
+        },
+        {
+          "command": "Vinicius Delascio zero-time normalization decision; pinned Deno fmt/lint/check and 6-test suite; fresh authorized export and real-source dry-run",
+          "result": "pass",
+          "details": "Vinicius explicitly approved replacing each of the two Go-zero createdat values with the timestamp encoded in that record's MongoDB ObjectId. The parser applies only that exact transformation, reports go_zero_time_to_object_id_time by sanitized source ID, and rejects other canonical numeric dates. Six unit tests pass. The fresh real-source dry-run accepted all 114 feelings and both weekly trackers, rejected zero, reported exactly two transformations, and retained all five identities. Reports were mode 0600 and contained no raw identity, content, connection string, or secret; the second plaintext export and reports were removed after sanitized evidence was captured."
+        },
+        {
+          "command": "Vinicius Delascio production-derived non-production load approval; fresh owner-only export and dry-run; hosted import twice; hosted read-only reconciliation",
+          "result": "pass",
+          "details": "Vinicius explicitly approved loading all 116 records with the two documented timestamp normalizations into the empty Steady non-production project. The fresh dry-run accepted 114 feelings and 2 weekly trackers with zero exceptions. The first forced-RLS transaction inserted and matched all 116 with zero target-only rows; the identical second import inserted zero, matched all 116, and preserved both structural hashes. Read-only hosted reconciliation again matched 114/2 with zero conflicts or target-only rows. MongoDB remained unchanged and Go/Heroku remained available."
+        },
+        {
+          "command": "Owner logical role/schema/data dump; checksummed manifest; AES-256-GCM encryption; private Sydney Storage upload/download; exact ciphertext checksum verification",
+          "result": "pass",
+          "details": "The post-import manifest records PostgreSQL 17.6, migration 20260818040229, Sydney residency, 114 feelings, and 2 weekly trackers; the role dump contains no password material. The retained object database/20260818T054525Z/steady-nonprod-post-import-20260818T054525Z.tar.gz.enc is 20,115 bytes with SHA-256 cb1fe709653235362bf57b52bac3277cfedcbbd2a4cbc4a742a3af4564ea76e7. An authenticated download matched exactly. No plaintext or credential was uploaded."
+        },
+        {
+          "command": "Decrypt downloaded post-import backup; verify component hashes; restore to disposable PostgreSQL 17; Stage 4 SQL suite; full source reconciliation; remove disposable restore",
+          "result": "pass",
+          "details": "Authenticated decryption and all manifest checks passed. The restore contained 114 feelings, 2 weekly trackers, five policies, and forced RLS on both tables. The full constraint/grant/two-subject SQL suite passed, and reconciliation matched all 116 records with zero exceptions or target-only rows. The exact disposable restore container was removed."
+        },
+        {
+          "command": "supabase db advisors --linked --type all --level warn --fail-on warn --output json",
+          "result": "pass",
+          "details": "The hosted Steady non-production project reported no security or performance advisor issue after the representative import."
+        },
+        {
+          "command": "Pinned Deno migration fmt/lint/check/test; backup fmt/lint/test; unchanged Go characterization regression; remove exact ignored Stage 5 scratch directory",
+          "result": "pass",
+          "details": "The migration CLI is formatted, lint-clean, type-safe, and 6/6 tests pass; authenticated backup encryption is formatted, lint-clean, and 3/3 tests pass; and the unchanged Go suite passes. After the retained encrypted backup and restore evidence were verified, the owner-only plaintext exports, reports, SQL dumps, decrypted archive, downloaded and local encrypted copies, temporary logs, package cache, and disposable restore scratch were permanently removed from the exact ignored directory. MongoDB and both retained private Storage objects remain recoverable."
+        },
+        {
+          "command": "AI-OS approved design/plan readiness validation; implementation structural validation; JSON parse; git diff --check; generic credential-pattern scan with documented synthetic fixture exclusion; exact non-disclosing Keychain-value scan",
+          "result": "pass",
+          "details": "The approved design and plan remain structurally valid and ready, implementation.json is structurally valid, JSON parsing and patch whitespace checks pass, and no operator Keychain secret appears in any tracked or unignored repository file. The generic scan is clean after excluding the existing compatibility test's intentionally synthetic localhost PostgreSQL URL."
         }
       ],
-      "notes": "Stage 5 remains in progress. Vinicius accepted a separate Free Sydney Supabase project as project-level isolation while acknowledging that it remains in the same Supabase account/provider boundary. The encrypted logical backup and full restore rehearsal prerequisite is now satisfied, with the first retained backup containing schema and zero application rows. No automatic retention deletion is authorized. The migration CLI, representative fixture, separately authorized MongoDB access, import, reconciliation, and exception decisions remain outstanding. No production data has been read, changed, or migrated."
+      "notes": "Stage 5 is complete. Vinicius authorized read-only source access, inclusion of all five identities and all 116 records, exact ObjectId timestamp normalization for the two Go-zero records, and the production-derived load into Steady non-production. The hosted target contains 114 feelings and 2 weekly trackers; first import, idempotent repeat import, and read-only reconciliation all match every record with no exception, duplicate, conflict, or target-only row. Synthetic tests retain target-only rollback reporting and transaction rollback coverage. A post-import AES-256-GCM logical backup is retained in the approved private Sydney Storage project and has passed exact download, authenticated decryption, PostgreSQL 17 restore, schema/RLS tests, and full 116-record reconciliation. MongoDB remains unchanged, Go/Heroku remains available, and no production traffic or endpoint changed. Plaintext migration and restore scratch was removed after evidence capture."
     },
     {
       "id": "STAGE-06",
