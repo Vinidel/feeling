@@ -509,10 +509,56 @@
     },
     {
       "id": "STAGE-07",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Depends on STAGE-05 and STAGE-06. Not started."
+      "status": "complete",
+      "files_changed": [
+        "api/Dockerfile",
+        "api/README.md",
+        "api/src/app.ts",
+        "api/src/feelings.ts",
+        "api/src/main.ts",
+        "api/tests/app_test.ts",
+        "api/tests/feelings_app_test.ts",
+        "api/tests/feelings_contract_test.ts",
+        "api/tests/feelings_integration.ts",
+        "server/feelings_contract_test.go",
+        "tests/contract/README.md",
+        "tests/contract/feelings.mjs",
+        "specs/backend-migration/stage-07-feelings.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Pinned Deno 2.9.4 fmt --check; lint; check src/main.ts tests/; test with loopback-only network; audit",
+          "result": "pass",
+          "details": "All API files are formatted, 17 TypeScript files are lint-clean and type-safe, 19 tests pass, and Deno reports no known dependency vulnerability. Stage 7 cases cover empty/populated GET, all five statuses and activities, neutral defaults, exactly one service call, malformed and strict-validation failures with no persistence call, two-subject isolation, header mismatch, and the reusable URL-level target contract. Stage 6 Auth0, CORS, readiness, schema, dependency, and log-sanitization regressions also pass."
+        },
+        {
+          "command": "Run api/tests/feelings_integration.ts through the Keychain-held steady_runtime TLS transaction-pooler URL with exact Deno env/network permissions",
+          "result": "pass",
+          "details": "The hosted rollback-only test used the real Postgres mapper and least-privilege transaction boundary. It proved one insert produces a count delta of exactly one, returned all nested camel-case fields and a string status, exposed the insert on the subsequent read, ordered created_at descending then UUID descending, retained explicit user_id predicates, and left both synthetic subjects empty after rollback. No credential or private migrated content was printed."
+        },
+        {
+          "command": "docker run golang:1.23 go test -count=1 ./... with server and shared contract fixtures mounted",
+          "result": "pass",
+          "details": "The unchanged Go handlers and prior characterization suite pass. A new ephemeral Gin HTTP test runs the Stage 1 synthetic feelings fixture and equivalent missing/malformed auth, empty, create/read, mismatched-identity, permissive-status, and second-subject cases through real Go handlers backed by Mongo wire mocks. The source's permissive status quirk is retained only as comparison evidence."
+        },
+        {
+          "command": "cd client && npm test -- --watchAll=false --runInBand src/apiContract.test.js",
+          "result": "pass",
+          "details": "Both React API contract tests pass. The current Auth0 token acquisition, bearer plus optional x-user-id headers, feeling payload, and response-consuming journey require no frontend change for the target slice."
+        },
+        {
+          "command": "docker build --no-cache -f api/Dockerfile -t feeling-api:stage-7 .; disposable local image smoke against hosted readiness; non-root/log assertions; stop and remove container",
+          "result": "pass",
+          "details": "The clean digest-pinned image installed only locked dependencies and type-checked in-image. Running as uid/gid 1993, it returned 200 for health and hosted readiness, 401 for unauthenticated GET /api/feelings, and 404 for the still-disabled weekly route. Captured logs contained only allowlisted operational fields; the disposable container was stopped and removed."
+        },
+        {
+          "command": "node --check tests/contract/feelings.mjs; JSON parse; git diff --check; AI-OS design/plan readiness and implementation structural validation",
+          "result": "pass",
+          "details": "The reusable base-URL contract is syntactically valid, repository JSON and patches are clean, the approved design and plan remain ready, and the Stage 7 implementation hand-off is structurally valid. No production deployment, endpoint, traffic, environment, data, Auth0, Heroku, or MongoDB change was performed."
+        }
+      ],
+      "notes": "Stage 7 is complete. The Deno service now enables only GET/POST /api/feelings with retained Auth0 identity, strict React-compatible input, append-only least-privilege Postgres persistence, forced-RLS isolation, deterministic history ordering, empty-array normalization, and existing camel-case/nested response mapping. URL-level Go and Deno evidence makes the approved source quirks explicit. Weekly and retired routes remain disabled, the hosted test committed no synthetic data, and Go/Heroku remains intact and runnable."
     },
     {
       "id": "STAGE-08",
@@ -579,11 +625,6 @@
     }
   ],
   "unresolved_questions": [
-    {
-      "question": "Which encrypted Australian destination should hold manual logical backups while the Supabase project remains on the Free plan? This must be resolved before representative data is loaded.",
-      "blocking": false,
-      "owner": "Vinicius Delascio"
-    },
     {
       "question": "Before Release, which of the legacy React dependency audit findings reported by the rollback-image build are reachable in the retained application, and should remediation occur within this migration or be tracked as separately approved work?",
       "blocking": false,

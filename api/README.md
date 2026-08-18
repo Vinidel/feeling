@@ -1,8 +1,22 @@
 # Standalone Deno API
 
-Stage 6 establishes the shared authentication, authorization, database, and HTTP
-boundary. It deliberately does not enable feelings, weekly tracker, chat, or
-agent routes; those paths still return the normalized `404` envelope.
+Stage 7 enables the feelings vertical slice on the shared authentication,
+authorization, database, and HTTP boundary. Weekly tracker, chat, agent, and
+ping routes remain disabled and return the normalized `404` envelope.
+
+## Feelings slice
+
+- `GET /api/feelings` returns only the verified Auth0 subject's rows as a bare
+  array. Empty history is normalized to `[]`, and rows are ordered by
+  `createdAt` descending with generated ID descending as the deterministic tie
+  breaker.
+- `POST /api/feelings` accepts the existing React payload, applies neutral
+  comment/activity defaults, inserts exactly one append-only row for the
+  verified subject, and returns the saved camel-case/nested representation with
+  status serialized as a string.
+- Unknown fields, client-selected identity, malformed timestamps, and status
+  outside `0` through `4` return the normalized `400 invalid_request` envelope
+  without calling persistence.
 
 ## Security boundary
 
@@ -81,17 +95,21 @@ deno task test
 ```
 
 The regular suite uses a controlled loopback JWKS server and synthetic signed
-tokens. `tests/database_integration.ts` is a separately authorized hosted test:
-provide the runtime-only `DATABASE_URL` through an operator secret mechanism and
-grant Deno network access only to that database host. It inserts synthetic rows
-inside an intentionally rolled-back transaction, proves two-subject isolation,
-ownership-reassignment and DELETE denial, explicit application predicates,
-transaction-local identity replacement, and absence of pool identity leakage.
+tokens. It also invokes the reusable URL-level feelings contract against an
+ephemeral Deno server. `tests/database_integration.ts` and
+`tests/feelings_integration.ts` are separately authorized hosted tests: provide
+the runtime-only `DATABASE_URL` through an operator secret mechanism and grant
+Deno network access only to that database host. Both keep synthetic writes in
+intentionally rolled-back transactions. Together they prove two-subject
+isolation, denied ownership reassignment and DELETE, explicit application
+predicates, transaction-local identity replacement, feeling mapping, exactly one
+insert, subsequent reads, deterministic ordering, and absence of pool identity
+leakage.
 
 Build the portable OCI image from the repository root:
 
 ```bash
-docker build -f api/Dockerfile -t feeling-api:stage-6 .
+docker build -f api/Dockerfile -t feeling-api:stage-7 .
 ```
 
 The image remains based on the digest-pinned official Deno 2.9.4 image, runs as

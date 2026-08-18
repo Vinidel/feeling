@@ -2,6 +2,7 @@ import { createHandler } from "./app.ts";
 import { createAuth0Authenticator } from "./auth.ts";
 import { readRuntimeConfig } from "./config.ts";
 import { createDatabase } from "./database.ts";
+import { createFeelingsService } from "./feelings.ts";
 import { logEvent } from "./log.ts";
 
 export async function run(): Promise<void> {
@@ -11,6 +12,7 @@ export async function run(): Promise<void> {
     audience: config.auth0Audience,
     issuer: config.auth0Issuer,
   });
+  const feelings = createFeelingsService(database);
   const server = Deno.serve(
     {
       hostname: config.hostname,
@@ -27,6 +29,7 @@ export async function run(): Promise<void> {
       allowedOrigins: config.allowedOrigins,
       authenticate,
       database,
+      feelings,
       deploymentVersion: config.deploymentVersion,
     }),
   );

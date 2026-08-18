@@ -1,7 +1,9 @@
 import type { AuthenticateRequest } from "./auth.ts";
 import type { Database } from "./database.ts";
 import { errorResponse, HttpError } from "./errors.ts";
+import type { FeelingsService } from "./feelings.ts";
 import { logEvent } from "./log.ts";
+import { feelingRequestSchema } from "./schemas.ts";
 
 export type RequestLogger = typeof logEvent;
 
@@ -9,6 +11,7 @@ export type HandlerOptions = Readonly<{
   allowedOrigins: ReadonlySet<string>;
   authenticate: AuthenticateRequest;
   database: Pick<Database, "checkReadiness">;
+  feelings: FeelingsService;
   deploymentVersion: string;
   logger?: RequestLogger;
 }>;
@@ -82,7 +85,25 @@ function verifyCors(
 function routeTemplate(request: Request, pathname: string): string {
   if (request.method === "GET" && pathname === "/healthz") return "/healthz";
   if (request.method === "GET" && pathname === "/readyz") return "/readyz";
+  if (
+    (request.method === "GET" || request.method === "POST") &&
+    pathname === "/api/feelings"
+  ) return "/api/feelings";
   return "unmatched";
+}
+
+async function parseFeelingRequest(request: Request) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    throw new HttpError(400, "invalid_request", "Request body is invalid");
+  }
+  const result = feelingRequestSchema.safeParse(body);
+  if (!result.success) {
+    throw new HttpError(400, "invalid_request", "Request body is invalid");
+  }
+  return result.data;
 }
 
 function responseWithOperationalHeaders(
@@ -134,6 +155,17 @@ export function createHandler(
           );
         }
         response = jsonResponse({ status: "ready" }, 200);
+      } else if (template === "/api/feelings") {
+        const { userId } = await options.authenticate(request);
+        if (request.method === "GET") {
+          response = jsonResponse(await options.feelings.list(userId), 200);
+        } else {
+          const feeling = await parseFeelingRequest(request);
+          response = jsonResponse(
+            await options.feelings.create(userId, feeling),
+            200,
+          );
+        }
       } else {
         throw new HttpError(404, "not_found", "Route not found");
       }

@@ -1,8 +1,14 @@
 import assert from "node:assert/strict";
 import { createHandler } from "../src/app.ts";
+import type { FeelingsService } from "../src/feelings.ts";
 import type { LogRecord } from "../src/log.ts";
 
-function testHandler(options: { ready?: () => Promise<void> } = {}) {
+function testHandler(
+  options: {
+    ready?: () => Promise<void>;
+    feelings?: FeelingsService;
+  } = {},
+) {
   const records: LogRecord[] = [];
   let authenticationCalls = 0;
   const handler = createHandler({
@@ -13,6 +19,11 @@ function testHandler(options: { ready?: () => Promise<void> } = {}) {
     },
     database: {
       checkReadiness: options.ready ?? (() => Promise.resolve()),
+    },
+    feelings: options.feelings ?? {
+      list: () => Promise.resolve([]),
+      create: (_userId, feeling) =>
+        Promise.resolve({ ...feeling, userID: "auth0|test" }),
     },
     deploymentVersion: "test-version",
     logger: (level, event, fields) => {
@@ -72,12 +83,11 @@ Deno.test("readiness dependency failures are sanitized", async () => {
   assert.equal(records[0].failureCode, "dependency_unavailable");
 });
 
-Deno.test("foundation still exposes no business or retired route", async () => {
+Deno.test("weekly and retired routes remain disabled", async () => {
   const { handler, authenticationCalls } = testHandler();
 
   for (
     const path of [
-      "/api/feelings",
       "/api/weekly-tracker",
       "/api/chat/capabilities",
       "/api/agent/feelings",

@@ -2,6 +2,14 @@
 
 `run.mjs` is a base-URL-driven smoke layer for comparing the existing Go service with later replacement slices. It never contains credentials or private fixtures.
 
+`feelings.mjs` is the reusable Stage 7 URL-level contract. It covers missing and
+malformed auth, empty and populated reads, one create followed by a visible
+read, header identity mismatch, two-subject isolation, and the approved source
+versus target status-validation normalization. The Deno suite imports it
+directly against an ephemeral target HTTP server. The Go suite exercises the
+same shared synthetic fixture and URL cases against an ephemeral source HTTP
+server backed by Mongo wire mocks.
+
 Run unauthenticated and route checks against a local or isolated deployment:
 
 ```bash
