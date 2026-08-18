@@ -284,10 +284,39 @@
     },
     {
       "id": "STAGE-05",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Depends on STAGE-04. No data access or migration has occurred."
+      "status": "in_progress",
+      "files_changed": [
+        "specs/backend-migration/stage-05-data-migration.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Supabase changelog and current region, Storage bucket, Free-plan, and backup documentation review",
+          "result": "pass",
+          "details": "No current breaking change blocks the backup project. The review confirmed Sydney ap-southeast-2 is a specific data-residency region, Storage origin follows the project region, buckets are private by default when public=false, and Free projects require an operator-managed logical backup process."
+        },
+        {
+          "command": "supabase projects list --output json; supabase projects create 'Steady backups' --org-id <non-secret-org-id> --db-password <generated Keychain value> --region ap-southeast-2 --output json",
+          "result": "pass",
+          "details": "The account had one active project and an available second Free slot. Under Vinicius Delascio's explicit authorization, Steady backups was created in Sydney with reference dabuqchfkqbsgymbspvk and reported ACTIVE_HEALTHY. The generated database password and project reference were stored in macOS Keychain without credential output."
+        },
+        {
+          "command": "supabase ssl-enforcement update/get --project-ref <backup-project-ref> --enable-db-ssl-enforcement --experimental --yes",
+          "result": "pass",
+          "details": "External database TLS enforcement was enabled and the provider returned database=true."
+        },
+        {
+          "command": "Create and inspect database-backups through the Supabase Storage API using an ephemeral server-only key",
+          "result": "pass",
+          "details": "The database-backups bucket was created with public=false. Its server-only operator key is stored only in macOS Keychain and is unavailable to the browser, request-serving API, repository, and reports."
+        },
+        {
+          "command": "Synthetic private-bucket upload/download/unauthenticated-denial/removal probe",
+          "result": "pass",
+          "details": "A random synthetic object uploaded and downloaded byte-for-byte through operator authorization, unauthenticated access did not return 200, and the probe object was removed and confirmed absent. No application, MongoDB, Auth0, comment, note, or backup content was uploaded."
+        }
+      ],
+      "notes": "Stage 5 has started only through its approved backup prerequisite. Vinicius accepted a separate Free Sydney Supabase project as project-level isolation while acknowledging that it remains in the same Supabase account/provider boundary. No retention deletion is authorized. The encrypted logical dump, checksum, restore rehearsal, migration CLI, representative fixture, MongoDB access, import, reconciliation, and exception decisions remain outstanding. No production data has been read, changed, or migrated."
     },
     {
       "id": "STAGE-06",
