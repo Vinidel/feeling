@@ -36,6 +36,7 @@ Keychain:
 | `feeling/supabase/steady-backups/project-ref` | `steady-backups` | Backup project reference |
 | `feeling/supabase/steady-backups/database-password` | `steady-backups-db-owner` | Backup-project database owner password |
 | `feeling/supabase/steady-backups/storage-secret-key` | `database-backups-operator` | Server-only Storage administration |
+| `feeling/supabase/steady-backups/encryption-key` | `database-backups-aes256gcm` | 256-bit authenticated backup-encryption key |
 
 The Storage secret key bypasses Storage RLS and is restricted to controlled
 operator tooling. It must never be supplied to the browser, Deno request-serving
@@ -49,19 +50,50 @@ was denied. The synthetic object was then deleted and its absence verified. No
 application data, MongoDB data, database dump, comments, notes, Auth0 subject, or
 other private content was uploaded.
 
-## Backup format and restore gate
+## First logical backup and restore rehearsal
 
-Before representative MongoDB data is loaded into `Steady non-prod`, Stage 5
-must still:
+The first pre-data backup completed on 2026-08-18:
 
-1. generate a logical roles, schema, and data backup without secret values;
-2. encrypt the backup locally before upload;
-3. calculate and record a SHA-256 checksum without private content;
-4. upload the encrypted object to `database-backups`;
-5. download it through operator-only credentials;
-6. verify the checksum, decrypt locally, and restore into a disposable database;
-7. verify schema and row counts; and
-8. remove all decrypted temporary material after the rehearsal.
+- Object: `database/20260818T020203Z/steady-nonprod-20260818T020203Z.tar.gz.enc`
+- Encrypted size: 2,669 bytes
+- Encrypted SHA-256: `a873d7ece7f3dcfb27706c8d4ee0c5844e1cf8203121b5d0e39e7097db4b6e30`
+- Encryption: AES-256-GCM with a random 96-bit IV and authentication tag
+- Source PostgreSQL: 17.6
+- Source migration: `20260817053317`
+- Source rows: zero feelings and zero weekly trackers
+
+The logical archive contains separate role, `steady` schema, data, and manifest
+files. The manifest records a SHA-256 for every SQL component and contains no
+secret value or private application content. The role dump contains the custom
+role definitions without password values. The encrypted Storage object uses
+`application/octet-stream`.
+
+`tools/backup/crypto.ts` is a dependency-free Deno helper for the authenticated
+envelope. Tests prove round-trip behavior, absence of plaintext in ciphertext,
+tamper rejection, wrong-key rejection, and strict 32-byte key decoding.
+
+The object was downloaded through the operator credential and matched the
+recorded encrypted checksum. After decryption, its archive and all three
+component checksums matched. The schema and zero-row data were restored into a
+disposable local PostgreSQL 17 database. Verification proved:
+
+- both retained tables exist and are owned by `steady_migration_owner`;
+- both source and restored row counts are zero;
+- all five RLS policies exist and RLS is forced;
+- the runtime grants match the approved operations and exclude `DELETE`; and
+- the complete Stage 4 constraint and two-subject RLS suite passes.
+
+The disposable database, local Supabase containers, plaintext SQL, decrypted
+archive, downloaded encrypted copy, and original local encrypted copy were
+removed after verification. The encrypted Storage object is the only retained
+artifact outside version-controlled source and Keychain-held secrets.
+
+## Remaining Stage 5 work
+
+The backup and restore prerequisite is satisfied. Before representative source
+data is imported, Stage 5 must still build the standalone migration CLI, prove
+the synthetic invalid/duplicate/repeat-input cases, obtain separately authorized
+representative MongoDB data, and complete deterministic import and reconciliation.
 
 No automatic backup deletion or retention policy has been authorized. No real
-backup has been created yet.
+application record was present in this first backup.

@@ -1,5 +1,6 @@
 /.idea/
 /server/web/
+/.tmp/
 /api/.env
 /api/.env.*
 !/api/.env.example

@@ -286,8 +286,11 @@
       "id": "STAGE-05",
       "status": "in_progress",
       "files_changed": [
+        ".gitignore",
         "specs/backend-migration/stage-05-data-migration.md",
-        "specs/backend-migration/implementation.json"
+        "specs/backend-migration/implementation.json",
+        "tools/backup/crypto.ts",
+        "tools/backup/crypto_test.ts"
       ],
       "test_evidence": [
         {
@@ -314,9 +317,34 @@
           "command": "Synthetic private-bucket upload/download/unauthenticated-denial/removal probe",
           "result": "pass",
           "details": "A random synthetic object uploaded and downloaded byte-for-byte through operator authorization, unauthenticated access did not return 200, and the probe object was removed and confirmed absent. No application, MongoDB, Auth0, comment, note, or backup content was uploaded."
+        },
+        {
+          "command": "deno fmt --check tools/backup; deno lint tools/backup; deno test tools/backup",
+          "result": "pass",
+          "details": "The pinned Deno 2.9.4 runtime reports both dependency-free backup helper files formatted and lint-clean. Three tests prove AES-256-GCM round trip, ciphertext does not contain the synthetic plaintext, tampering and wrong keys fail authentication, and only a valid base64-encoded 32-byte key is accepted."
+        },
+        {
+          "command": "supabase db dump --db-url <Keychain TLS session URL> for roles, schema steady, and data-only; generate checksummed manifest; encrypt with tools/backup/crypto.ts",
+          "result": "pass",
+          "details": "Read-only logical dumps captured role definitions without password values, the private steady schema, and zero-row data. A private-content-free manifest records PostgreSQL 17.6, source migration 20260817053317, Sydney source region, zero feelings/weekly rows, and SHA-256 values for each component. The archive was authenticated-encrypted locally with a Keychain-held 256-bit key; no secret was logged or written to the repository."
+        },
+        {
+          "command": "Upload encrypted archive to private Storage; download with operator key; verify SHA-256; decrypt; verify archive and component checksums",
+          "result": "pass",
+          "details": "The retained private object is database/20260818T020203Z/steady-nonprod-20260818T020203Z.tar.gz.enc, 2,669 bytes, SHA-256 a873d7ece7f3dcfb27706c8d4ee0c5844e1cf8203121b5d0e39e7097db4b6e30. The downloaded ciphertext matched exactly, authenticated decryption succeeded, and all internal dump checksums matched the encrypted manifest."
+        },
+        {
+          "command": "Restore verified schema.sql and data.sql to disposable PostgreSQL 17 stage5_restore; run metadata assertions and supabase/tests/stage_04_schema_test.sql",
+          "result": "pass",
+          "details": "The restore recreated both retained tables with zero rows, five policies, forced RLS, migration-owner ownership, approved runtime grants, and no DELETE grant. The complete constraint, uniqueness, atomic-upsert, missing-identity, two-subject isolation, ownership-reassignment, and forced-RLS suite passed with all synthetic rows rolled back."
+        },
+        {
+          "command": "dropdb stage5_restore; supabase stop --project-id steady-backend-migration --no-backup; remove exact ignored Stage 5 scratch directory; inspect retained Storage object metadata",
+          "result": "pass",
+          "details": "The disposable restore database and local containers were removed. All plaintext SQL, decrypted archives, downloaded copies, and local encrypted copies were permanently removed from the exact scratch directory. The private Sydney Storage object remains available with the expected path, size, and application/octet-stream content type."
         }
       ],
-      "notes": "Stage 5 has started only through its approved backup prerequisite. Vinicius accepted a separate Free Sydney Supabase project as project-level isolation while acknowledging that it remains in the same Supabase account/provider boundary. No retention deletion is authorized. The encrypted logical dump, checksum, restore rehearsal, migration CLI, representative fixture, MongoDB access, import, reconciliation, and exception decisions remain outstanding. No production data has been read, changed, or migrated."
+      "notes": "Stage 5 remains in progress. Vinicius accepted a separate Free Sydney Supabase project as project-level isolation while acknowledging that it remains in the same Supabase account/provider boundary. The encrypted logical backup and full restore rehearsal prerequisite is now satisfied, with the first retained backup containing schema and zero application rows. No automatic retention deletion is authorized. The migration CLI, representative fixture, separately authorized MongoDB access, import, reconciliation, and exception decisions remain outstanding. No production data has been read, changed, or migrated."
     },
     {
       "id": "STAGE-06",
