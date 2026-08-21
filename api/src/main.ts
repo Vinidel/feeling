@@ -5,6 +5,7 @@ import { createDatabase } from "./database.ts";
 import { createFeelingsService } from "./feelings.ts";
 import { logEvent } from "./log.ts";
 import { createWeeklyTrackersService } from "./weekly.ts";
+import { createStaticAssetServer } from "./static.ts";
 
 export async function run(): Promise<void> {
   const config = readRuntimeConfig();
@@ -18,6 +19,9 @@ export async function run(): Promise<void> {
   });
   const feelings = createFeelingsService(database);
   const weeklyTrackers = createWeeklyTrackersService(database);
+  const serveStatic = config.staticRoot
+    ? createStaticAssetServer({ root: config.staticRoot })
+    : undefined;
   const server = Deno.serve(
     {
       hostname: config.hostname,
@@ -37,6 +41,7 @@ export async function run(): Promise<void> {
       feelings,
       weeklyTrackers,
       deploymentVersion: config.deploymentVersion,
+      serveStatic,
     }),
   );
 

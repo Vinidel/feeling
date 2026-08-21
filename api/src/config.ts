@@ -28,6 +28,7 @@ const runtimeConfigSchema = z.object({
   DEPLOYMENT_VERSION: z.string().trim().min(1).default("development"),
   HOST: z.string().trim().min(1).default("0.0.0.0"),
   PORT: z.coerce.number().int().min(1).max(65535).default(8080),
+  STATIC_ROOT: z.string().trim().min(1).optional(),
 }).strict();
 
 export type RuntimeConfig = {
@@ -39,6 +40,7 @@ export type RuntimeConfig = {
   deploymentVersion: string;
   hostname: string;
   port: number;
+  staticRoot?: string;
 };
 
 function parseOrigins(value: string): ReadonlySet<string> {
@@ -64,6 +66,7 @@ export function parseRuntimeConfig(
     deploymentVersion: parsed.DEPLOYMENT_VERSION,
     hostname: parsed.HOST,
     port: parsed.PORT,
+    ...(parsed.STATIC_ROOT ? { staticRoot: parsed.STATIC_ROOT } : {}),
   };
 }
 
@@ -77,5 +80,6 @@ export function readRuntimeConfig(): RuntimeConfig {
     DEPLOYMENT_VERSION: Deno.env.get("DEPLOYMENT_VERSION"),
     HOST: Deno.env.get("HOST"),
     PORT: Deno.env.get("PORT"),
+    STATIC_ROOT: Deno.env.get("STATIC_ROOT"),
   });
 }

@@ -801,10 +801,98 @@
     },
     {
       "id": "STAGE-12",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Depends on STAGE-11 and requires separate infrastructure/rehearsal authorization."
+      "status": "complete",
+      "files_changed": [
+        "api/.env.example",
+        "api/Dockerfile",
+        "api/deno.json",
+        "api/src/app.ts",
+        "api/src/config.ts",
+        "api/src/main.ts",
+        "api/src/static.ts",
+        "api/tests/static_test.ts",
+        "docs/host-migration-guide.md",
+        "docs/runbooks/azure-container-apps.md",
+        "docs/runbooks/backup.md",
+        "docs/runbooks/post-write-rollback.md",
+        "docs/runbooks/pre-commit-rollback.md",
+        "docs/runbooks/restore.md",
+        "docs/runbooks/stage-12-cutover.md",
+        "supabase/migrations/20260819004100_add_rollback_reconciliation_role.sql",
+        "supabase/tests/stage_04_rollback.sql",
+        "supabase/tests/stage_04_schema_test.sql",
+        "supabase/tests/stage_12_rollback_role_test.sql",
+        "tools/rollback/README.md",
+        "tools/rollback/deno.json",
+        "tools/rollback/deno.lock",
+        "tools/rollback/main.ts",
+        "tools/rollback/reconcile.ts",
+        "tools/rollback/tests/reconcile_test.ts",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Create Australia East Azure resource group, ACR, Container Apps environment/app, managed identity, Log Analytics workspace, and monthly budget in the isolated personal-subscription CLI profile",
+          "result": "pass",
+          "details": "Vinicius Delascio explicitly authorized the named nonproduction infrastructure and rehearsal. The user-assigned identity has only AcrPull on the admin-disabled registry; the app scales 0..1 at 0.25 CPU/0.5 GiB and has one secret reference named database-url. The 5 monthly budget has an 80 percent actual-cost owner alert and is documented as an alert rather than a spending cap. No unrelated or corporate subscription was used."
+        },
+        {
+          "command": "Clean Linux/AMD64 Buildx image build, local emulated smoke, ACR manifest inspection, digest deployment, TLS/redirect/root/SPA/readiness/unauthenticated/log checks",
+          "result": "pass",
+          "details": "The same-origin React plus Deno image was built from digest-pinned Node 20 Alpine and Deno 2.9.4 bases, verified as linux/amd64, and deployed by immutable digest sha256:bffde960b8d9eb263d72a7b02b817039bb75733dad93f533c3c77fc4a4757497. The dark Australia East URL returned TLS-verified 200 HTML, SPA fallback and readiness, redirected HTTP to HTTPS, rejected unauthenticated API access with 401, and emitted only allowlisted structured logs."
+        },
+        {
+          "command": "Azure multiple-revision traffic shift r3 to r2 and back to r3; final revision and ingress snapshot",
+          "result": "pass",
+          "details": "Both retained revisions reported Healthy and Provisioned on the same pinned digest. The dark URL served root and readiness after each shift; r3 is again at 100 percent, r2 at zero, with no production hostname or traffic involved. The reversal completed in under two minutes."
+        },
+        {
+          "command": "Local Supabase reset and complete Stage 4 schema/RLS suite plus Stage 12 rollback-role transaction test",
+          "result": "pass",
+          "details": "All three migrations apply from zero. The nologin, no-BYPASSRLS steady_rollback role can select and link only the current Auth0 subject's rows, has UPDATE only on legacy_mongo_id, cannot change private content, and cannot access another subject. All synthetic fixtures rolled back."
+        },
+        {
+          "command": "Hosted Supabase db push dry-run then apply 20260819004100; transaction-wrapped rollback-role test; aggregate counts; linked advisors",
+          "result": "pass",
+          "details": "The dry run named exactly the additive rollback-role migration. After authorized application to Steady non-prod, the hosted isolation test passed and rolled back, counts remained 114 feelings and 2 weekly trackers, and Supabase security/performance advisors reported no issue. No production Mongo data or target business row changed."
+        },
+        {
+          "command": "Disposable target-to-Mongo plan, execute, second execute, aggregate linkage checks, fresh Mongo export, and forward migration reconcile",
+          "result": "pass",
+          "details": "Starting from 3/2 source rows plus one target-only feeling, one changed weekly row, and one target-only weekly row, execute inserted the feeling and weekly row, normalized two weekly documents, and linked two target rows. The second execute wrote and linked nothing and reported all three weekly rows already matched. Mongo ended at 4/3, every target row had a legacy ID, and a fresh forward reconcile matched 4/3 with zero exception or target-only row."
+        },
+        {
+          "command": "Constrained rollback operator container permission rehearsal",
+          "result": "pass",
+          "details": "The dedicated container mounted only repository source read-only and an ignored report directory, received only explicit secrets, and limited network access to the selected PostgreSQL and Mongo endpoints plus dependency retrieval. Deno read-only system metadata was required by the MongoDB driver; no host home or secret store was mounted. Reports contained sanitized counts and keyed hashes only."
+        },
+        {
+          "command": "Pinned Deno API fmt/lint/check/28 tests; rollback helper fmt/lint/check/2 tests; migration helper 6 tests; backup crypto 3 tests; React 5 suites/9 tests; Go 1.23 regression",
+          "result": "pass",
+          "details": "All implementation and rollback-source suites are green. Static same-origin serving protects asset, HEAD, SPA, unsafe-path, API-path and unsupported-method behavior. The unchanged Go characterization remains recoverable. The React build's pre-existing dependency audit findings remain an unresolved Release input rather than an unreviewed Stage 12 upgrade."
+        },
+        {
+          "command": "Create named cutover, pre-commit rollback, post-write rollback, backup, restore, Azure target, and beginner host-migration runbooks",
+          "result": "pass",
+          "details": "The procedures name Vinicius Delascio as owner/approver, define the first replacement production request as the commit point, separate the two rollback modes, require write suspension and bidirectional reconciliation, retain Go/Heroku/Mongo, and state that rehearsal approval does not authorize production cutover or decommissioning."
+        },
+        {
+          "command": "Auth0 Dashboard allowlist inspection and real retained-account read-only browser journey through the Azure same-origin URL",
+          "result": "pass",
+          "details": "After Vinicius Delascio approved and entered the Azure preproduction origin, the exact URL was present in Auth0 callback, logout, web-origin, and CORS allowlists without replacing existing entries. Auth0 accepted the redirect, the retained account loaded the journal and weekly tracker through the Azure origin and hosted Supabase data, the session survived reload, and sign-out returned to the public screen with private history absent. No feeling, weekly tracker, account, or other business record was created or changed."
+        },
+        {
+          "command": "Remove exact disposable Stage 12 Mongo container, stop only steady-backend-migration local Supabase without backup, and delete exact ignored synthetic rehearsal files",
+          "result": "pass",
+          "details": "The synthetic Mongo container and local rehearsal database were permanently removed after sanitized evidence was recorded. Ten exact ignored exports/reports and their now-empty directory were removed. The unrelated car-chronicle local stack, hosted Supabase projects, Azure preproduction revisions, Go/Heroku rollback source, Mongo production data, and encrypted backup objects were not changed."
+        },
+        {
+          "command": "AI-OS plan readiness and implementation structural validation; implementation readiness probe; JSON, patch, cleanup, generic credential-pattern, and exact Keychain secret-value checks",
+          "result": "pass",
+          "details": "The approved plan remains structurally valid and ready, implementation.json is structurally valid, JSON and whitespace checks pass, disposable Stage 12 resources are absent, and no known Keychain secret value or generic credential pattern occurs in repository files. Full implementation readiness correctly remains closed because Stages 13 through 16 are pending and the earlier Stage 3 IPv6 direct-endpoint probe remains truthfully recorded as failed; Stage 12 does not waive or rewrite those facts."
+        }
+      ],
+      "notes": "Stage 12 is complete. The Australia East Azure target satisfies ARCH-002, the pinned same-origin image and revision rollback pass, both data rollback modes are timed and repeatable, the additive hosted rollback role remains least-privilege under forced RLS, and the real retained-Auth0 read-only browser journey passes through the dark Azure origin. All implementation, legacy rollback, migration, backup, React, database, advisor, and reconciliation checks are green. Production traffic, frontend endpoints, production environment variables, Heroku, and Mongo remain unchanged and recoverable. This rehearsal does not authorize production cutover, deployment, or decommissioning."
     },
     {
       "id": "STAGE-13",

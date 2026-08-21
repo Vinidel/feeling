@@ -9,6 +9,7 @@ import {
   weeklyTrackerRequestSchema,
 } from "./schemas.ts";
 import type { WeeklyTrackersService } from "./weekly.ts";
+import type { StaticAssetServer } from "./static.ts";
 
 export type RequestLogger = typeof logEvent;
 
@@ -30,6 +31,7 @@ export type HandlerOptions = Readonly<{
   weeklyTrackers: WeeklyTrackersService;
   deploymentVersion: string;
   logger?: RequestLogger;
+  serveStatic?: StaticAssetServer;
 }>;
 
 const allowedCorsMethods = new Set(["GET", "POST"]);
@@ -173,7 +175,7 @@ export function createHandler(
     const startedAt = performance.now();
     const requestId = crypto.randomUUID();
     const url = new URL(request.url);
-    const template = routeTemplate(request, url.pathname);
+    let template = routeTemplate(request, url.pathname);
     let failureCode: string | undefined;
     let origin: string | undefined;
     let response: Response;
@@ -222,6 +224,13 @@ export function createHandler(
             record: await options.weeklyTrackers.upsert(userId, tracker),
           }, 200);
         }
+      } else if (options.serveStatic) {
+        const staticResponse = await options.serveStatic(request);
+        if (!staticResponse) {
+          throw new HttpError(404, "not_found", "Route not found");
+        }
+        template = "static_asset_or_spa";
+        response = staticResponse;
       } else {
         throw new HttpError(404, "not_found", "Route not found");
       }

@@ -23,7 +23,7 @@ begin
 
   if exists (
     select 1 from pg_roles
-    where rolname in ('steady_migration_owner', 'steady_runtime')
+    where rolname in ('steady_migration_owner', 'steady_runtime', 'steady_rollback')
       and (rolsuper or rolcreatedb or rolcreaterole or rolinherit or rolbypassrls)
   ) then
     raise exception 'a Stage 4 role has a forbidden role attribute';
@@ -84,8 +84,19 @@ begin
     raise exception 'RLS is not enabled and forced on both tables';
   end if;
 
-  if (select count(*) from pg_policies where schemaname = 'steady') <> 5 then
+  if (select count(*) from pg_policies where schemaname = 'steady') <> 9 then
     raise exception 'unexpected number of RLS policies';
+  end if;
+
+  if not pg_has_role('steady_migration_owner', 'steady_rollback', 'member')
+    or not has_table_privilege('steady_rollback', 'steady.feelings', 'SELECT')
+    or not has_column_privilege(
+      'steady_rollback', 'steady.feelings', 'legacy_mongo_id', 'UPDATE'
+    )
+    or has_column_privilege(
+      'steady_rollback', 'steady.feelings', 'comment', 'UPDATE'
+    ) then
+    raise exception 'rollback role privileges are not narrowly scoped';
   end if;
 
   select pg_get_indexdef(indexrelid) into feelings_index

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://deno.land/x/deno/cli/schemas/config-file.v1.json",
+  "imports": {
+    "mongodb": "npm:mongodb@7.5.0",
+    "postgres": "npm:postgres@3.4.9"
+  },
+  "lock": {
+    "path": "./deno.lock",
+    "frozen": true
+  },
+  "nodeModulesDir": "none",
+  "minimumDependencyAge": 1440,
+  "tasks": {
+    "check": "deno check main.ts tests/",
+    "fmt:check": "deno fmt --check",
+    "lint": "deno lint",
+    "test": "deno test --frozen --no-prompt"
+  }
+}
