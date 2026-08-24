@@ -129,7 +129,7 @@
       "definition_of_done": [
         "Every representative source record is deterministically migrated or appears in a sanitized exception manifest.",
         "Repeatability and rollback reconciliation tests pass without duplicate or lost records.",
-        "Australian project and managed-backup residency evidence accompanies the dry-run report.",
+        "Sydney placement plus private encrypted logical-backup, checksum, and successful disposable-restore evidence accompanies the dry-run report without being represented as a managed database backup.",
         "The migration role and Mongo dependency exist only in the CLI and are unavailable to the request-serving service.",
         "No production data has been read, changed, or migrated without separate authorization."
       ]
@@ -296,7 +296,7 @@
         "docs/runbooks/ cutover, pre-commit rollback, post-write rollback, backup, and restore procedures",
         "sanitized migration checkpoint and reconciliation evidence"
       ],
-      "acceptance_criteria": ["AC-13"],
+      "acceptance_criteria": [],
       "tests": [
         "Obtain separate human authorization before creating managed container infrastructure, changing a hosted environment, or performing the rehearsal.",
         "Deploy the pinned OCI image dark or to pre-production in Australia and verify TLS, same-origin routing, secrets, health/readiness, structured logs, and deployment rollback.",
@@ -307,7 +307,7 @@
       "definition_of_done": [
         "The hosting provider satisfies every ARCH-002 requirement or Design is reopened.",
         "Named, timed, repeatable cutover and both rollback procedures have passing evidence and explicit commit-point semantics.",
-        "Go/Heroku, Mongo credentials/checkpoint, migration tools, and rollback configuration remain recoverable.",
+        "Go/Heroku, the Mongo checkpoint, migration tools, rollback configuration, and the requirements for separate scoped runtime/operator Mongo credentials remain recoverable and explicit.",
         "Rehearsal approval is not treated as production deployment or traffic-switch authority."
       ]
     },
@@ -322,13 +322,13 @@
         "production environment-variable inventory without values",
         "operational ownership, monitoring, backup/restore, audit, breach-response, cutover, and rollback records"
       ],
-      "acceptance_criteria": ["AC-14"],
+      "acceptance_criteria": [],
       "tests": [
         "Verify every plan stage through rehearsal has command and result evidence and every brief acceptance criterion has a traceable test.",
         "Run final database/security advisors and review runtime grants, forced RLS, Deno permissions, dependency lock integrity, secret exposure, log redaction, and replacement route inventory.",
         "Verify production record-count/response-size/request/error baselines are captured sufficiently to judge unpaginated history and set coarse alerts; return to Define if pagination is required.",
         "Verify named owners and procedures exist for migration, cutover, monitoring, support, backup/restore, operator audit, breach response, and both rollback modes.",
-        "Verify the Go/Heroku/Mongo rollback source remains available and no production action or resource deletion is bundled into Review or Release approval."
+        "Verify the Go/Heroku/Mongo rollback source remains available; record whether retired machine tokens and broad Mongo privileges remain live; and do not bundle any production action or resource deletion into Review or Release approval."
       ],
       "definition_of_done": [
         "Evidence is ready for the separate AI-OS Review stage and all required review disciplines.",
@@ -340,73 +340,156 @@
     {
       "id": "STAGE-14",
       "sequence": 14,
-      "title": "Execute the explicitly authorized production cutover",
+      "title": "Implement and rehearse the amended backup and rollback controls",
       "depends_on": ["STAGE-13"],
       "targets": [
-        "production Supabase Sydney project and managed backups",
-        "production Australian Deno container deployment",
-        "production Mongo checkpoint, migration, reconciliation, environment, and traffic switch",
-        "live Auth0 and React smoke verification"
+        "tools/backup/ complete encrypted logical-backup and disposable-restore workflow",
+        "docs/runbooks/ backup, restore, cutover, Heroku isolation, Mongo credential rotation, and rollback procedures",
+        "local or isolated Go fail-closed checks for retired chat and agent routes",
+        "least-privilege Mongo runtime/operator role specifications and verification probes",
+        "sanitized remediation evidence for REV-001, REV-002, and REV-003"
       ],
-      "acceptance_criteria": [],
+      "acceptance_criteria": ["AC-13", "AC-14"],
       "tests": [
-        "Do not start until Review has passed, Release is approved, and explicit human authority is recorded separately for production infrastructure, data migration, environment changes, deployment, frontend/public endpoint or traffic changes, and any irreversible database action involved.",
-        "Follow the rehearsed write-freeze/checkpoint/import/reconciliation/contract/RLS/React-smoke sequence without deviation; stop and use the appropriate rollback mode on any failed gate.",
-        "Before resuming writes, prove all source records are accounted for, the four public routes and Auth0 journeys pass, another synthetic subject cannot access the owner user's rows, and logs contain no private content.",
-        "Record the cutover commit point, source-of-truth transition, approvals, sanitized counts, deployment versions, and rollback readiness."
+        "Discover the installed Supabase CLI commands through --help and scan the current Supabase changelog before locking operator commands; verify both projects report Sydney and the database-backups bucket remains private.",
+        "Run the complete PostgreSQL 17 backup workflow: export roles without passwords plus private schema and data; create a content-free manifest containing versions, regions, counts, and SHA-256 component checksums; archive and AES-256-GCM encrypt locally; upload only ciphertext; download and verify its outer checksum; decrypt and verify all internal checksums; restore into an empty disposable target; reapply or verify migration history; then pass counts, constraints, forced-RLS two-subject isolation, API smoke, and reconciliation checks.",
+        "Prove plaintext SQL, decrypted archives, credentials, private field values, and raw Auth0 subjects never enter Storage, repository artefacts, logs, or reports, and remove exact plaintext scratch paths after durable ciphertext and restore evidence exist.",
+        "Run the Go service locally or in an isolated fixture with CHAT_INGEST_TOKEN and AGENT_API_TOKEN absent and prove both retired routes fail closed before their handlers while all four Auth0 browser routes remain runnable when their normal dependencies are present.",
+        "Rehearse the Heroku sequence without mutating production: maintenance on, retired-token removal, config-name verification, maintenance off only for authorized browser rollback, four-route Auth0 smoke, and no restoration of retired tokens. Resolve all commands and rollback checks without secret values.",
+        "Verify disposable or otherwise non-production Mongo users matching steady_legacy_runtime and steady_rollback_operator have only readWrite on the feeling database, use separate custody, can execute their required browser/rollback probes, and cannot perform admin, cross-database, user-management, project, or infrastructure operations.",
+        "Run all existing Go, Deno, React, contract, RLS, migration, rollback, backup, and secret-pattern checks to prove the remediation adds no externally observable behavior change."
       ],
       "definition_of_done": [
-        "Production traffic serves the approved Deno/Supabase replacement only after all separately authorized gates pass.",
-        "Supabase becomes authoritative only when writes resume after verified cutover.",
-        "Every acknowledged write is accounted for and rollback remains executable.",
-        "Heroku and Mongo remain available and unchanged except for the authorized write suspension/source-of-truth transition."
+        "A fresh encrypted backup has passed download, authenticated decryption, empty-target PostgreSQL 17 restore, migration, constraint, RLS, API, and reconciliation checks, and the retained evidence does not claim managed database backup coverage.",
+        "The Heroku retired-route isolation sequence and both least-privilege Mongo roles are independently rehearsed with explicit pass/fail probes and rollback steps.",
+        "Implementation evidence maps the three Review findings to concrete controls, commands, results, owners, and separate production approval gates.",
+        "No production Heroku configuration, Mongo credential, Supabase data, Azure deployment, frontend endpoint, or traffic has changed in this stage."
       ]
     },
     {
       "id": "STAGE-15",
       "sequence": 15,
-      "title": "Observe the production replacement and preserve rollback readiness",
+      "title": "Repeat the independent AI-OS Review",
       "depends_on": ["STAGE-14"],
       "targets": [
-        "managed Deno and Supabase logs, health, metrics, and alerts",
-        "production contract and React smoke checks",
-        "post-cutover reconciliation and incident/rollback decision log",
-        "retained Go/Heroku/Mongo rollback assets"
+        "specs/backend-migration/review.json",
+        "amended brief, design, plan, and implementation evidence",
+        "architecture, security, privacy, data, operations, and quality findings",
+        "explicit disposition of REV-001, REV-002, REV-003, and separately tracked FOLLOWUP-REACT-001"
       ],
       "acceptance_criteria": [],
       "tests": [
-        "Run scheduled smoke checks for Auth0 login/session, feelings read/write, weekly read/upsert, same-origin routing, health, and readiness using approved non-private test handling.",
-        "Monitor status/error rates, latency, database connections, response size, failed authorization, and migration/reconciliation indicators using sanitized provider telemetry.",
-        "Reconcile post-cutover records and investigate any missing, duplicate, cross-user, or malformed result immediately; suspend writes and invoke the approved rollback when a trigger is met.",
-        "Periodically confirm Go/Heroku/Mongo and the target-to-Mongo reconciliation path remain operational throughout the approved observation period."
+        "Use the AI-OS Review skill to independently trace every acceptance criterion through the amended contracts and implementation evidence.",
+        "Verify REV-001 is resolved by the owner-approved encrypted logical-backup contract and a passing full restore rehearsal, without describing it as managed backup coverage.",
+        "Verify REV-002 has a tested fail-closed mechanism, a precise Heroku maintenance/token-removal production gate, and a browser-only rollback path that never depends on restoring retired tokens.",
+        "Verify REV-003 has two separately held readWrite-on-feeling credential definitions, passing least-privilege probes, an ordered production rotation/revocation procedure, and no waiver for atlasAdmin.",
+        "Re-run the deterministic Review validators and obtain explicit accountable approval; any open high-severity finding or needs_changes verdict blocks Release."
       ],
       "definition_of_done": [
-        "The Release-approved observation conditions are satisfied with no unresolved rollback trigger or data discrepancy.",
-        "Operational ownership and incidents are recorded without private data or secret values.",
-        "No legacy resource has been deleted merely because observation succeeded."
+        "The new Review artefact passes structure and readiness validation with an approved pass verdict and no open high-severity finding.",
+        "Any remaining medium or low finding has an explicit owner and disposition without being silently waived.",
+        "Review approval is not treated as Release approval or authority for any production mutation."
       ]
     },
     {
       "id": "STAGE-16",
       "sequence": 16,
-      "title": "Decommission Heroku and Mongo only under separate explicit authority",
+      "title": "Create and approve the AI-OS Release decision",
       "depends_on": ["STAGE-15"],
       "targets": [
+        "specs/backend-migration/release.json",
+        "production cutover, rollback, support, and observation gates",
+        "operator logical-backup cadence and retention decision",
+        "named owners and separate-authority checklist for every production mutation"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Use the AI-OS Release skill only after Stage 15 Review is approved and verify every rollout, support, monitoring, rollback, and stop condition has a named owner.",
+        "Have Vinicius Delascio explicitly choose the ongoing Free-plan logical-backup cadence and retention duration; do not infer an RPO or deletion schedule from the repository.",
+        "Record the exact ordered cutover checklist and distinguish Release approval from the separate authorities for production credentials, environment variables, data migration, backup upload, deployment, frontend/public traffic, irreversible database changes, and later deletion.",
+        "Validate release.json structurally and for readiness; do not deploy or mutate production as part of creating the Release decision."
+      ],
+      "definition_of_done": [
+        "The Release artefact passes structure and readiness validation and is explicitly approved by the accountable human.",
+        "Backup cadence, retention, observation checks, stop triggers, support ownership, and both rollback modes are concrete.",
+        "No production action has occurred and every production mutation remains separately gated."
+      ]
+    },
+    {
+      "id": "STAGE-17",
+      "sequence": 17,
+      "title": "Execute the explicitly authorized production cutover",
+      "depends_on": ["STAGE-16"],
+      "targets": [
+        "production Supabase Postgres and private encrypted backup in the separate Sydney project",
+        "production Australian Deno container deployment",
+        "scoped Mongo runtime/operator credentials and revoked broad credential",
+        "Heroku maintenance state and retired chat/agent token configuration",
+        "production Mongo checkpoint, final migration, reconciliation, frontend traffic, and live Auth0 smoke verification"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Do not start until Review and Release are approved and explicit human authority is separately recorded for every production infrastructure, credential, environment, data, backup-upload, deployment, frontend/public-traffic, and irreversible database mutation involved.",
+        "Create steady_legacy_runtime in Atlas with readWrite only on feeling and store it only in Heroku; create steady_rollback_operator with the same database-only role and store it only in the operator secret store. Verify browser and reconciliation paths plus unchanged 114/2 source counts before revoking the old atlasAdmin credential, and stop without revocation if either probe fails.",
+        "Take a fresh production-target logical backup through the Stage 14 encrypted workflow and require successful download, checksum, authenticated decryption, empty-target restore, migration, constraints, forced-RLS, API smoke, and reconciliation before the write freeze.",
+        "At the authorized write freeze, enable Heroku maintenance mode, remove CHAT_INGEST_TOKEN and AGENT_API_TOKEN, verify both names are absent and the public Heroku hostname cannot serve a retired handler, then take the final Mongo checkpoint and execute idempotent import and 100 percent reconciliation or explicitly approved exceptions.",
+        "Deploy or promote the pinned Azure revision, switch the authorized frontend/public traffic, and before resuming writes prove the four Auth0 browser routes, React journeys, another-subject denial, sanitized logs, source/target accounting, and rollback readiness.",
+        "On any failed pre-commit gate, keep or restore traffic on Go only after disabling maintenance and passing the four browser routes; on post-write rollback, suspend writes, reconcile target-only rows to Mongo with steady_rollback_operator, then disable maintenance and pass browser smokes. Never restore the retired tokens."
+      ],
+      "definition_of_done": [
+        "Production traffic serves the approved Deno/Supabase replacement only after every separately authorized gate passes and the source-of-truth commit point is recorded.",
+        "The fresh encrypted backup is restorable, every acknowledged write is accounted for, and both rollback modes remain executable.",
+        "Heroku remains deployed but in maintenance mode with retired machine tokens absent; Mongo remains available through two separate scoped credentials and the old broad credential is revoked.",
+        "No Heroku, MongoDB, backup, or legacy deployment resource has been deleted."
+      ]
+    },
+    {
+      "id": "STAGE-18",
+      "sequence": 18,
+      "title": "Observe the production replacement and preserve browser-only rollback readiness",
+      "depends_on": ["STAGE-17"],
+      "targets": [
+        "managed Deno and Supabase logs, health, metrics, and alerts",
+        "production contract and React smoke checks",
+        "post-cutover reconciliation, backup, and incident/rollback decision log",
+        "retained Go/Heroku/Mongo browser-only rollback assets"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Run Release-scheduled smoke checks for Auth0 login/session, feelings read/write, weekly read/upsert, same-origin routing, health, and readiness using approved non-private test handling.",
+        "Monitor status/error rates, latency, database connections, response size, failed authorization, and migration/reconciliation indicators using sanitized provider telemetry.",
+        "Run encrypted logical backups at the approved cadence and verify checksum plus restore evidence according to the approved retention decision.",
+        "Reconcile post-cutover records and investigate any missing, duplicate, cross-user, or malformed result immediately; suspend writes and invoke the approved rollback when a trigger is met.",
+        "Periodically verify Heroku remains in maintenance mode, retired token names remain absent, the two Mongo credentials retain only readWrite on feeling with separate custody, and the browser-only rollback/reconciliation path remains operational."
+      ],
+      "definition_of_done": [
+        "The Release-approved observation conditions are satisfied with no unresolved rollback trigger or data discrepancy.",
+        "Operational ownership, backups, and incidents are recorded without private data or secret values.",
+        "No retired token, broad Mongo privilege, or public legacy machine route has returned.",
+        "No legacy resource has been deleted merely because observation succeeded."
+      ]
+    },
+    {
+      "id": "STAGE-19",
+      "sequence": 19,
+      "title": "Decommission Heroku and Mongo only under separate explicit authority",
+      "depends_on": ["STAGE-18"],
+      "targets": [
         "Heroku application and configuration",
-        "MongoDB Atlas database and credentials",
+        "MongoDB Atlas database and scoped credentials",
         "legacy Go deployment artifacts and rollback-only configuration",
         "final retention, export, and deletion evidence"
       ],
       "acceptance_criteria": [],
       "tests": [
         "Obtain a new explicit human approval naming the exact Heroku, MongoDB, credential, backup, and legacy artifact targets; neither plan approval nor Release approval authorizes deletion.",
-        "Before deletion, verify the observation exit conditions, final Supabase reconciliation, restore evidence, retained-data obligations, and absence of any rollback need or active legacy caller.",
+        "Before deletion, verify the observation exit conditions, final Supabase reconciliation, latest restore evidence, retained-data obligations, and absence of any rollback need or active legacy caller.",
         "Resolve each destructive target to an exact provider resource and record whether deletion is recoverable, any retention period, and the final source backup disposition.",
-        "After authorized decommissioning, verify production remains healthy, legacy credentials are revoked, billing/resources match the approved list, and no unrelated resource was affected."
+        "After authorized decommissioning, verify production remains healthy, scoped legacy credentials are revoked, billing/resources match the approved list, and no unrelated resource was affected."
       ],
       "definition_of_done": [
         "Only explicitly named and approved legacy resources are retired.",
-        "The final system remains healthy and its data is reconciled and restorable under the approved provider defaults.",
+        "The final system remains healthy and its data is reconciled and restorable under the approved operator-backup contract.",
         "Removal actions, recovery properties, owners, and evidence are recorded in the Release record.",
         "If explicit decommission approval is withheld, this stage remains unexecuted without blocking operation of the validated replacement."
       ]
@@ -414,7 +497,7 @@
   ],
   "accepted_complexity": [
     {
-      "item": "Keep the Go/Heroku/Mongo implementation and its credentials, checkpoint, and rollback tooling alongside the Deno/Supabase replacement through Review, Release, cutover, and observation.",
+      "item": "Keep the Go/Heroku/Mongo implementation, separate scoped runtime/operator credentials, checkpoint, and rollback tooling alongside the Deno/Supabase replacement through Review, Release, cutover, and observation.",
       "rationale": "Incremental migration and evidence-based rollback require a working source implementation until the replacement is proven; temporary duplication is safer than early decommissioning.",
       "owner": "Vinicius Delascio"
     },
@@ -442,12 +525,22 @@
       "item": "Keep complete unpaginated feelings history during this migration and measure production size before release.",
       "rationale": "Pagination would change the public contract and is not approved; measured unsafe size triggers a return to Define rather than concealed scope growth.",
       "owner": "Vinicius Delascio"
+    },
+    {
+      "item": "Operate encrypted PostgreSQL logical backups with checksum and restore rehearsal in a separate private Sydney Supabase Storage project while remaining on the Free plan.",
+      "rationale": "The owner accepted operator responsibility and reduced recovery automation for this sole-user pilot to avoid a paid plan; this control is more complex than managed backups and must never be represented as equivalent PITR coverage.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "item": "Keep the verified Go release for browser rollback while isolating it with Heroku maintenance mode, permanently removing retired machine tokens, and maintaining two separately held database-scoped Mongo credentials.",
+      "rationale": "Browser rollback remains necessary through observation, but retaining public machine routes or atlasAdmin is unnecessary risk. Maintenance and scoped credentials preserve rollback at the cost of explicit cutover and verification steps.",
+      "owner": "Vinicius Delascio"
     }
   ],
   "approval": {
     "status": "approved",
     "by": "Vinicius Delascio",
-    "at": "2026-08-17",
-    "reason": "Vinicius Delascio approved the execution plan on 2026-08-13, including the staged Deno/Supabase vertical slices and accepted migration complexity. On 2026-08-17 he selected the Free-plan manual-backup posture and approved DATA-004's TLS Supavisor session migration fallback for IPv4-only environments; STAGE-03 verification wording was reconciled accordingly. This approval permits progression to implementation but does not authorize any production infrastructure, data, environment, deployment, traffic, irreversible migration, or deletion action; those remain separately gated."
+    "at": "2026-08-24",
+    "reason": "The original execution-plan approvals from 2026-08-13 and 2026-08-17 remain recorded in repository history. On 2026-08-24, Vinicius Delascio explicitly approved the amendment that inserts remediation rehearsal, repeated Review, and Release gates before moving production cutover to STAGE-17, observation to STAGE-18, and separately authorized decommissioning to STAGE-19. This approval permits Stage 14 implementation but does not authorize any production mutation."
   }
 }
