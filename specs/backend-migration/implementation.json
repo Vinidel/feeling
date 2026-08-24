@@ -789,7 +789,7 @@
         {
           "command": "Build and inspect feeling-api:stage-11 from digest-pinned Deno 2.9.4 image; health/readiness probes; non-root identity check",
           "result": "pass",
-          "details": "The image builds and type-checks with frozen production dependencies, runs as UID/GID 1993, exposes only eight strict environment names, and limits network permission to the listener, retained Auth0 JWKS host, and Sydney Supavisor. The disposable API returned healthy and ready against local Supabase."
+          "details": "The image builds and type-checks with frozen production dependencies, runs as UID/GID 1993, exposes only nine strict environment names including the read-only static-root path, and limits network permission to the listener, retained Auth0 JWKS host, and Sydney Supavisor. The disposable API returned healthy and ready against local Supabase."
         },
         {
           "command": "Owner-only scratch cleanup; local service shutdown; lifecycle validation; JSON, secret-pattern, and patch checks",
@@ -896,10 +896,73 @@
     },
     {
       "id": "STAGE-13",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Depends on STAGE-12. Not started."
+      "status": "complete",
+      "files_changed": [
+        "specs/backend-migration/stage-10-api-inventory.md",
+        "specs/backend-migration/stage-13-review-readiness.md",
+        "docs/runbooks/monitoring-support.md",
+        "docs/runbooks/operator-audit.md",
+        "docs/runbooks/breach-response.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Trace completed STAGE-01 through STAGE-12 evidence and AC-1 through AC-14 into specs/backend-migration/stage-13-review-readiness.md",
+          "result": "pass",
+          "details": "Every stage through rehearsal has durable command/result evidence and every brief acceptance criterion maps to named stage evidence. The Stage 3 direct-IPv6 failure and approved TLS Supavisor session fallback remain visible. Review, Release, production mutations, and decommissioning remain separate gates."
+        },
+        {
+          "command": "supabase db advisors --linked --type all --level info --fail-on warn --output json; read-only hosted role/grant/RLS/policy/migration metadata query",
+          "result": "pass",
+          "details": "Security and Performance Advisors found no issue. Both application roles are non-superuser and non-BYPASSRLS; feelings and weekly_trackers have RLS enabled and forced; nine policies exist; runtime table grants are SELECT/INSERT/UPDATE; PUBLIC has no steady table grant; and hosted migrations are exactly 20260817053317, 20260818040229, and 20260819004100."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 audit --frozen for api, tools/migrate, and tools/rollback; SHA-256 lockfile fingerprint",
+          "result": "pass",
+          "details": "All three Deno audits reported no known vulnerability. Lockfile SHA-256 values are api 62d41049f5111d74c07e164bbdc3e7c349c69c3e390ea65f618a21d0958a9dda, migrate dd94feb0e011a92f48354658713d333fa5a29509d34c4109d2b98d94778503f9, and rollback 3ad690ee790f39ce0f1b4084e1beec3ce4001547ee680c649ea7768c71f97fad."
+        },
+        {
+          "command": "cd client && npm audit --json; aggregate severity and affected package names without advisory bodies",
+          "result": "pass",
+          "details": "The audit and classification completed and found 82 advisories: 15 low, 17 moderate, 42 high, and 8 critical across 1,415 dependencies. Direct affected packages include axios, moment, postcss, and react-scripts; many critical/high findings are transitive build dependencies. On 2026-08-24 Vinicius Delascio placed reachability analysis and remediation in separately Defined FOLLOWUP-REACT-001 rather than expanding backend-migration. The findings are not represented as clean or waived, and no forced dependency mutation was performed."
+        },
+        {
+          "command": "Pinned Deno API test suite; React --watchAll=false --runInBand; Go 1.23 characterization suite",
+          "result": "pass",
+          "details": "The API passed 28/28 tests, React passed 5 suites and 9/9 tests, and the unchanged Go rollback source passed. The replacement tests cover exact and retired routes, Auth0, cross-user denial, strict schemas, CORS, normalized errors, static serving, and allowlisted log behavior."
+        },
+        {
+          "command": "Read-only hosted aggregate count and API-shape JSON-size query",
+          "result": "pass",
+          "details": "Hosted counts remain 114 feelings and 2 weekly trackers across five identity groups. The largest current feeling history is 106 rows and approximately 50,464 serialized JSON bytes. This is below the documented 500-row/250-KiB pagination-review guardrail, so current evidence does not require a return to Define. No identity or private content was emitted."
+        },
+        {
+          "command": "heroku apps:info/ps/config key-only inspection; sanitized retained-log aggregation; public Heroku and Azure health checks",
+          "result": "pass",
+          "details": "Heroku remains available with one Basic web and one Basic worker running ./main; the US/container app exposes only config names AGENT_API_TOKEN, CHAT_INGEST_TOKEN, DB_PASS, and DB_USER. Logplex returned no retained router lines, so historical rate/error baselines are explicitly unavailable. Azure root returned 200 after a 26-second scale-to-zero cold start, warm readiness returned 200 in about 0.09 seconds, unauthenticated feelings returned 401, and retained Heroku root returned 200."
+        },
+        {
+          "command": "AZURE_CONFIG_DIR=<isolated-personal-profile> az containerapp show and Log Analytics metadata refresh",
+          "result": "fail",
+          "details": "The profile still identifies the enabled personal Azure subscription, but Microsoft security defaults blocked refresh and require interactive reauthentication. The public target remains healthy and Stage 12 contains the latest full infrastructure snapshot. Reauthentication and a secret-name-only metadata refresh are mandatory before Release; the unrelated corporate subscription was not used."
+        },
+        {
+          "command": "Review Docker permission boundary, replacement route/config inventory, legacy Heroku config-name inventory, and repository retired-route/shared-secret scan",
+          "result": "pass",
+          "details": "The replacement registers four authenticated browser routes plus health/readiness, runs as UID/GID 1993, reads only its static bundle, allows nine exact environment names, and limits network access to listener/Auth0/Sydney Supavisor. Retired routes and secrets remain only in the recoverable Go source, legacy documentation, and negative tests; they are absent from replacement runtime configuration."
+        },
+        {
+          "command": "Create named monitoring/support, operator-audit, breach-response, backup/restore, cutover, and both rollback records; inspect cloud-provider defaults",
+          "result": "pass",
+          "details": "Vinicius Delascio owns every operational responsibility. The runbooks record Azure's 90-day control-plane Activity Log default, Supabase Free Account Audit/project-log limitations, Auth0 plan-dependent retention, the approved encrypted Sydney logical-backup posture, absolute low-volume alerts, incident handling, and separate authority for every production mutation."
+        },
+        {
+          "command": "AI-OS plan readiness and implementation structural validation; implementation readiness probe; JSON, patch whitespace, generic credential-pattern, and exact Keychain secret-value checks",
+          "result": "pass",
+          "details": "The approved plan remains valid and ready, implementation.json is valid JSON and structurally valid, patch whitespace is clean, and no known Keychain secret value occurs in repository files. The generic scan finds only the intentional synthetic localhost PostgreSQL fixture. Full implementation readiness correctly remains closed by the Azure evidence-refresh blocker, the truthful Stage 3 transport failure, and pending production Stages 14 through 16; Stage 13 does not waive those gates."
+        }
+      ],
+      "notes": "Stage 13 is complete as an evidence-assembly stage, not as a Review or Release decision. Architecture, security, privacy, data, operational, environment-name, traceability, provider-default, monitoring, support, audit, incident, cutover, and rollback inputs are durable. The Deno replacement and hosted database controls are green; current data size does not require pagination. On 2026-08-24 Vinicius Delascio directed that legacy React dependency reachability and remediation be tracked as separately Defined FOLLOWUP-REACT-001; the audit findings remain explicit and unwaived. The remaining Release blocker is reauthentication of the isolated personal Azure profile for a fresh metadata snapshot. The Free-plan manual backup/audit limitations and scale-to-zero cold start are visible trade-offs. No production infrastructure, data, environment, deployment, traffic, or resource was changed or deleted; Go/Heroku/Mongo remain available."
     },
     {
       "id": "STAGE-14",
@@ -925,8 +988,8 @@
   ],
   "unresolved_questions": [
     {
-      "question": "Before Release, which of the legacy React dependency audit findings reported by the rollback-image build are reachable in the retained application, and should remediation occur within this migration or be tracked as separately approved work?",
-      "blocking": false,
+      "question": "Before Release, reauthenticate the isolated personal Azure CLI profile and verify the current Container App revision, secret names, role assignment, budget, and Log Analytics retention without using the unrelated corporate subscription.",
+      "blocking": true,
       "owner": "Vinicius Delascio"
     }
   ]

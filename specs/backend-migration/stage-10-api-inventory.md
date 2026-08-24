@@ -32,10 +32,11 @@ services.
 | `DEPLOYMENT_VERSION` | Non-secret release identifier. |
 | `HOST` | Container listener address. |
 | `PORT` | Container listener port. |
+| `STATIC_ROOT` | Read-only path containing the bundled React production build. |
 
 The strict configuration parser rejects unknown variables supplied through its
 configuration contract. The replacement image grants environment access only
-to the eight names above. Hosted environments must use the default TLS-required
+to the nine names above. Hosted environments must use the default TLS-required
 mode; the disable option exists solely for disposable local Supabase CLI stacks.
 
 ## Intentionally absent responsibilities
