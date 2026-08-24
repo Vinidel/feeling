@@ -1,0 +1,149 @@
+{
+  "work_id": "backend-migration",
+  "sources": [
+    "specs/backend-migration/brief.json",
+    "specs/backend-migration/design.json",
+    "specs/backend-migration/plan.json",
+    "specs/backend-migration/implementation.json",
+    "specs/backend-migration/current-state.md",
+    "specs/backend-migration/stage-13-review-readiness.md",
+    "supabase/migrations/20260817053317_create_private_feelings_and_weekly_schema.sql",
+    "supabase/migrations/20260818040229_allow_migration_owner_to_assume_runtime.sql",
+    "supabase/migrations/20260819004100_add_rollback_reconciliation_role.sql",
+    "api/Dockerfile",
+    "api/src",
+    "api/tests",
+    "tools/migrate",
+    "tools/rollback",
+    "docs/runbooks"
+  ],
+  "verdict": "needs_changes",
+  "findings": [
+    {
+      "id": "REV-001",
+      "severity": "high",
+      "status": "open",
+      "summary": "The selected Free-plan manual backup posture does not satisfy the literal managed-database-backup contract.",
+      "evidence": "Brief AC-14 and design OPS-005 require selected cloud-provider managed backup defaults. Supabase reports no owner-accessible daily database backup or PITR for the Free project. Stages 5 and 11 instead prove an authenticated-encrypted logical dump uploaded to a private bucket in the separate Sydney Steady backups project and restored successfully. This is a credible low-cost control, but the repository correctly states that it is not a managed database backup. Review cannot silently reinterpret AC-14. Return to Define to amend the contract to the owner-selected manual-backup control, or select a plan that provides managed backups.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "id": "REV-002",
+      "severity": "high",
+      "status": "open",
+      "summary": "The retained public Heroku rollback service still exposes the retired privileged machine-route surface.",
+      "evidence": "On 2026-08-24 unauthenticated production checks returned 401, not 404, for /api/chat/capabilities and /api/agent/feelings, confirming that the public rollback service still registers both token-protected routes. Heroku also retains CHAT_INGEST_TOKEN and AGENT_API_TOKEN config names. The agent route accepts a caller-selected user identity after shared-token authentication, which is intentionally absent from the replacement. Keeping Go/Heroku recoverable does not require keeping these retired privileged endpoints publicly usable throughout observation. Before cutover, Define/Design/Plan must specify an explicitly authorized control that disables their secrets/routes or isolates rollback ingress while preserving browser-route rollback.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "id": "REV-003",
+      "severity": "high",
+      "status": "open",
+      "summary": "The retained MongoDB application credential has broader privileges than the rollback source requires.",
+      "evidence": "Stage 5 records that the production Go/Heroku Mongo credential still has atlasAdmin@admin access. The application and rollback tooling require only scoped access to the feeling database and collections. Because Heroku/Mongo must remain recoverable through observation, this broad credential remains live during the highest-risk migration window. Before production cutover, provision and verify least-privilege browser-service and rollback access, or obtain an explicit named waiver after documenting the exact Atlas role and blast radius. Any Atlas or Heroku credential change requires separate production authority.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "id": "REV-004",
+      "severity": "medium",
+      "status": "open",
+      "summary": "The shipped legacy React client has direct and transitive dependency advisories tracked outside this migration.",
+      "evidence": "The current audit reports 82 findings: 15 low, 17 moderate, 42 high, and 8 critical. Direct affected packages are axios, moment, postcss, and react-scripts. The API uses fixed same-origin endpoints and strict server-side validation, while postcss/react-scripts are build tooling, so npm severity is not accepted as application exploitability without analysis. On 2026-08-24 Vinicius Delascio directed remediation to separately Defined FOLLOWUP-REACT-001. The findings remain visible and unwaived; that follow-up must perform reachability analysis and modernization.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "id": "REV-005",
+      "severity": "info",
+      "status": "resolved",
+      "summary": "Azure Review evidence was refreshed with modern authentication while Security Defaults remained enabled.",
+      "evidence": "Microsoft Security Defaults correctly rejected device-code flow for the new tenant. Vinicius Delascio completed browser-based modern authentication against tenant 8e263016-4fa0-4d3c-a7f2-7cc76d872ccb and the isolated personal subscription. Read-only checks verified Australia East, healthy r2/r3 revisions on the approved digest, r3 at 100 percent, scale 0..1, only database-url as a secret reference, ACR admin disabled, managed-identity AcrPull only, 30-day Log Analytics retention, monthly 5 budget/80-percent alert, 17 counted requests and zero restarts over seven days. The unrelated corporate subscription was not used.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "id": "REV-006",
+      "severity": "info",
+      "status": "resolved",
+      "summary": "Current history size does not require a pagination contract change, but scale-to-zero latency remains observable.",
+      "evidence": "The largest hosted history is 106 records and approximately 50,464 JSON bytes, below the documented 500-row/250-KiB review guardrail. Azure's first request after scale-to-zero took approximately 26 seconds; warm readiness and unauthorized API checks were approximately 0.09 seconds. The monitoring runbook records both the growth trigger and cold-start trade-off. Changing minimum replicas remains a separately approved cost/infrastructure decision.",
+      "owner": "Vinicius Delascio"
+    }
+  ],
+  "acceptance_criteria_evidence": [
+    {
+      "ac_id": "AC-1",
+      "status": "pass",
+      "evidence": "Stages 7, 8 and 11: exact feelings contract, hosted RLS integration, source/target differential verification, full 114-row reconciliation and authenticated browser read."
+    },
+    {
+      "ac_id": "AC-2",
+      "status": "pass",
+      "evidence": "Stages 7, 8 and 11: strict POST contract, one-write persistence, verified-sub ownership, subsequent read, two-subject isolation and hosted rollback-only tests."
+    },
+    {
+      "ac_id": "AC-3",
+      "status": "pass",
+      "evidence": "Stages 9 and 11: weekly empty-result envelope record:null through service, HTTP, integration, differential and browser verification."
+    },
+    {
+      "ac_id": "AC-4",
+      "status": "pass",
+      "evidence": "Stages 4, 9 and 11: unique user/week schema, atomic ON CONFLICT upsert, concurrency test, version/timestamp mapping and full browser journey."
+    },
+    {
+      "ac_id": "AC-5",
+      "status": "pass",
+      "evidence": "Stages 6, 7, 9 and 11: RS256 issuer/audience/expiry/sub validation, missing/invalid/mismatched credential matrix, no-write assertions and cross-user RLS denial."
+    },
+    {
+      "ac_id": "AC-6",
+      "status": "pass",
+      "evidence": "Owner confirmed OpenClaw no longer exists; Stages 1, 10 and 13 found no current caller in repository/config inventory. The public rollback service still registers the routes and is separately raised as REV-002 before Release."
+    },
+    {
+      "ac_id": "AC-7",
+      "status": "pass",
+      "evidence": "Stage 10 exact route/config tests prove the replacement exposes none of chat, agent or ping and requires none of their secrets or privileged identity paths."
+    },
+    {
+      "ac_id": "AC-8",
+      "status": "pass",
+      "evidence": "Stages 8, 9, 11 and 12: React contract/journey suites and retained-account Azure same-origin login, reload, read, weekly navigation and logout without relinking or re-registration."
+    },
+    {
+      "ac_id": "AC-9",
+      "status": "pass",
+      "evidence": "Stages 1, 7, 9, 10 and 11: approved quirk normalization, empty array, strict validation, structured statuses/errors, pre-handler CORS rejection and ping removal."
+    },
+    {
+      "ac_id": "AC-10",
+      "status": "pass",
+      "evidence": "Stages 3 through 5 and 11: Sydney target/backup projects, deterministic migration of 114 feelings and 2 weekly trackers, five ownership keys, approved normalization, zero exceptions/target-only rows and successful encrypted restore rehearsal."
+    },
+    {
+      "ac_id": "AC-11",
+      "status": "pass",
+      "evidence": "Stages 4, 6, 7, 9, 11 and 12: private schema, no Data API grants, non-BYPASSRLS roles, forced RLS, nine hosted policies, two-subject direct/API tests and no operator application route."
+    },
+    {
+      "ac_id": "AC-12",
+      "status": "pass",
+      "evidence": "Stage 11 full nonproduction verification: 114/2 counts, keyed reconciliation, contracts, negative security matrix, browser journey and no unapproved discrepancy."
+    },
+    {
+      "ac_id": "AC-13",
+      "status": "pass",
+      "evidence": "Stage 12: healthy Azure revision reversal, pre-commit procedure, disposable post-write reconciliation to Mongo, second-run idempotency and forward zero-discrepancy proof."
+    },
+    {
+      "ac_id": "AC-14",
+      "status": "fail",
+      "evidence": "Owners, secret-name inventory, monitoring, support, audit, incident, cutover and rollback procedures exist and production remains unchanged. However the selected Free project has no owner-accessible managed database backup, so the manual encrypted logical-backup control does not meet the literal managed-backup clause. REV-001 requires a Define amendment or a managed-backup plan."
+    }
+  ],
+  "approval": {
+    "status": "pending",
+    "by": "Vinicius Delascio",
+    "at": "",
+    "reason": "Pending resolution of the three open high-severity findings and explicit accountable Review approval. This Review does not authorize Release or any production mutation."
+  }
+}

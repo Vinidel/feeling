@@ -40,7 +40,9 @@ migration, deployment, and deletion actions each require explicit authority.
   retention immediately before Release; the Free plan currently retains one
   day. See https://auth0.com/docs/deploy-monitor/logs/log-data-retention.
 
-Before Release, reauthenticate the isolated Azure CLI profile, verify it names
-the personal subscription, and capture the current Container App, revision,
-secret-name-only, role assignment, budget, and Log Analytics retention state.
-Never print secret values while doing so.
+Before Release, reauthenticate the isolated Azure CLI profile using the default
+browser-based modern-auth flow, verify it names the personal subscription, and
+capture the current Container App, revision, secret-name-only, role assignment,
+budget, and Log Analytics retention state. New tenants with Security Defaults
+block device-code flow from July 2026; do not disable Security Defaults to make
+that legacy flow work. Never print secret values while collecting evidence.

@@ -101,11 +101,15 @@ Current public checks returned:
 - unauthenticated Azure feelings `401` in about 0.09 seconds;
 - retained Heroku root `200` in about 2.25 seconds.
 
-The Azure isolated personal CLI profile now requires interactive
-reauthentication because Microsoft security defaults blocked token refresh.
-The running public target remains healthy. Before Release, reauthenticate that
-profile and refresh secret-name-only, revision, role, budget, and log-retention
-evidence. Do not use the unrelated corporate subscription.
+On 2026-08-24 the Azure isolated personal CLI profile was reauthenticated using
+browser-based modern authentication. Security Defaults correctly blocked the
+legacy device-code flow and remained enabled. The refreshed evidence confirms
+the personal subscription, Australia East placement, healthy retained
+revisions, approved image digest, 0..1 scale, one named secret reference,
+ACR-admin disabled, managed-identity-only `AcrPull`, 30-day Log Analytics
+retention, and the monthly 5 budget with its 80-percent alert. Seven-day metrics
+show 17 counted requests and zero restarts. The unrelated corporate subscription
+was not used.
 
 ## Environment and secret dependencies
 
@@ -161,16 +165,14 @@ incident runbooks.
    dependency modernization, and remediation will be separately Defined work,
    not scope added to `backend-migration`. The findings remain visible risk; no
    automated forced upgrade or waiver was performed.
-2. **Release evidence refresh — Azure login.** Reauthenticate only the isolated
-   personal Azure profile and recapture current infrastructure/audit metadata.
-3. **Known cost/latency choice — scale to zero.** A 26-second cold load was
+2. **Known cost/latency choice — scale to zero.** A 26-second cold load was
    observed. Keeping zero minimum replicas minimizes cost; changing it requires
    a separately approved cost/infrastructure decision.
-4. **Reduced Free-plan recovery/audit posture.** Manual backup and limited
+3. **Reduced Free-plan recovery/audit posture.** Manual backup and limited
    provider audit retention are deliberate constraints. Review must verify the
    latest encrypted backup/restore rehearsal and determine whether the posture
    remains acceptable for production.
-5. **Legacy rollback debt.** The production Mongo application credential still
+4. **Legacy rollback debt.** The production Mongo application credential still
    has the previously recorded broad Atlas role, and the redundant Heroku worker
    still runs. They are retained to preserve rollback and must not be treated as
    migrated target permissions. Remediation/deletion needs separate scope and
@@ -186,9 +188,9 @@ own explicit human authority. Go, Heroku, MongoDB, and their rollback credential
 remain available and unchanged.
 
 The deterministic implementation structural validator passes. Its full
-`--ready` mode intentionally remains closed because the Azure evidence-refresh
-blocker is unresolved, the Stage 3 direct-IPv6 probe remains a truthful failure,
-and production Stages 14 through 16 have not been authorized or executed.
+`--ready` mode intentionally remains closed because the Stage 3 direct-IPv6
+probe remains a truthful failure and production Stages 14 through 16 have not
+been authorized or executed.
 
 ## Separate follow-up register
 

@@ -18,8 +18,8 @@
       "Define and enforce least-privilege row ownership for authenticated browser users using an approved combination of verified identity and Supabase authorization controls",
       "Treat feelings and weekly reflections as sensitive private personal data: normal access is through the owner's authenticated Auth0 application session, while authorized operator access is available only through the cloud provider's administrative data controls",
       "Retain all existing migrated feelings and weekly reflections and all records created after migration indefinitely unless a separately approved future policy changes that requirement",
-      "Host the Supabase project and its managed data backups in an Australian cloud region",
-      "Use and document the target cloud provider's managed defaults for backup, restore, operator auditing, and breach response without adding custom operational mechanisms",
+      "Host the Supabase Postgres project in an Australian cloud region and store authenticated-encrypted logical-backup ciphertext only in a private bucket in a separate Supabase project in an Australian cloud region",
+      "Use and document the approved Free-plan operator-run logical-backup and restore process, including checksums, encryption, private Australian Storage, retention records, and restore rehearsal, while using and documenting cloud-provider defaults for operator auditing and breach response",
       "Use the repository inventory and accountable-owner confirmation that the retired OpenClaw instance no longer exists and the legacy chat capability, chat ingest, and agent read APIs have no active callers, then omit those APIs and their shared-secret dependencies from the replacement",
       "Create characterization, contract, authorization, data-migration, and rollback evidence sufficient to compare the replacement with the approved current behaviour",
       "Support an incremental cutover in which the existing Go/Heroku implementation remains recoverable until the replacement has passed Review and Release and separate production-change authority has been granted",
@@ -30,7 +30,7 @@
       "A greenfield redesign of the Steady product, user interface, mood model, weekly tracker, or integration capabilities",
       "New user-facing features, new API capabilities, or new file/object-storage functionality",
       "Adding user-facing data deletion or export features",
-      "Custom backup, restore, operator-audit, or breach-response systems beyond the target cloud provider's managed defaults",
+      "Paid managed database backups, point-in-time recovery, automated multi-region backup orchestration, or custom operator-audit and breach-response systems beyond the approved Free-plan pilot controls",
       "Reproducing accidental implementation quirks or migrating code that has no verified supported user or integration responsibility",
       "Replacing or retiring Auth0, migrating users to Supabase Auth, or changing current login methods and user accounts",
       "Preserving or redesigning the legacy /api/chat/* and /api/agent/* APIs in the replacement after their retirement was approved",
@@ -98,7 +98,7 @@
       "id": "AC-10",
       "given": "a non-production export representative of the production MongoDB collections and identity keys",
       "when": "the approved migration process is dry-run into the Supabase Postgres schema",
-      "then": "every source record is accounted for as migrated or as an explicitly classified exception approved by the repository owner/requester, ownership and timestamps are preserved according to the approved mapping, duplicate or malformed data is reported without silent loss, reconciliation can be repeated deterministically without creating duplicate target records, and the target project and managed backups are verified to reside in Australia"
+      "then": "every source record is accounted for as migrated or as an explicitly classified exception approved by the repository owner/requester, ownership and timestamps are preserved according to the approved mapping, duplicate or malformed data is reported without silent loss, reconciliation can be repeated deterministically without creating duplicate target records, the target project and separate private backup Storage project are verified to reside in Australia, and an authenticated-encrypted logical backup is downloaded, checksum-verified, decrypted, and restored successfully into an empty disposable target"
     },
     {
       "id": "AC-11",
@@ -122,7 +122,7 @@
       "id": "AC-14",
       "given": "the replacement is proposed for production release",
       "when": "Review and Release assess its evidence",
-      "then": "the Go/Heroku implementation has not been removed, migration and rollback procedures have named owners, secret and environment dependencies are documented without values, the selected cloud-provider managed backup, restore, operator-audit, and breach-response defaults are documented and verified, operational support and monitoring responsibilities are recorded, and no deployment, data migration, environment change, traffic switch, irreversible migration, or resource deletion occurs without separate explicit human authority"
+      "then": "the Go/Heroku implementation has not been removed, migration and rollback procedures have named owners, secret and environment dependencies are documented without values, the approved Free-plan logical-backup procedure, private Australian ciphertext storage, retention record, checksum verification, and restore rehearsal are documented and verified without being represented as a managed database backup, the selected cloud-provider operator-audit and breach-response defaults are documented and verified, operational support and monitoring responsibilities are recorded, and no deployment, data migration, environment change, traffic switch, irreversible migration, or resource deletion occurs without separate explicit human authority"
     }
   ],
   "constraints": [
@@ -139,8 +139,9 @@
     "Feelings and weekly reflections are sensitive private personal data; application access is limited to the owning Auth0 identity and authorized operator access is permitted only through cloud-provider administrative data controls",
     "The replacement must not introduce an application-level support, impersonation, service-token, or operator bypass for reading or writing another identity's rows",
     "Feelings and weekly reflections are retained indefinitely; this migration does not add user-facing deletion or export capabilities",
-    "The Supabase project and its managed data backups must use an Australian cloud region; the exact supported region is selected during Design",
-    "The target cloud provider's managed defaults are sufficient for backup, restore, operator auditing, and breach response; custom mechanisms are not required by this migration",
+    "The Supabase Postgres project and the separate private Supabase Storage project holding only authenticated-encrypted logical-backup ciphertext must use Australian cloud regions; the exact supported regions are selected during Design",
+    "The Free-plan pilot uses an operator-run logical backup and restore procedure rather than owner-accessible managed database backups or PITR; every usable backup requires encryption, manifest and ciphertext checksums, private Australian Storage, a retention record, download verification, and a successful restore rehearsal",
+    "The selected cloud providers' managed defaults are sufficient for operator auditing and breach response for this sole-user pilot, subject to their documented Free-plan retention and export limitations",
     "The repository owner/requester is the accountable human who may approve cleanup, transformation, quarantine, or exclusion of malformed, legacy, orphaned, or duplicate source records; no such handling may occur without that explicit approval",
     "The production dependency boundary is limited to the repository-defined Heroku web application, MongoDB Atlas, and Auth0; the former OpenClaw integration no longer exists and there are no active workers, schedulers, relevant add-ons or triggers, external API consumers, or chat/agent callers",
     "Structural validation, readiness validation, and human approval are separate gates; validation never authorizes deployment or destructive operations",
@@ -156,16 +157,16 @@
     "Repository-defined Heroku web deployment inventory covering config variable names, domains and certificates, deployment pipeline, traffic and availability signals, logging, rollback, and accountable ownership",
     "Accountable-owner confirmation, recorded on 2026-08-12, that the former OpenClaw instance no longer exists and GET /api/chat/capabilities, POST /api/chat/feeling, and GET /api/agent/feelings have no active callers",
     "A verified one-to-one mapping that preserves existing Auth0 subject identifiers from MongoDB documents in target Postgres ownership fields",
-    "Documentation and verification of the selected cloud-provider managed defaults for backup, restore, operator auditing, and breach response",
-    "Supabase support for a suitable Australian project region and Australian residency for its managed backups",
+    "Documentation and verification of the approved Free-plan encrypted logical-backup and restore procedure and the selected cloud-provider defaults for operator auditing and breach response",
+    "Supabase support for suitable Australian regions for the Postgres project and a separate private Storage project containing only encrypted logical-backup ciphertext",
     "Cloud-provider administrative access controls sufficient for authorized operator inspection without creating a privileged application route",
     "A test environment and sanitized or access-controlled representative dataset suitable for repeatable migration, authorization, contract, cutover, and rollback rehearsals",
     "Design-stage evaluation of TypeScript compute, API boundary, Auth0 JWT integration with Supabase authorization, RLS policy model, frontend hosting, data migration, observability, and rollback options"
   ],
   "risks": [
     "Auth0 subject strings may be represented or interpreted incorrectly in Postgres or Supabase authorization policies, causing orphaned, merged, or cross-user data",
-    "Mood notes and weekly reflections contain sensitive private personal information; cloud-provider managed backup, restore, audit, and breach-response defaults may vary by region or plan and must be verified before release",
-    "The required Australian residency may constrain Supabase project, backup, or disaster-recovery options and must be verified before architecture approval",
+    "Mood notes and weekly reflections contain sensitive private personal information; the Free-plan logical-backup process is operator-run and its recovery point depends on execution cadence, so encryption, private Australian storage, checksum verification, retention evidence, and restore rehearsal must be verified before release",
+    "The required Australian residency may constrain Supabase project, Storage-backup, or disaster-recovery options and must be verified before architecture approval",
     "Schema-flexible MongoDB data may contain legacy, malformed, missing, mixed-type, or duplicate records that do not fit a strict Postgres schema",
     "Sparse automated coverage may allow supported route, validation, error, CORS, ordering, polling, or response-contract behaviour to regress while quirks are normalized",
     "If the confirmed-retired OpenClaw integration or another undisclosed caller reappears, omitting chat and agent routes could break it; retaining a hidden compatibility path would preserve broad shared-secret cross-user access",
@@ -190,7 +191,7 @@
   "approval": {
     "status": "approved",
     "by": "Vinicius Delascio",
-    "at": "2026-08-12",
-    "reason": "Vinicius Delascio explicitly approved this Define brief on 2026-08-12 after resolving all blocking scope, behaviour, identity, access, data-policy, dependency, cutover, and cleanup decisions."
+    "at": "2026-08-24",
+    "reason": "Vinicius Delascio explicitly approved the original Define brief on 2026-08-12 and, on 2026-08-24, approved replacing the managed-database-backup requirement with the verified Free-plan control: authenticated-encrypted logical backups, private Storage in a separate Australian Supabase project, checksum and retention evidence, and successful restore rehearsal. This amendment does not waive operator-audit, breach-response, migration-safety, production-authority, or rollback requirements."
   }
 }

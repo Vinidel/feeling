@@ -43,7 +43,7 @@
     {
       "id": "RESP-001",
       "area": "architecture",
-      "decision": "Existing Go responsibility disposition: KEEP IN APPLICATION CODE — the four browser HTTP route contracts; Auth0 bearer-token verification; verified-sub extraction; optional x-user-id mismatch rejection; CORS enforcement; request orchestration; API-to-database field mapping; normalized response serialization; and initial static SPA delivery. MOVE TO SUPABASE — feelings and weekly-tracker persistence; relational schema and migrations; user-row isolation via RLS; database grants; status/mood/type constraints; the one-tracker-per-user/week guarantee; atomic weekly upsert; server timestamps; deterministic feeling ordering; indexes; generated record IDs; managed backups; and operator data access through provider controls. REPLACE — Go transport/persistence structs with separate TypeScript request/response schemas and database types; Gin routing/listener with a standalone Deno TypeScript HTTP service; handwritten JWKS fetching/cache with a maintained Deno-compatible OIDC/JWT library; permissive Go decoding with strict TypeScript request schemas; Mongo client/bootstrap and startup ping/fatal boot coupling with a least-privilege Deno-compatible pooled Postgres connection plus platform readiness checks; ad-hoc errors with one structured error envelope; default Gin logging/recovery with sanitized structured logs and framework error boundaries; Mongo credentials and Heroku PORT configuration with Deno runtime/Supabase configuration; checked-in Go binary and generated server web assets with reproducible locked builds. REMOVE — chat capability and ingest routes; agent read route; chat/agent shared-token and allowlist middleware; their environment variables; the Heroku worker image declaration; unmatched /api/ping client call and unused PingComponent; all Mongo-specific query/decoding code after release; and any Storage, queue, scheduler, worker, or Edge Function responsibility not backed by an approved requirement.",
+      "decision": "Existing Go responsibility disposition: KEEP IN APPLICATION CODE — the four browser HTTP route contracts; Auth0 bearer-token verification; verified-sub extraction; optional x-user-id mismatch rejection; CORS enforcement; request orchestration; API-to-database field mapping; normalized response serialization; and initial static SPA delivery. MOVE TO SUPABASE — feelings and weekly-tracker persistence; relational schema and migrations; user-row isolation via RLS; database grants; status/mood/type constraints; the one-tracker-per-user/week guarantee; atomic weekly upsert; server timestamps; deterministic feeling ordering; indexes; generated record IDs; private Australian Storage for already-encrypted operator backup ciphertext; and operator data access through provider controls. KEEP IN OPERATOR TOOLING — PostgreSQL logical export, authenticated encryption, manifests and checksums, private Storage upload/download, restore rehearsal, migration, and reconciliation. REPLACE — Go transport/persistence structs with separate TypeScript request/response schemas and database types; Gin routing/listener with a standalone Deno TypeScript HTTP service; handwritten JWKS fetching/cache with a maintained Deno-compatible OIDC/JWT library; permissive Go decoding with strict TypeScript request schemas; Mongo client/bootstrap and startup ping/fatal boot coupling with a least-privilege Deno-compatible pooled Postgres connection plus platform readiness checks; ad-hoc errors with one structured error envelope; default Gin logging/recovery with sanitized structured logs and framework error boundaries; broad Mongo credentials and Heroku PORT configuration with scoped Mongo rollback credentials and Deno runtime/Supabase configuration; checked-in Go binary and generated server web assets with reproducible locked builds. REMOVE — chat capability and ingest routes; agent read route; chat/agent shared-token and allowlist middleware; their environment variables; the Heroku worker image declaration; unmatched /api/ping client call and unused PingComponent; all Mongo-specific query/decoding code after release; and any application Storage, queue, scheduler, worker, or Edge Function responsibility not backed by an approved requirement.",
       "rationale": "This classifies every observed Go backend responsibility by its target owner and prevents a file-for-file rewrite. Application code remains only where the compatibility or verified-identity boundary requires it; invariants and durable authorization move down to Postgres; obsolete integrations and accidental code are omitted.",
       "alternatives": [
         "Recreate handler/repository/service layers for every Go handler: rejected as unnecessary ceremony for four routes and a one-for-one rewrite risk.",
@@ -133,6 +133,30 @@
         "Service-role secret in Deno: simpler but excessive and capable of bypassing all row policies."
       ],
       "reversibility": "hard"
+    },
+    {
+      "id": "SEC-004",
+      "area": "security",
+      "decision": "Treat the retained Go/Heroku service as a browser-route rollback source, not as a compatibility host for the retired machine APIs. At the production write freeze, under separate environment-change authority, enable Heroku maintenance mode and remove CHAT_INGEST_TOKEN and AGENT_API_TOKEN from the app configuration. Characterization proves missing tokens fail closed before their handlers; maintenance mode prevents the public Heroku hostname serving any legacy route during observation. Pre-commit or post-write rollback disables maintenance mode only after the applicable data checks, and the four Auth0 browser routes must pass before writes resume. The retired tokens are not rollback dependencies and are never restored; if a caller reappears, return to Define.",
+      "rationale": "The public Heroku hostname remains reachable even after the production origin moves. Leaving shared-token routes live would preserve the broad caller-selected identity surface the replacement intentionally removes. Maintenance mode is reversible and preserves the deployed Go release, while removing the unused token configuration makes the machine routes fail closed if maintenance is lifted for browser rollback.",
+      "alternatives": [
+        "Leave token-protected routes public during observation: rejected because possession of one shared secret permits the retired privileged behavior.",
+        "Deploy a new Go release that deletes the routes: stronger 404 behavior but rejected during cutover because it mutates the verified rollback binary.",
+        "Delete or scale down Heroku immediately: rejected because it removes the approved rollback source."
+      ],
+      "reversibility": "moderate"
+    },
+    {
+      "id": "SEC-005",
+      "area": "security",
+      "decision": "Replace the broad Atlas application credential before cutover with two named MongoDB database users: a steady_legacy_runtime user stored only in Heroku with readWrite on the feeling database for browser-route rollback, and a separate steady_rollback_operator user stored only in the operator secret store with readWrite on the feeling database for target-to-Mongo reconciliation. Neither receives atlasAdmin, admin-database, cross-database, user-management, project, or infrastructure privileges. Verify both paths and the unchanged 114/2 source counts before revoking the old broad user under separate credential-change authority.",
+      "rationale": "The legacy app and rollback tool require collection reads and writes but no Atlas administration. Separate credentials prevent a serving-app compromise from also becoming an operator credential and reduce the blast radius throughout the observation window without removing rollback capability.",
+      "alternatives": [
+        "Keep atlasAdmin until Heroku deletion: rejected because the highest-privilege credential would remain live during cutover and observation.",
+        "One shared readWrite credential for both Go and rollback tooling: functional but rejected because it couples serving and operator custody.",
+        "Make the legacy runtime read-only: rejected because an authorized rollback must resume browser writes to Mongo after reconciliation."
+      ],
+      "reversibility": "moderate"
     },
     {
       "id": "IFACE-001",
@@ -226,7 +250,7 @@
     {
       "id": "OPS-003",
       "area": "operations",
-      "decision": "Define a cutover commit point and two rollback modes. Before writes resume, rollback restores Heroku traffic with Mongo unchanged. After Supabase accepts writes, rollback first suspends writes and runs an approved, idempotent target-to-Mongo reconciliation for target-only rows before restoring Heroku; no acknowledged write may be discarded. Keep Go/Heroku, Mongo credentials, source backup/checkpoint, migration tools, and domain rollback configuration through Review and Release. Removing them is a later separately authorized release action.",
+      "decision": "Define a cutover commit point and two rollback modes. Before writes resume, rollback restores Heroku browser traffic with Mongo unchanged. After Supabase accepts writes, rollback first suspends writes and runs an approved, idempotent target-to-Mongo reconciliation for target-only rows before restoring Heroku browser traffic; no acknowledged write may be discarded. Keep Go/Heroku, the two scoped Mongo credentials from SEC-005, source backup/checkpoint, migration tools, and domain rollback configuration through Review and Release. The retired chat/agent tokens are not rollback dependencies and remain removed. Deleting Heroku, Mongo, or the scoped rollback credentials is a later separately authorized release action.",
       "rationale": "A retained binary is not a safe rollback if its database is stale. Explicit authority and reconciliation are required after the source of truth changes. The write pause makes this feasible for the sole user without continuous replication.",
       "alternatives": [
         "Rollback compute only: rejected because Go reads Mongo and would lose post-cutover writes.",
@@ -249,9 +273,12 @@
     {
       "id": "OPS-005",
       "area": "operations",
-      "decision": "Create the Supabase project in the specific Sydney region ap-southeast-2 and verify the selected plan's managed backup residency and defaults before any data is loaded. Force any future Supabase regional function invocation to Sydney, although no Edge Function is part of this design. Operator inspection uses Supabase administrative controls only.",
-      "rationale": "Supabase lists Oceania/Sydney ap-southeast-2 as a specific project region (https://supabase.com/docs/guides/platform/regions), satisfying the approved Australian residency requirement. Selecting project region is hard to reverse after data exists.",
+      "decision": "Create the Supabase Postgres project in Sydney ap-southeast-2. Because the selected Free plan has no owner-accessible managed database backup or PITR, keep the approved separate Steady backups Supabase project in Sydney and its database-backups bucket private. Operator tooling exports PostgreSQL 17 roles without passwords, the private steady schema, and data; creates a content-free manifest with counts, versions, region and internal SHA-256 checksums; archives and authenticated-encrypts locally with the operator-held AES-256-GCM key; uploads only ciphertext using a server-only Storage operator credential; downloads and verifies the ciphertext checksum; decrypts and verifies every internal checksum; and restores into a new empty disposable PostgreSQL 17 target followed by migrations, counts, constraints, forced-RLS isolation, API smoke and migration-history checks. Retain object path, size, checksum, timestamp, owner and restore result; remove plaintext scratch files. Never represent this as a managed database backup. At minimum, require a fresh verified backup immediately before production cutover and before any later data-affecting migration; ongoing cadence and retention duration remain Release responsibilities because no recovery-point objective was defined. Force any future Supabase regional function invocation to Sydney, although no Edge Function is part of this design. Operator inspection uses provider administrative controls only.",
+      "rationale": "Both selected projects report Sydney placement, and encrypt-before-upload keeps private journal content opaque to the separate Storage project. A download/decrypt/restore rehearsal proves recoverability more strongly than upload success. This implements the owner-approved Free-plan trade-off without claiming provider-managed database recovery. Selecting project region and secret-custody boundaries is hard to reverse after production data exists.",
       "alternatives": [
+        "Upgrade to Pro daily managed backups or PITR: operationally simpler but rejected for this sole-user pilot's current cost constraint; it remains a future option.",
+        "Store plaintext logical dumps in Supabase Storage: rejected because Storage is a separate operator destination and journal content must be encrypted before transmission.",
+        "Store backup ciphertext in the primary project: rejected because a separate Sydney project reduces common project-deletion and credential blast radius.",
         "General APAC region: rejected because it does not guarantee Australia.",
         "Singapore: technically close but conflicts with the approved residency decision.",
         "Globally nearest Edge execution: not applicable initially and would require explicit Sydney invocation if later introduced (https://supabase.com/docs/guides/functions/regional-invocation)."
@@ -304,11 +331,11 @@
     },
     {
       "ac_id": "AC-6",
-      "design_refs": ["IFACE-004", "RESP-001", "TEST-001"]
+      "design_refs": ["IFACE-004", "SEC-004", "RESP-001", "TEST-001"]
     },
     {
       "ac_id": "AC-7",
-      "design_refs": ["IFACE-004", "SEC-003", "RESP-001", "TEST-001"]
+      "design_refs": ["IFACE-004", "SEC-003", "SEC-004", "RESP-001", "TEST-001"]
     },
     {
       "ac_id": "AC-8",
@@ -332,21 +359,23 @@
     },
     {
       "ac_id": "AC-13",
-      "design_refs": ["OPS-002", "OPS-003", "TEST-001"]
+      "design_refs": ["OPS-002", "OPS-003", "SEC-004", "SEC-005", "TEST-001"]
     },
     {
       "ac_id": "AC-14",
-      "design_refs": ["ARCH-002", "OPS-003", "OPS-004", "OPS-005", "DATA-005", "SEC-003"]
+      "design_refs": ["ARCH-002", "OPS-003", "OPS-004", "OPS-005", "DATA-005", "SEC-003", "SEC-004", "SEC-005"]
     }
   ],
   "risk_triggers": [
     "Auth0 production tokens are not RS256, do not contain a stable non-empty sub, or no longer validate against the documented issuer/audience; stop security design and obtain Auth0 owner review.",
     "A proposed implementation requires an Auth0 Action, ID-token flow, Supabase Auth migration, account relink, or forced sign-in; return to Design and product approval.",
-    "The Supabase plan cannot guarantee the approved Sydney project location or Australian managed-backup residency; stop before project creation or data loading and obtain privacy/data approval.",
+    "Either Supabase project is not in Sydney, the backup bucket becomes public, plaintext/private content is uploaded, encryption/checksum verification fails, or the restore rehearsal does not reproduce counts, migrations and forced-RLS isolation; block cutover and obtain privacy/data/operations review.",
     "Any application design introduces a service-role key, BYPASSRLS role, table ownership, public-schema exposure, or browser database credential; require security and architecture re-review.",
     "RLS cannot be forced for the runtime role, transaction-local Auth0 identity leaks across pooled requests, or two-subject authorization tests expose or mutate another user's row; block implementation/release.",
     "Production profiling finds mixed status/date/user types, missing Auth0 subjects, duplicate weekly trackers, non-ObjectID identifiers, unknown activity/check/note fields, or other malformed records; create an exception report and stop affected transformation until Vinicius Delascio approves handling.",
     "Repository or production evidence shows any current OpenClaw/chat/agent caller; stop route retirement and return to Define for access/scope decisions.",
+    "CHAT_INGEST_TOKEN or AGENT_API_TOKEN remains configured at cutover, a retired machine route can reach its handler, or the retained Heroku hostname is publicly serving during observation outside an authorized rollback; block traffic switch and security review.",
+    "The old atlasAdmin credential remains active after scoped credential verification, either replacement Mongo user has privileges beyond readWrite on the feeling database, or serving and operator custody use the same credential; block cutover and security review.",
     "The complete feeling history is too large for acceptable memory, latency, or response size; return to Define before adding pagination because that changes the public contract.",
     "A selected Deno hosting platform lacks Australian compute, OCI deployment, same-origin custom-domain routing, managed TLS, secret storage, health checks, structured logs, or rollback; require architecture/operations review before selection.",
     "A required HTTP, Auth0/JWT, PostgreSQL, validation, migration, or test dependency does not run correctly under the pinned Deno release, requires unsafe lifecycle scripts or native addons, or needs materially broader Deno permissions than designed; reconsider the library or return to Design for runtime review.",
@@ -362,27 +391,11 @@
     "data",
     "operations"
   ],
-  "unresolved_questions": [
-    {
-      "question": "Which Australian managed container provider will host the portable Deno service while meeting the ARCH-002 contract?",
-      "blocking": false,
-      "owner": "Vinicius Delascio"
-    },
-    {
-      "question": "What are the measured production record count, response size, request rate, latency, and error baseline used to set alert thresholds and confirm that unpaginated GET /api/feelings remains safe?",
-      "blocking": false,
-      "owner": "Vinicius Delascio"
-    },
-    {
-      "question": "Which concrete Deno-compatible HTTP framework, schema validator, PostgreSQL driver, test runner, and build process best satisfy this design without changing its boundaries?",
-      "blocking": false,
-      "owner": "Implementation planner"
-    }
-  ],
+  "unresolved_questions": [],
   "approval": {
     "status": "approved",
     "by": "Vinicius Delascio",
-    "at": "2026-08-17",
-    "reason": "Vinicius Delascio approved the complete technical design on 2026-08-13, including the standalone Deno/Supabase boundary, pinned runtime and permission model, private relational schema, custom transaction-scoped Auth0-sub RLS model, Sydney project placement, single-writer cutover, and rollback reconciliation design. On 2026-08-17 he explicitly approved DATA-004's TLS Supavisor session fallback for migrations from IPv4-only environments while retaining direct connections as preferred where IPv6 is available."
+    "at": "2026-08-24",
+    "reason": "The original design approvals from 2026-08-13 and 2026-08-17 remain recorded in repository history. On 2026-08-24, Vinicius Delascio explicitly approved the amendment covering Free-plan encrypted logical backup/restore in a separate Sydney project, Heroku maintenance plus retired-token removal while retaining browser rollback, and separate least-privilege Mongo runtime/operator credentials."
   }
 }
