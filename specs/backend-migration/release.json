@@ -1,0 +1,84 @@
+{
+  "work_id": "backend-migration",
+  "source_review": "specs/backend-migration/review.json",
+  "deployment_strategy": "Promote the already-rehearsed target rather than provision a second stack: Azure Container App steady-preprod in resource group rg-steady-preprod-aue, Australia East, serving https://steady-preprod.wittyglacier-50c44c34.australiaeast.azurecontainerapps.io from the approved immutable Deno/React image; and Supabase project Steady non-prod (qzsdmhptclzqndzsqpax), Sydney ap-southeast-2, as the production database. Preserve the existing Auth0 tenant, issuer, retained API audience identifier, and user account. Use a short single-writer freeze and final idempotent Mongo-to-Postgres reconciliation; do not dual-write. Keep Go/Heroku/Mongo as a browser-only rollback source in Heroku maintenance mode throughout observation. No Supabase, Auth0, Azure, Heroku, or MongoDB account-plan upgrade is part of this release. Continue on the selected plans and existing scale-to-zero Azure configuration; if a provider limit prevents a required backup, security, availability, or rollback control, stop and return for an explicit decision rather than upgrading or weakening the control. Release approval approves this operational decision only: every production infrastructure, credential, environment, backup upload, data migration, deployment, public URL/traffic, irreversible database, and later deletion mutation still needs separate explicit authority.",
+  "rollout": [
+    "Gate 0 — authority: Vinicius Delascio records separate explicit approval for each exact Stage 17 production mutation: scoped Atlas-user creation and broad-user revocation, Heroku DB credential and retired-token environment changes, maintenance/write suspension, production backup creation/upload, final Mongo export, Supabase import, Azure promotion or environment change, Auth0 URL/configuration change if any, frontend/public URL cutover, and any irreversible database action. Release approval alone is insufficient.",
+    "Gate 1 — freeze the candidate: record the exact Git commit, approved immutable image digest, Azure revision, Supabase migration versions, source and target resources, operator, UTC start time, and rollback decision-maker. Require the approved Review to remain valid and no new active retired-route caller or open critical/high finding.",
+    "Gate 2 — provider and configuration checks: verify the isolated Azure personal subscription, Australia East app health, managed TLS, revision readiness, 0..1 scale, managed-identity AcrPull, ACR admin disabled, named secret references only, budget alert, and sanitized logs. Verify Steady non-prod and Steady backups are ACTIVE_HEALTHY in Sydney, private schema/Data API boundary, non-BYPASSRLS roles, forced RLS and advisors. Verify the exact Azure production URL is allowed by Auth0 while retaining issuer, audience, and the existing account; record names and states only, never secret values.",
+    "Gate 3 — least-privilege rollback credentials: create steady_legacy_runtime with only readWrite on Mongo database feeling and store it only in Heroku; create steady_rollback_operator with the same database-only role and store it only in the operator secret store. Verify browser and reconciliation paths plus unchanged source counts before revoking the old atlasAdmin credential. Stop without revocation or cutover if either scoped path fails; never share the two credentials.",
+    "Gate 4 — fresh recovery evidence: create a new PostgreSQL 17 logical backup using the Stage 14 strict manifest and AES-256-GCM workflow, upload only ciphertext to the private database-backups bucket in the separate Sydney project, download it, verify its outer and internal checksums, and restore it into a new empty disposable PostgreSQL 17 target. Require migrations, 114/2-or-current counts, constraints, grants, nine forced-RLS policies, two-subject isolation, API smoke, reconciliation, retained object metadata, and removal of plaintext scratch data. Do not represent this as managed backup or PITR.",
+    "Gate 5 — write freeze and legacy isolation: announce the sole-user write suspension, wait for in-flight requests, enable maintenance on exact Heroku app stormy-cliffs-52671, remove CHAT_INGEST_TOKEN and AGENT_API_TOKEN together, verify both config names are absent without displaying values, and prove the public Heroku hostname serves no handler. Never restore the retired tokens.",
+    "Gate 6 — final source checkpoint and migration: export the final owner-only Mongo feelings and weekly_trackers checkpoints, record sanitized timestamps/counts/checksums/custody, run migration dry-run, import, idempotent repeat, and reconciliation into Supabase project qzsdmhptclzqndzsqpax. Require every source record to be matched, zero duplicate/target-only rows, and zero exception unless Vinicius Delascio explicitly approves that exact exception. Mongo remains authoritative and Heroku remains in maintenance until the commit point.",
+    "Gate 7 — dark-target verification: against the pinned Azure revision run health/readiness, exact four-route contracts, missing/invalid/mismatched Auth0 cases, two-subject RLS denial, CORS, structured-error/log-redaction, React login/session/reload/logout, feelings read/write, weekly read/upsert, and source/target accounting. Roll back before commit on any discrepancy, secret exposure, failed journey, unavailable rollback path, or provider health failure.",
+    "Gate 8 — commit and public URL cutover: record the commit point, promote the healthy pinned revision if required, and direct the sole user to https://steady-preprod.wittyglacier-50c44c34.australiaeast.azurecontainerapps.io under the separately approved public-traffic/frontend authority. Enable Supabase writes only after every prior gate passes. The Auth0 API audience remains https://stormy-cliffs-52671.herokuapp.com/api as an identifier unless a separately reviewed change is approved.",
+    "Gate 9 — immediate production verification: through the production Azure URL, run retained-account login, session reload, feelings history and one approved write, weekly navigation and upsert, logout, another-subject denial, health/readiness, response/log sanitation, and complete post-write reconciliation. Any lost, duplicate, cross-user, malformed, or unexplained row; persistent authentication/readiness failure; secret exposure; or unusable supported journey suspends writes and invokes the correct rollback mode.",
+    "Gate 10 — observation: keep Heroku deployed in maintenance with retired token names absent and Mongo available only through the two scoped credentials. Observe the Stage 18 signals after every use and at least monthly; maintain the weekly encrypted backup schedule and additional pre-release/pre-data-migration backups; retain weekly ciphertext for 12 months and preserve pre-cutover backups until separately approved Heroku/Mongo decommissioning. Do not automatically upgrade a provider plan or delete any legacy resource.",
+    "Gate 11 — decommissioning exclusion: successful observation does not authorize deletion. Heroku, MongoDB, scoped rollback credentials, checkpoints, or backup objects may be removed only in Stage 19 after a new approval names each exact target, verifies final reconciliation and restore evidence, and records recoverability and retention implications."
+  ],
+  "monitoring": [
+    {
+      "signal": "Azure revision, /healthz, /readyz, replicas, and restarts",
+      "success": "The approved revision is Healthy/Provisioned, TLS succeeds, health and readiness pass, scale remains within 0..1, and no unexplained restart occurs.",
+      "failure": "Persistent readiness/database failure, an unhealthy revision, an unexpected restart loop, TLS failure, or the supported journey being unavailable suspends writes and triggers rollback evaluation."
+    },
+    {
+      "signal": "Supported Auth0 and React journey",
+      "success": "The retained account can log in, reload its session, read and save feelings, navigate/read/upsert weekly tracking, and log out through the Azure production URL without relinking or re-registration.",
+      "failure": "Persistent login/token failure, forced account relinking/re-registration, an unapproved Auth0 configuration change, or any supported journey failure blocks or rolls back release."
+    },
+    {
+      "signal": "Authorization and privacy boundary",
+      "success": "Missing, invalid, expired, and mismatched credentials receive the approved denial; two-subject tests expose only owner rows; retired/operator routes remain unavailable; logs contain no bodies, tokens, database URLs, raw Auth0 subjects, comments, or notes.",
+      "failure": "Any cross-user access, caller-selected identity override, privileged route availability, secret/private-field exposure, or uncertainty about isolation is a high-severity incident: suspend writes and remove traffic from the target."
+    },
+    {
+      "signal": "Migration and ongoing data reconciliation",
+      "success": "Final and post-cutover reports account for every feeling and weekly tracker with expected counts/hashes, no duplicate, no target-only row, and only explicitly approved normalization.",
+      "failure": "Any missing, duplicate, target-only, cross-user, malformed, or unexplained row stops cutover or triggers post-write rollback before traffic can return to Mongo."
+    },
+    {
+      "signal": "Application errors and warm latency",
+      "success": "No unexplained 5xx occurs; warm p95 remains at or below 2 seconds over 15 minutes; the known scale-to-zero cold start remains distinguishable from warm service behavior.",
+      "failure": "Any 5xx is investigated; repeated 5xx, warm p95 above 2 seconds for 15 minutes, or an unusable supported journey triggers rollback evaluation. The known cold start alone does not authorize an account or replica upgrade."
+    },
+    {
+      "signal": "Supabase health, RLS, connections, storage, and capacity",
+      "success": "Both Sydney projects remain healthy; runtime access remains forced-RLS and least privilege; advisors show no blocking issue; database/storage consumption stays below 80 percent of a provider limit.",
+      "failure": "Database unavailability, RLS/grant regression, advisor security issue, or 80-percent capacity requires investigation; imminent exhaustion blocks writes or the next release and returns for a plan decision rather than silently upgrading."
+    },
+    {
+      "signal": "Encrypted logical-backup schedule and recoverability",
+      "success": "A verified encrypted backup exists immediately before cutover and every later release/data migration; an operator-run backup completes weekly; weekly ciphertext is retained for 12 months; object path, checksum, size, timestamp, owner, and restore result are recorded; pre-cutover backups remain until separately approved decommissioning.",
+      "failure": "A missed weekly backup, failed upload/download/checksum/authenticated decryption/restore, public bucket, non-Australian placement, plaintext residue, missing encryption key, or inability to retain required backups blocks data-affecting work and requires owner action without an automatic plan upgrade."
+    },
+    {
+      "signal": "Legacy browser-only rollback source",
+      "success": "Heroku remains deployed in maintenance, retired token names remain absent, Mongo is reachable through separate readWrite@feeling runtime/operator credentials, the old atlasAdmin user is revoked after verification, and browser rollback plus reconciliation remain executable.",
+      "failure": "Heroku serving outside authorized rollback, a retired token returning, broad/shared Mongo privilege, unavailable browser rollback, or failed reconciliation blocks observation success and triggers incident handling."
+    },
+    {
+      "signal": "Provider audit, incident evidence, and cost",
+      "success": "Vinicius Delascio records every mutation and decision without secrets/private content, preserves short-retention Auth0/Supabase evidence promptly, uses only the isolated Azure subscription, and reviews the existing budget alert.",
+      "failure": "Unknown operator change, missing evidence during an incident, use of an unrelated subscription, or unexpected spend triggers investigation. No alert or limit authorizes an account upgrade by itself."
+    }
+  ],
+  "rollback": {
+    "required": true,
+    "plan": "Before the commit point, keep writes suspended, cancel or reverse any pending public-route change, verify the scoped steady_legacy_runtime credential, final Mongo checkpoint/counts, and all four Go/Auth0 browser routes, then disable Heroku maintenance and resume Mongo writes; never restore retired tokens. After the commit point, suspend target writes, take fresh encrypted Supabase and Mongo backups, use steady_rollback_operator to plan and explicitly authorize target-to-Mongo reconciliation, run it twice to prove idempotency, export Mongo and reconcile back to Supabase with zero discrepancy, verify Auth0 isolation/counts and the scoped legacy runtime while Heroku stays in maintenance, then route the sole user back to Go, disable maintenance, repeat browser smokes, and only then resume Mongo writes. Preserve the failed target, logs, checksums, and reports; do not delete either system. Vinicius Delascio owns the rollback decision and every production execution still requires explicit authority."
+  },
+  "support_owner": "Vinicius Delascio — release owner, deploy authority, first responder, rollback decision-maker, backup operator, and provider escalation contact through the Azure, Supabase, Auth0, MongoDB Atlas, and Heroku dashboards/status channels.",
+  "communications": [
+    "There is one user, Vinicius Delascio. Record the planned write-freeze start, expected temporary unavailability, exact Azure production URL, cutover commit point, completion, and any rollback directly in the release record; no broader customer campaign is required.",
+    "Record sanitized operator actions, resource names, timestamps, image/migration identifiers, before/after state without values, verification results, incidents, provider cases, and rollback outcomes. Never include credentials, tokens, database URLs, raw Auth0 subjects, comments, notes, or request bodies.",
+    "Communicate that Supabase Storage contains operator-encrypted logical backups, not managed backups or PITR; weekly retention is 12 months; pre-cutover backups remain through separately approved decommissioning; and no account upgrade is approved.",
+    "Keep REV-004 visible as separately Defined FOLLOWUP-REACT-001. This release does not claim the 82 legacy React dependency advisories are remediated or waived."
+  ],
+  "blockers": [],
+  "approval": {
+    "status": "approved",
+    "by": "Vinicius Delascio",
+    "at": "2026-08-27",
+    "reason": "Vinicius Delascio explicitly approved the complete Stage 16 Release decision on 2026-08-27, including weekly plus pre-release/pre-migration backups, 12-month weekly retention, preservation of pre-cutover backups through separately approved decommissioning, no account-plan upgrades, and promotion of the existing Azure/Supabase targets. This approval permits progression to Stage 17 but does not authorize any production mutation; every credential, environment, backup upload, data migration, deployment, Auth0, public URL/traffic, irreversible database, and deletion action remains separately gated."
+  }
+}

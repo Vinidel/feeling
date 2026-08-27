@@ -2,6 +2,14 @@
 
 Status: nonproduction rehearsal environment. It is not a production endpoint.
 
+Release candidate decision: on 2026-08-27 Vinicius Delascio selected this
+existing environment for promotion instead of provisioning a duplicate stack.
+The selected production URL is
+`https://steady-preprod.wittyglacier-50c44c34.australiaeast.azurecontainerapps.io`.
+This decision does not make the endpoint production or authorize promotion;
+Stage 17 still requires separate deployment, environment, Auth0, and public
+traffic authority.
+
 ## Selected resources
 
 All resources are in Australia East inside `rg-steady-preprod-aue`:

@@ -1081,10 +1081,36 @@
     },
     {
       "id": "STAGE-16",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "The AI-OS Release decision has not started and no production action is authorized."
+      "status": "complete",
+      "files_changed": [
+        "docs/runbooks/azure-container-apps.md",
+        "docs/runbooks/backup.md",
+        "specs/backend-migration/release.json",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Validate approved Stage 15 Review readiness and trace Release rollout, monitoring, support, rollback, production-authority, backup, and provider-plan decisions through approved contracts and runbooks",
+          "result": "pass",
+          "details": "Review is approved, ready, and has no open critical/high finding. The Release candidate has named success/failure signals, both rollback modes, Vinicius Delascio as owner, exact separate-authority gates, and no automatic deployment or destructive action."
+        },
+        {
+          "command": "Current Supabase changelog scan and read-only Azure candidate metadata check",
+          "result": "pass",
+          "details": "No current Supabase breaking change affects the private-schema/direct-Postgres/operator-backup architecture. The isolated Azure personal subscription remains enabled; steady-preprod is Succeeded in Australia East, latest ready revision steady-preprod--r3, exact FQDN steady-preprod.wittyglacier-50c44c34.australiaeast.azurecontainerapps.io, and scale 0..1. No hosted state changed."
+        },
+        {
+          "command": "Record owner decisions for weekly plus pre-release/pre-migration backups, 12-month weekly retention, pre-cutover preservation, no account-plan upgrades, and promotion of the existing Azure/Supabase targets",
+          "result": "pass",
+          "details": "Vinicius Delascio explicitly approved these Release inputs on 2026-08-27. They are recorded without treating them as deployment authority."
+        },
+        {
+          "command": "AI-OS Release structural and readiness validation after explicit approval by Vinicius Delascio",
+          "result": "pass",
+          "details": "release.json has an approved decision, no blockers, concrete rollout and monitoring signals, required rollback plan, named support owner, and explicit separation between Release approval and every Stage 17 production mutation. It passes deterministic structure and readiness validation."
+        }
+      ],
+      "notes": "Stage 16 is complete. Vinicius Delascio explicitly approved the Release decision on 2026-08-27. The selected existing Azure/Supabase promotion, backup cadence/retention, no-upgrade constraint, monitoring, support, and both rollback modes are concrete. No production infrastructure, account plan, credential, data, backup object, environment, deployment, Auth0 setting, public endpoint, traffic, or legacy resource changed. Stage 17 has not started and requires separate explicit authority for every named production mutation."
     },
     {
       "id": "STAGE-17",
