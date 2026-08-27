@@ -1227,10 +1227,54 @@
     },
     {
       "id": "STAGE-19",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Heroku and Mongo decommissioning is not authorized; all legacy resources remain available."
+      "status": "in_progress",
+      "files_changed": [
+        "specs/backend-migration/stage-19-decommission.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Confirm clean committed Stage 18 state and read the exact Stage 19 destructive gate, rollback, legacy-security, backup, and restore contracts",
+          "result": "pass",
+          "details": "Branch codex/backend-migration was clean at 8ca0b9d and matched origin. Stage 19 requires a new approval naming every provider, credential, backup, and repository target. Discovery proceeded read-only; no previous approval was reused as deletion authority."
+        },
+        {
+          "command": "Heroku app, add-on, domain, dyno, release, pipeline, maintenance, DNS, post-commit router, and Azure custom-hostname metadata inventory",
+          "result": "pass",
+          "details": "stormy-cliffs-52671 is a maintenance-on US container app with no add-on or pipeline, two running Basic dynos, 15 releases, its Heroku hostname, and custom domain www.delasc.io. Only two post-commit router records exist and both are 503 observation probes. DNS still points www.delasc.io to Heroku while Azure has no custom hostname, so domain preservation versus retirement is a required owner decision before app deletion."
+        },
+        {
+          "command": "Atlas project, cluster, process, database-metric, database-user role, and scoped collection-count inventory",
+          "result": "pass",
+          "details": "Project feeling (5f891a6c6940e56d2d915ab0) has one unprotected no-backup M0 Sydney cluster, Cluster0, on MongoDB 8.0.29. The scoped view reports only feeling.feelings=114 and feeling.weekly_trackers=2. Atlas M0 process metrics returned no database inventory, so deletion must explicitly name the whole cluster. Exactly two users remain, each only readWrite@feeling with separate custody."
+        },
+        {
+          "command": "Supabase private Storage path inventory, recovery-gap analysis, Git legacy-artifact inventory, and exact decommission approval grouping",
+          "result": "pass",
+          "details": "Five private ciphertexts total 188,237 bytes. The latest qualified restore is 114/2 and predates the two production writes, so fresh 115/3-or-current PostgreSQL backup/restore plus a final encrypted 114/2 Mongo export/restore are hard prerequisites. Exact proposed cleanup is the Heroku app, Cluster0, both scoped Mongo users, the operator Keychain item after revocation, root Dockerfile/heroku.yml/app.json, and 20 tracked server files. No backup deletion is proposed; current client, Deno API, Azure, Supabase, Auth0, tools, and historical evidence are retained."
+        },
+        {
+          "command": "Record Vinicius Delascio's www.delasc.io preservation decision; verify authoritative DNS, Azure ingress/custom-domain metadata, current CORS coverage, and official managed-certificate requirements",
+          "result": "pass",
+          "details": "Vinicius explicitly selected migration of www.delasc.io to Azure before Heroku deletion. GoDaddy is authoritative; www currently has a roughly 23-minute-TTL CNAME to Heroku, DNSSEC is unsigned, and no CAA restriction is present. Azure external ingress is healthy on port 8080, has no custom hostname, and exposes the CNAME/TXT verification contract for a free managed certificate. Current CORS_ORIGINS contains only the Azure hostname, so the custom origin must be added. Auth0 and GoDaddy authenticated verification are the next gate; no production setting or DNS record has changed yet."
+        },
+        {
+          "command": "Verify Auth0 allowlists; update Azure CORS_ORIGINS; move 100% traffic to ready revision steady-preprod--qd8vj4s; probe direct Azure root, health, and readiness",
+          "result": "pass",
+          "details": "Auth0 already allowed https://www.delasc.io for callback, logout, web-origin, and CORS use, so no Auth0 mutation or secret access was required. The approved non-secret CORS value now contains both Azure and custom origins. Azure created ready revision steady-preprod--qd8vj4s, retained its predecessor for rollback, and direct root, /healthz, and /readyz probes returned 200 after the traffic switch."
+        },
+        {
+          "command": "Replace GoDaddy www CNAME, add Azure ownership TXT, verify both authoritative nameservers and public DNS, then add and bind the Azure Container Apps custom hostname with a CNAME-validated managed certificate",
+          "result": "pass",
+          "details": "www.delasc.io now points directly to the Azure Container Apps FQDN; the ownership TXT is present without recording its value. Both GoDaddy authoritative nameservers and public resolvers returned the new records. Azure bound www.delasc.io with SNI; the Australia East managed certificate reached Succeeded and its hostname, issuer chain, validity window, and TLS verification passed. Heroku and its custom-domain attachment remain retained, and the previous Heroku CNAME is recorded for rollback."
+        },
+        {
+          "command": "Verify www.delasc.io SPA, liveness, readiness, auth boundary, retired route, CORS, Auth0 session, journal history, and weekly-tracker browser journey without writes",
+          "result": "pass",
+          "details": "Against Azure ingress, the SPA, /healthz, and /readyz returned 200 with verified TLS; missing-token feelings and weekly requests returned 401; retired /api/ping returned 404; and allowed-origin preflight returned 204 with the exact custom origin. A transient normal curl 503 was proven to use a workstation-cached Heroku IP while authoritative DNS already pointed to Azure. The in-app browser resolved Azure, completed the existing Auth0 session, loaded 107 journal entries and the weekly-tracker screen, and made no production write."
+        }
+      ],
+      "notes": "Stage 19 is in progress but destructive execution is not authorized. The approved www.delasc.io migration prerequisite is complete: DNS, Azure CORS and managed TLS, Auth0 session, supported reads, and health boundaries passed while Heroku remains retained as rollback. Before any deletion, fresh current Supabase and final Mongo encrypted backup/restore evidence plus final reconciliation are still required, followed by a new explicit approval naming every destructive target."
     }
   ],
   "unresolved_questions": []
