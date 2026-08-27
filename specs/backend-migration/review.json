@@ -153,9 +153,9 @@
     }
   ],
   "approval": {
-    "status": "pending",
+    "status": "approved",
     "by": "Vinicius Delascio",
-    "at": "",
-    "reason": "Independent Review recommends approval with verdict pass and no open critical/high finding. Explicit accountable approval is still required. REV-004 remains visible, unwaived, separately Defined work; REV-007 records that all production mutations remain separately gated. Review approval is not Release approval and authorizes no production action."
+    "at": "2026-08-27",
+    "reason": "Vinicius Delascio explicitly approved the Stage 15 independent Review on 2026-08-27. The pass verdict has no open critical/high finding. REV-004 remains visible, unwaived, separately Defined work; REV-007 records that all production mutations remain separately gated. This approval permits progression to the Release-decision stage but is not Release approval and authorizes no production action."
   }
 }

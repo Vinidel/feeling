@@ -1045,10 +1045,39 @@
     },
     {
       "id": "STAGE-15",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "The amended independent AI-OS Review has not started. Stage 14 evidence is ready for review."
+      "status": "complete",
+      "files_changed": [
+        "specs/backend-migration/review.json",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Validate approved brief, design, and plan readiness plus implementation structure; independently trace AC-1 through AC-14 and reassess REV-001 through REV-004",
+          "result": "pass",
+          "details": "All upstream contracts validated. Every acceptance criterion has passing evidence. The amended backup contract and full restore resolve REV-001; the tested Heroku isolation/browser-only rollback gate resolves REV-002; the tested separate-custody Mongo role and rotation gate resolves REV-003. REV-004 remains an explicit open medium finding owned by separately Defined FOLLOWUP-REACT-001."
+        },
+        {
+          "command": "Current Supabase changelog scan; projects list; read-only private bucket metadata and encrypted object-path verification",
+          "result": "pass",
+          "details": "No applicable breaking change was found. Steady non-prod and Steady backups remain ACTIVE_HEALTHY on PostgreSQL 17.6 in Sydney ap-southeast-2. The database-backups bucket remains private and the Stage 14 ciphertext path remains present; no object was downloaded, changed, or deleted."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 backup fmt/lint/check/8 tests; legacy-security fmt/lint/check/5 tests; API fmt/lint/check/28 tests; Go 1.23 full suite; React 5 suites/9 tests and production build",
+          "result": "pass",
+          "details": "All independently rerun formatting, static analysis, contract, security, backup, API, legacy rollback, and frontend checks passed. The React build retained only its existing outdated-caniuse-lite notice."
+        },
+        {
+          "command": "Read-only Heroku maintenance, config-name-only, and unauthenticated retired-route checks; refreshed aggregate npm audit",
+          "result": "pass",
+          "details": "Heroku remains intentionally unchanged before Release: maintenance off, both retired token names configured, and retired routes returning 401 without credentials. The Review records the mandatory Stage 17 maintenance/token-removal gate and does not claim it ran. npm audit remains 82 findings across 1,415 dependencies: 15 low, 17 moderate, 42 high, and 8 critical, retained as REV-004 without waiver."
+        },
+        {
+          "command": "AI-OS Review structural and readiness validation after explicit approval by Vinicius Delascio",
+          "result": "pass",
+          "details": "review.json has verdict pass, all acceptance criteria pass, no open critical/high finding, explicit approval dated 2026-08-27, and passes deterministic structure and readiness validation."
+        }
+      ],
+      "notes": "Stage 15 is complete. Vinicius Delascio explicitly approved the independent pass Review on 2026-08-27. REV-001, REV-002, and REV-003 are resolved by amended, implemented, and tested controls; production execution remains separately gated. REV-004 remains open medium work under FOLLOWUP-REACT-001, and REV-007 keeps all unexecuted production gates visible. No production infrastructure, credentials, data, deployment, environment, endpoint, traffic, or resource changed. Stage 16 Release has not started."
     },
     {
       "id": "STAGE-16",
