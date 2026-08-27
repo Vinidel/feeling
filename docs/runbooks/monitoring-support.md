@@ -1,6 +1,8 @@
 # Production monitoring and support
 
-Status: Review input; production monitoring is not yet activated.
+Status: Active since the production commit point on 2026-08-27 at
+14:49:55 UTC. The first post-cutover checkpoint is recorded in
+`specs/backend-migration/stage-18-observation.md`.
 
 Owner, first responder, and escalation decision-maker: Vinicius Delascio.
 Provider support paths are the Azure, Supabase, and Auth0 dashboards and their
@@ -51,6 +53,12 @@ Any stop trigger in `stage-12-cutover.md` selects the pre-commit or post-write
 rollback procedure. In ordinary operation, check provider health and recent
 errors after each use and at least monthly; run Supabase advisors and a restore
 rehearsal before each release and after any database change.
+
+Stage 18 has no fixed elapsed observation window for this sole-user pilot.
+Completing its initial stable checkpoint does not end these checks and does not
+authorize decommissioning. The owner continues the after-use/monthly checks,
+the weekly encrypted-backup schedule, and the pre-release/pre-migration backup
+and restore gates for as long as the replacement is production.
 
 Heroku has no durable log drain. A Stage 13 CLI query returned no retained
 router lines, so historic request rate and error rate cannot be reconstructed

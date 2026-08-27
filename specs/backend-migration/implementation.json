@@ -1180,10 +1180,50 @@
     },
     {
       "id": "STAGE-18",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Production observation has not started."
+      "status": "complete",
+      "files_changed": [
+        "docs/runbooks/monitoring-support.md",
+        "specs/backend-migration/stage-18-observation.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Confirm clean Stage 17 commit equals origin and validate the approved Stage 18 and Release observation gates",
+          "result": "pass",
+          "details": "Branch codex/backend-migration was clean at 2b29df5 and matched its upstream. Release requires checks after use and at least monthly but sets no fixed elapsed observation window for this sole-user pilot. Stage 18 completion therefore records the first stable post-use checkpoint while preserving the ongoing weekly, after-use, and monthly duties and the separate Stage 19 destruction gate."
+        },
+        {
+          "command": "Isolated Azure subscription, Container App, revision, traffic, replica, restart, public health/readiness, response-size, metric, and sanitized Log Analytics queries",
+          "result": "pass",
+          "details": "The personal subscription remains enabled. Revision steady-preprod--r3 is Healthy/Provisioned at 100 percent traffic in Australia East with scale 0..1 and only database-url as a secret name. Since commit, sanitized logs account for 283 requests: 280 2xx, three deliberate 401 denials, zero other 4xx, zero 5xx, and zero error logs. Application p95 was 33.93 ms and maximum 165.04 ms; RestartCount stayed zero. The known scale-to-zero request was 25.925 seconds, while warm health/readiness were 83-86 ms with small bounded bodies and verified TLS."
+        },
+        {
+          "command": "Production missing/invalid Auth0 credential denial probes; retained-user cutover journey evidence; isolated public React page check",
+          "result": "pass",
+          "details": "Missing credentials on feelings and weekly plus an invalid bearer token each returned the approved 401 and identical 79-byte structured response. The retained user had completed login/session reload, both reads and both real writes through the production origin at commit, and this checkpoint accounts for those effects. A fresh isolated browser tab had no Auth0 session, verified only the public sign-in page, performed no mutation, and was closed; it is not misrepresented as an authenticated smoke."
+        },
+        {
+          "command": "Supabase project health, current changelog, Security/Performance Advisors, aggregate Postgres accounting, forced-RLS/policy, connection, and capacity queries",
+          "result": "pass",
+          "details": "Both Sydney projects remain ACTIVE_HEALTHY on PostgreSQL 17.6.1.155. Security and Performance Advisors returned no lint and no current changelog item affects standalone Deno/direct Postgres. Production remains 115 feelings and three weekly trackers, including exactly one explained post-commit row of each type without a legacy ID; nine policies and forced RLS on both tables remain. Database use is 10,824,851 bytes, about 2.2 percent of the current 500 MB Free-plan limit, with 10 observed connections out of 60."
+        },
+        {
+          "command": "Private Supabase Storage object listing, bucket metadata, streamed ciphertext SHA-256, and aggregate backup-project size/connection query",
+          "result": "pass",
+          "details": "The accepted cutover ciphertext remains in the private database-backups bucket and streamed SHA-256 exactly matches 22c21cdf5e20360d9badd26b5cda1afbc42291db78cd7476923d1a9c4bc9fb68 without a local copy. Five ciphertext objects total 188,237 bytes. The backup database uses 10,488,979 bytes and had seven observed connections out of 60. The accepted full-restore evidence remains current; the first post-cutover weekly backup is due by 2026-09-03T05:50:46Z."
+        },
+        {
+          "command": "Heroku maintenance and exact retired-key checks, public isolation probe, Atlas user-role metadata, and scoped rollback-operator aggregate Mongo query",
+          "result": "pass",
+          "details": "Heroku maintenance is on, its public origin returns 503, both retired token names remain absent, and its configured database username remains steady_legacy_runtime without reading a password. Atlas lists exactly steady_legacy_runtime and steady_rollback_operator, each with only readWrite@feeling and no other scope. The separately held operator credential confirmed Mongo remains frozen at 114 feelings and two weekly trackers."
+        },
+        {
+          "command": "Record active monitoring cadence, initial observation decision, next weekly/monthly due points, and continued decommission exclusion; run structural implementation validation and repository hygiene checks",
+          "result": "pass",
+          "details": "The production runbook is now active and the sanitized observation record names all evidence, known scale-to-zero behavior, expected post-commit rows, next due checks, and zero open incident/rollback trigger. Structural validation, JSON parsing, and patch hygiene pass. Overall implementation readiness correctly remains unavailable because Stage 19 is pending and the durable Stage 3 record retains its historical failed direct-IPv6 probe; neither condition is rewritten. No provider plan, production row, environment, route, credential, maintenance state, backup object, or legacy resource was changed or deleted."
+        }
+      ],
+      "notes": "Stage 18 is complete as the first stable post-use production checkpoint under the approved no-fixed-window sole-user Release decision. Azure/Deno is healthy with no 5xx or unexplained error, warm p95 is far below threshold, Auth0 denials remain fail-closed, every 115/3 Supabase row is accounted for against the frozen 114/2 Mongo checkpoint, forced RLS and advisors are green, capacity is well below 80 percent, the accepted encrypted backup remains private and checksum-valid, and browser-only rollback remains ready with Heroku maintenance and exactly two scoped Mongo users. Operational checks continue after use and at least monthly; encrypted backups continue weekly and before releases/data migrations. Completion does not authorize Stage 19 or any deletion."
     },
     {
       "id": "STAGE-19",
