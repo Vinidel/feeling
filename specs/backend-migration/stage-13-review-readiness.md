@@ -117,11 +117,11 @@ No values are included below.
 
 | Boundary | Names/dependency | Handling |
 | --- | --- | --- |
-| Legacy Heroku | `DB_USER`, `DB_PASS`, `CHAT_INGEST_TOKEN`, `AGENT_API_TOKEN`; platform-injected `PORT` | Retain unchanged for rollback; retired route secrets are not migrated |
+| Legacy Heroku | `DB_USER`, `DB_PASS`, `CHAT_INGEST_TOKEN`, `AGENT_API_TOKEN`; platform-injected `PORT` | Stage 14 rehearses scoped browser credential rotation and fail-closed token removal; production changes remain separately gated for Stage 17 |
 | Legacy Go constants | Auth0 issuer/audience, Mongo host/database, permissive CORS | Replaced by strict target configuration; retain only in rollback source |
 | Target API | `AUTH0_AUDIENCE`, `AUTH0_ISSUER`, `CORS_ORIGINS`, `DATABASE_SSL_MODE`, `DATABASE_URL`, `DEPLOYMENT_VERSION`, `HOST`, `PORT`, `STATIC_ROOT` | Only `DATABASE_URL` is a deployment secret; exact Deno env permission list |
 | Migration | migration-owner database URL/password, report HMAC key, backup encryption key | Operator secret store only; never supplied to serving API |
-| Rollback | scoped Postgres rollback membership and Mongo rollback credential | Operator-only, explicit execution approval, constrained container |
+| Rollback | scoped Postgres rollback membership; separate `steady_legacy_runtime` and `steady_rollback_operator` Mongo credentials | Runtime credential in Heroku only; operator credential in the operator store only; explicit execution approval |
 | Backup Storage | server-only Supabase Storage operator credential | Separate Sydney project; never browser/API accessible |
 | Frontend/Auth0 | Auth0 domain, client ID, audience and allowed origins | Public client configuration; no client secret |
 
@@ -135,6 +135,7 @@ All responsibilities are owned by Vinicius Delascio:
 | Pre-commit rollback | `pre-commit-rollback.md` |
 | Post-write rollback | `post-write-rollback.md`, rollback CLI documentation |
 | Backup and restore | `backup.md`, `restore.md` |
+| Legacy rollback security | `legacy-rollback-security.md` |
 | Azure operation | `azure-container-apps.md` |
 | Monitoring and support | `monitoring-support.md` |
 | Operator audit | `operator-audit.md` |
@@ -169,14 +170,17 @@ incident runbooks.
    observed. Keeping zero minimum replicas minimizes cost; changing it requires
    a separately approved cost/infrastructure decision.
 3. **Reduced Free-plan recovery/audit posture.** Manual backup and limited
-   provider audit retention are deliberate constraints. Review must verify the
-   latest encrypted backup/restore rehearsal and determine whether the posture
-   remains acceptable for production.
-4. **Legacy rollback debt.** The production Mongo application credential still
-   has the previously recorded broad Atlas role, and the redundant Heroku worker
-   still runs. They are retained to preserve rollback and must not be treated as
-   migrated target permissions. Remediation/deletion needs separate scope and
-   occurs only after rollback retirement is approved.
+   provider audit retention are deliberate constraints. The amended owner-
+   approved contract and Stage 14 now provide a reusable strict encrypted
+   workflow plus a fresh full restore rehearsal. Release must still choose the
+   ongoing cadence and retention.
+4. **Production legacy controls remain gated.** Stage 14 proves fail-closed
+   machine routes, exact scoped Mongo policies, real disposable allowed/denied
+   probes, and the ordered maintenance/token-removal/credential-rotation
+   runbook. The production machine tokens and broad Atlas credential remain
+   unchanged until Review and Release pass and Stage 17 receives separate
+   production authority. The redundant worker remains deletion-only debt for
+   Stage 19.
 
 ## Gate status
 

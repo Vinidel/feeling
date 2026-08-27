@@ -289,3 +289,8 @@ remain available.
 
 No automatic backup deletion or retention policy has been authorized. The
 pre-data zero-row backup and the post-import 116-record backup are both retained.
+
+Stage 14 supersedes the manual archive assembly with the reusable strict
+`tools/backup/workflow.ts` pack/verify workflow and records a fresh 2026-08-25
+backup with all three migrations, nine policies, 114/2 rows, and a passing Deno
+service smoke. These Stage 5 objects remain historical recovery evidence.

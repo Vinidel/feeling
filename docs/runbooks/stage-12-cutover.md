@@ -25,13 +25,17 @@ rollback. Never infer the mode from elapsed time.
 - Verify Auth0 callback, logout, and web-origin entries for the production URL.
 - Verify the latest encrypted Mongo and Supabase backups using
   [backup.md](backup.md) and [restore.md](restore.md).
+- Complete the separately authorized scoped Mongo credential rotation and
+  verify both paths using [legacy-rollback-security.md](legacy-rollback-security.md).
 - Run all contract, RLS, API, React, and hosted reconciliation checks. Stop on
   any unexplained exception or target-only row.
 
 ## Rehearsed sequence
 
-1. Announce write suspension and reject new writes at the source boundary.
-2. Confirm all requests that began before suspension have completed.
+1. Announce write suspension, enable Heroku maintenance mode, and confirm all
+   requests that began before suspension have completed.
+2. Remove `CHAT_INGEST_TOKEN` and `AGENT_API_TOKEN`, verify their config names
+   are absent, and keep Heroku in maintenance mode. Never restore these tokens.
 3. Export final owner-only Mongo checkpoints for `feelings` and
    `weekly_trackers`; record timestamps, counts, checksums, and custody without
    committing private files.
@@ -45,8 +49,8 @@ rollback. Never infer the mode from elapsed time.
    the healthy pinned revision, then enable target writes.
 7. Run the same authenticated smoke journey through the production hostname.
 8. Observe errors, latency, health, authentication failures, database
-   saturation, and write success. Keep Go/Heroku and Mongo unchanged and
-   recoverable.
+   saturation, and write success. Keep the Go release deployed in maintenance
+   mode and Mongo recoverable through the two separate scoped credentials.
 
 ## Stop and rollback triggers
 

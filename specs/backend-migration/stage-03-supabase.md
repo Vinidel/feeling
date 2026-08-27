@@ -86,8 +86,9 @@ The intended manual procedure is:
    treating the backup as usable.
 
 No representative data exists in the project, so no data backup was created in
-Stage 3. A production backup policy remains a Release prerequisite unless the
-project is upgraded to managed backups.
+Stage 3. The amended contract permits the operator-managed encrypted logical
+backup control on Free; Release must set its ongoing cadence and retention and
+must not describe it as managed backup or PITR coverage.
 
 ## Audit and access controls
 

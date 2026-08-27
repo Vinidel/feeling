@@ -966,20 +966,113 @@
     },
     {
       "id": "STAGE-14",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Production cutover is not authorized and has not started."
+      "status": "complete",
+      "files_changed": [
+        "api/tests/stage14_restore_smoke.ts",
+        "docs/runbooks/backup.md",
+        "docs/runbooks/legacy-rollback-security.md",
+        "docs/runbooks/post-write-rollback.md",
+        "docs/runbooks/pre-commit-rollback.md",
+        "docs/runbooks/restore.md",
+        "docs/runbooks/stage-12-cutover.md",
+        "server/retired_routes_test.go",
+        "specs/backend-migration/stage-03-supabase.md",
+        "specs/backend-migration/stage-05-data-migration.md",
+        "specs/backend-migration/stage-13-review-readiness.md",
+        "specs/backend-migration/stage-14-remediation.md",
+        "tools/backup/README.md",
+        "tools/backup/archive.ts",
+        "tools/backup/archive_test.ts",
+        "tools/backup/deno.json",
+        "tools/backup/workflow.ts",
+        "tools/backup/workflow_test.ts",
+        "tools/legacy-security/deno.json",
+        "tools/legacy-security/heroku_sequence.ts",
+        "tools/legacy-security/heroku_sequence_test.ts",
+        "tools/legacy-security/mongo_role_policy.ts",
+        "tools/legacy-security/mongo_role_policy_test.ts",
+        "tools/legacy-security/mongo_role_probe.js",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Supabase changelog scan; supabase 2.114.0 --help discovery; projects list; private Storage bucket metadata check; non-disclosing Keychain-entry checks",
+          "result": "pass",
+          "details": "No current breaking change affects the operator backup. Steady non-prod and Steady backups both report ACTIVE_HEALTHY, PostgreSQL 17.6, and Sydney ap-southeast-2. The database-backups bucket reports public=false. Required database-owner, encryption, Storage operator, and project reference entries are present without values being emitted."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 tools/backup fmt, lint, check, and 8 tests",
+          "result": "pass",
+          "details": "The dependency-free workflow strictly allowlists content-free metadata and exactly three SQL components; computes and verifies SHA-256; archives only in memory; AES-256-GCM encrypts; refuses overwrite/existing restore directories; and rejects unsafe metadata, tampering, wrong keys, trailing data, and checksum mismatches. Tests prove no synthetic private marker or raw Auth0 subject appears in ciphertext or JSON evidence."
+        },
+        {
+          "command": "Fresh owner-only Supabase logical dump; workflow pack; new private Storage upload; authenticated download; outer checksum; workflow verify; strict empty PostgreSQL 17 restore; Stage 4 SQL suite; Deno service smoke; final counts",
+          "result": "pass",
+          "details": "The migration role correctly refused owner-level dumping, so the separate Keychain-held database-owner backup credential was used without display. Password-free roles, steady schema, and data recorded PostgreSQL 17.6, migrations 20260817053317/20260818040229/20260819004100, Sydney-to-Sydney regions, and 114/2 rows. Only 52,785-byte ciphertext was uploaded at database/20260825T051148Z/steady-nonprod-20260825T051148Z.steady.enc with SHA-256 7c80298cb21b5a48138c554052b9be44189472f8a80d27348d3a241fb440b0b7. Download, authenticated decryption, every component checksum, roles/schema/data restore, nine-policy forced RLS, constraints/grants/two-subject tests, and rolled-back feelings/weekly service smoke passed; final counts remained 114/2. The first incomplete plain-Postgres fixture target exposed missing Supabase platform roles and was discarded before the successful from-empty rerun."
+        },
+        {
+          "command": "Pinned Deno legacy-security fmt/lint/check/5 tests; mongosh allowed/denied probes as steady_legacy_runtime and steady_rollback_operator in disposable MongoDB 7",
+          "result": "pass",
+          "details": "Static policy rejects atlasAdmin, readWriteAnyDatabase, extra/cross-database roles, and shared custody. Each synthetic user had only readWrite on feeling, passed insert/read/update/delete, and was denied admin usersInfo and a cross-database read. The probe collection, synthetic users/passwords, and exact disposable container were removed; production Atlas and Heroku were not changed."
+        },
+        {
+          "command": "Go 1.23 TestRetiredMachineRoutesFailClosedWithoutTokens, TestBrowserRoutesRemainIndependentOfRetiredTokens, and full characterization suite",
+          "result": "pass",
+          "details": "With CHAT_INGEST_TOKEN and AGENT_API_TOKEN absent, both retired machine routes return the characterized configuration failure before their handlers run. The four isolated Auth0 browser route shapes remain runnable. The complete unchanged Go API suite passes."
+        },
+        {
+          "command": "Heroku maintenance/config:unset --help discovery; executable Heroku isolation/rollback sequence tests; create backup/restore, legacy-security, cutover, and both rollback runbooks",
+          "result": "pass",
+          "details": "The runbooks and tested state machine order maintenance-on, both-token removal, config-name-only verification, data checks before maintenance-off, browser verification, browser-only rollback without token restoration, separate scoped Mongo credential verification, and old atlasAdmin revocation only after both paths pass. Unsafe ordering and token restoration fail. Every production mutation remains explicitly reserved for Stage 17; no state-changing Heroku or Atlas command ran."
+        },
+        {
+          "command": "Pinned Deno API 28 tests; migration 6 tests; rollback 2 tests; backup 8 tests; legacy-security 5 tests; React 5 suites/9 tests; Go 1.23 suite",
+          "result": "pass",
+          "details": "All replacement, migration, rollback, backup, policy, frontend, and legacy-source regressions pass. The initial API and rollback check commands mounted only their subdirectories and could not resolve shared sibling fixtures; rerunning with the repository root mounted passed without code changes."
+        },
+        {
+          "command": "Remove steady-stage14-mongo and steady-stage14-restore; remove exact private and git-ignored Stage 14 scratch directories; verify retained Storage object metadata",
+          "result": "pass",
+          "details": "Both exact disposable databases and all local SQL, decrypted files, manifests, local/downloaded ciphertext copies, synthetic credentials, and plaintext scratch were permanently removed after durable evidence. The new private Sydney ciphertext is the only artifact retained from this rehearsal; earlier encrypted historical objects remain. This is explicitly recorded as operator-managed logical backup, not managed database backup or PITR."
+        },
+        {
+          "command": "AI-OS approved plan and implementation validation; plan/implementation stage-ID parity; JSON and patch checks; disposable-resource absence; generic and exact non-disclosing Keychain secret-value scans",
+          "result": "pass",
+          "details": "The amended plan remains approved and ready, implementation.json is structurally valid, its 19 stage IDs match the plan, Stage 14 is complete, JSON and whitespace checks pass, both scratch paths and both disposable containers are absent, and no database-owner, migration URL, backup encryption, or Storage operator Keychain value occurs in repository files. The scoped generic scan found no database URL with a password, Supabase secret key, or private-key block in Stage 14 files."
+        }
+      ],
+      "notes": "Stage 14 is complete. The amended Free-plan backup contract now has reusable strict pack/verify tooling and a fresh full 114/2 restore rehearsal. The unused Go machine routes are executable-characterized as fail-closed without tokens, and the Heroku maintenance/token-removal browser-only rollback sequence is deterministic. Two separate-custody Mongo readWrite@feeling policies pass real allowed/denied disposable probes and have an ordered production rotation/revocation procedure. No production Heroku configuration, Mongo credential/data, Supabase business row, Azure deployment, frontend endpoint, traffic, or legacy resource changed or was deleted. Stage 15 must independently repeat Review; Stage 14 does not approve or close its own findings."
     },
     {
       "id": "STAGE-15",
       "status": "pending",
       "files_changed": [],
       "test_evidence": [],
-      "notes": "Production observation has not started."
+      "notes": "The amended independent AI-OS Review has not started. Stage 14 evidence is ready for review."
     },
     {
       "id": "STAGE-16",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "The AI-OS Release decision has not started and no production action is authorized."
+    },
+    {
+      "id": "STAGE-17",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Production cutover, credential rotation, Heroku maintenance/token removal, deployment, and traffic changes are not authorized and have not started."
+    },
+    {
+      "id": "STAGE-18",
+      "status": "pending",
+      "files_changed": [],
+      "test_evidence": [],
+      "notes": "Production observation has not started."
+    },
+    {
+      "id": "STAGE-19",
       "status": "pending",
       "files_changed": [],
       "test_evidence": [],

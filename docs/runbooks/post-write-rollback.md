@@ -12,7 +12,8 @@ for the named production databases.
    unchanged. They bound the allowed Auth0 subjects.
 3. Create fresh encrypted backups of current Supabase and Mongo state.
 4. Run `tools/rollback/main.ts plan` using the `steady_migration_owner` session
-   connection and Mongo rollback credential. Review only sanitized counts.
+   connection and the operator-only `steady_rollback_operator` Mongo
+   credential. Review only sanitized counts.
 5. Stop on any identity conflict or unexpected user. Otherwise authorize and
    run `execute`.
 6. Run `execute` a second time. It must insert/update/link nothing; all weekly
@@ -20,10 +21,12 @@ for the named production databases.
 7. Export Mongo again and run `tools/migrate/main.ts reconcile` against
    Supabase. Require zero rejected records, full matched counts, and zero
    target-only rows in both collections.
-8. Verify Auth0 subject isolation, Go API contracts, aggregate counts, and a
-   read-only authenticated browser journey before changing traffic.
-9. Route production back to the retained Go/Heroku release, verify health, and
-   then re-enable Mongo writes.
+8. Verify Auth0 subject isolation, aggregate counts, the scoped
+   `steady_legacy_runtime` connection, and all four Go browser contracts while
+   Heroku remains in maintenance mode.
+9. Route production back to the retained Go/Heroku release, disable maintenance
+   mode, repeat the four browser smokes, and only then re-enable Mongo writes.
+   Never restore `CHAT_INGEST_TOKEN` or `AGENT_API_TOKEN`.
 10. Keep Supabase read-only and preserve both reports, logs, checksums, and
     backups until Review and Release decide disposition.
 
