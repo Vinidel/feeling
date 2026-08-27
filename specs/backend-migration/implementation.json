@@ -1114,10 +1114,69 @@
     },
     {
       "id": "STAGE-17",
-      "status": "pending",
-      "files_changed": [],
-      "test_evidence": [],
-      "notes": "Production cutover, credential rotation, Heroku maintenance/token removal, deployment, and traffic changes are not authorized and have not started."
+      "status": "complete",
+      "files_changed": [
+        "specs/backend-migration/stage-17-cutover.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Validate approved Plan, Review, and Release readiness; verify clean immutable source commit; scan current Supabase changelog; discover installed Heroku and Supabase CLI mutation syntax through --help; inspect required Keychain item names without values",
+          "result": "pass",
+          "details": "All upstream gates pass at clean commit 93ea22e. No applicable Supabase breaking change was found. Exact maintenance, config-unset, Storage copy, migration, rollback, and backup procedures are available, and required existing operator items are present by name without values being displayed."
+        },
+        {
+          "command": "Record explicit Stage 17 authority from Vinicius Delascio for the eight enumerated production action groups",
+          "result": "pass",
+          "details": "On 2026-08-27 Vinicius Delascio explicitly authorized scoped Mongo user rotation and old broad-user revocation; fresh encrypted backup upload/restore test; Heroku maintenance and permanent retired-token removal; final Mongo checkpoint and Supabase migration/reconciliation; Azure promotion/public URL cutover; Supabase write resumption and authenticated smoke writes; and retained non-deleted Heroku/Mongo rollback assets."
+        },
+        {
+          "command": "Atlas CLI create/list/delete; Keychain-to-CLI password input; mongosh allowed/denied probes; Heroku config rotation; authenticated Heroku journal and weekly browser reads",
+          "result": "pass",
+          "details": "Created steady_legacy_runtime and steady_rollback_operator with exactly readWrite@feeling and separate custody. Both read the unchanged 114/2 source and were denied named-user and cross-database access; Atlas wraps those denials as code 8000 with not-authorized messages. Heroku restarted on the scoped runtime credential and both authenticated browser views passed. The old feeling atlasAdmin@admin user was then revoked, its old credential failed authentication, both scoped users still passed, and Atlas now lists exactly those two users. No Mongo business row changed."
+        },
+        {
+          "command": "Fresh Supabase CLI roles/schema/data export; AES-256-GCM pack; new private Storage upload; authenticated download and checksum; clean PostgreSQL 17 restore; Stage 4 SQL suite; Deno service smoke",
+          "result": "pass",
+          "details": "The accepted private Sydney ciphertext is database/20260827T055046Z/steady-production-cutover-20260827T055046Z.steady.enc, 52,789 bytes, SHA-256 22c21cdf5e20360d9badd26b5cda1afbc42291db78cd7476923d1a9c4bc9fb68. It restored 114/2, both steady_migration_owner table owners, grants, nine policies, forced RLS, constraints, atomic weekly behavior, two-subject isolation, and rolled-back Deno service writes. An earlier 59,879-byte encrypted object failed recovery qualification because a generic no-owner/no-privileges schema dump omitted ownership and grants; it is explicitly retained as not approved for recovery and was replaced through the established Supabase CLI export method before write freeze."
+        },
+        {
+          "command": "Heroku maintenance:on; config:unset CHAT_INGEST_TOKEN AGENT_API_TOKEN; config-name-only verification; public-origin status check",
+          "result": "pass",
+          "details": "After recovery proof, Heroku maintenance was enabled and the public origin returned 503. Both retired token names were removed and remain absent; DB_USER and DB_PASS remain present without values being read. The Go deployment remains retained, and maintenance has not been disabled."
+        },
+        {
+          "command": "Scoped mongoexport final checkpoint; migration dry-run, idempotent import, and read-only reconciliation through Keychain-held report and migration credentials",
+          "result": "pass",
+          "details": "The frozen source checkpoint contains 114 feelings and two weekly trackers with SHA-256 734d813a0b85540b9cd35c157a1c6bbe6a81dc2d56cfd98c8b7e367c52f55587 and 2f566f483bc368bdffbadaf410950dc3b03c7baec9cabf8b94c87e57ac95f686. Dry-run accepted all 116, rejected none, and reported exactly the two approved Go-zero-time normalizations. Import inserted zero and matched 114/2; final reconcile matched 114/2 with zero exception and zero target-only row. Mongo remained unchanged."
+        },
+        {
+          "command": "Isolated personal Azure profile login; Container App, revision, ACR, managed identity, Log Analytics, budget, health, and sanitized-log checks",
+          "result": "pass",
+          "details": "The correct isolated profile identifies Azure subscription 1, tenant 8e263016-4fa0-4d3c-a7f2-7cc76d872ccb, and vini.delascio@gmail.com. steady-preprod--r3 is Running/Succeeded at 100 percent in Australia East with scale 0..1 and only database-url as a secret name. ACR admin is false, the identity has only AcrPull, Log Analytics retention is 30 days, and the existing monthly 5 budget has its enabled 80-percent alert. Root and health returned 200. Logs contain structured route/status metadata, no error, and no private or credential fields."
+        },
+        {
+          "command": "Live hosted runtime transaction/RLS integration; retained-Auth0 Azure browser journal and weekly reads; user-entered weekly and feeling saves; authenticated reload; Azure POST log verification",
+          "result": "pass",
+          "details": "The TLS-capable hosted RLS suite denied cross-subject insert, ownership reassignment, and DELETE and rolled every fixture back. Vinicius entered one real weekly tracker and one real feeling rather than synthetic private data. GET and POST for both supported browser resources passed; POST /api/weekly-tracker returned 200 at the commit point 2026-08-27T14:49:55.8342617Z and POST /api/feelings returned 200 at 2026-08-27T14:50:29.5948854Z. Reload showed 107 visible normalized check-ins, up from 106, and the weekly view loaded. Logs show no 5xx or prohibited fields."
+        },
+        {
+          "command": "Post-write aggregate accounting; constrained read-only target-to-Mongo rollback plan; final Heroku/Atlas rollback-boundary audit",
+          "result": "pass",
+          "details": "Supabase now contains 115 feelings and three weekly trackers, exactly the frozen 114/2 baseline plus one target-only row of each type; nine policies and forced RLS on both tables remain. Mongo remains 114/2. The sanitized rollback plan reports one feeling insert, one weekly insert, two weekly already matched, no conflict, and no write or target link in plan mode. Deno MongoDB driver startup required environment read access inside the isolated container, and Docker DNS required Atlas's provider-equivalent explicit three-host TLS seedlist instead of SRV; no host secret store was mounted and network remained endpoint-restricted. Heroku remains maintenance-on, retired tokens absent, and Atlas retains exactly the two scoped users."
+        },
+        {
+          "command": "Remove exact disposable PostgreSQL restore container and owner-only plaintext Stage 17 scratch after durable evidence; retain encrypted Storage objects and all cloud rollback resources",
+          "result": "pass",
+          "details": "The successful restore and failed disposable restore targets, SQL dumps, decrypted components, source checkpoint exports, private migration/reconciliation reports, downloaded/local ciphertext copies, upload responses, and diagnostic helper were removed only after sanitized evidence was durable. The accepted encrypted backup, the explicitly non-qualified encrypted object, historical encrypted backups, Heroku deployment, Mongo data, two scoped Mongo users, and Azure/Supabase production resources remain retained."
+        },
+        {
+          "command": "AI-OS plan/review/release readiness checks; implementation structural validation; JSON, patch, secret-pattern, cloud-state, and production-accounting checks",
+          "result": "pass",
+          "details": "Stage 17 satisfies every approved gate and definition of done. The replacement is the production source of truth, acknowledged writes are accounted for, pre-commit and post-write rollback remain executable, no account plan was upgraded, and no legacy or backup resource was deleted. Stage 18 remains pending and Stage 19 still requires later explicit decommission approval."
+        }
+      ],
+      "notes": "Stage 17 is complete. Production traffic now uses the retained Auth0 user, the Australia East Deno/React revision steady-preprod--r3, and Sydney Supabase. The first replacement write at 2026-08-27T14:49:55.8342617Z is the source-of-truth commit point. Mongo is frozen at 114/2 and Supabase is 115/3 after Vinicius entered one real feeling and one real weekly tracker; the read-only rollback plan accounts for both. Heroku remains deployed in maintenance mode, retired tokens remain absent, Mongo has exactly two separately held readWrite@feeling users, and the broad credential is revoked. The fresh accepted encrypted backup passed full restore; no provider plan was upgraded and no cloud or legacy resource was deleted. Stage 18 observation needs a separate instruction to start; Stage 19 decommissioning still requires explicit human approval."
     },
     {
       "id": "STAGE-18",
