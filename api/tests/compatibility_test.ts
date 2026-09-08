@@ -102,6 +102,20 @@ Deno.test("runtime configuration is strict and defaults to the permitted contain
   );
 });
 
+Deno.test("deno task start allowlists local Supabase CLI Postgres", async () => {
+  const config = JSON.parse(
+    await Deno.readTextFile(new URL("../deno.json", import.meta.url)),
+  );
+  const allowNet = String(config.tasks.start).match(/--allow-net=(\S+)/)?.[1] ??
+    "";
+  const hosts = new Set(allowNet.split(","));
+  assert.ok(hosts.has("127.0.0.1:55322"));
+  assert.ok(hosts.has("localhost:55322"));
+  assert.ok(hosts.has("0.0.0.0:8080"));
+  assert.ok(hosts.has("dev-vin.au.auth0.com:443"));
+  assert.ok(hosts.has("aws-0-ap-southeast-2.pooler.supabase.com:6543"));
+});
+
 Deno.test("structured logging discards unapproved fields", () => {
   const record = createLogRecord("info", "test", {
     method: "GET",

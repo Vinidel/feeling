@@ -70,6 +70,11 @@ Run the API from `api/`:
 deno task start
 ```
 
+For the disposable local Supabase CLI database, apply the migrations under
+`supabase/`, point `DATABASE_URL` at loopback port `55322`, and set
+`DATABASE_SSL_MODE=disable`. `deno task start` allowlists that loopback
+Postgres endpoint; hosted TLS remains `DATABASE_SSL_MODE=require`.
+
 Run the browser application from a second terminal:
 
 ```bash

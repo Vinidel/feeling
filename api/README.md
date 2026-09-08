@@ -104,10 +104,11 @@ Production and hosted non-production deployments must retain
 `DATABASE_SSL_MODE=require`. The opt-out exists only because the local Supabase
 CLI database does not terminate TLS.
 
-The container's outbound permission list is limited to the existing Auth0 JWKS
-host and the Steady Sydney Supavisor transaction endpoint. Changing either host
-requires a reviewed image-permission update rather than silently expanding
-network access.
+`deno task start` allowlists that disposable local Postgres on
+`127.0.0.1:55322` and `localhost:55322` in addition to the Auth0 JWKS host and
+the Steady Sydney Supavisor transaction endpoint. The container image stays
+limited to Auth0 and Supavisor. Changing either hosted host requires a reviewed
+image-permission update rather than silently expanding network access.
 
 ## Verification
 
