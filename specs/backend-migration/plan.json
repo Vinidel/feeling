@@ -493,6 +493,33 @@
         "Removal actions, recovery properties, owners, and evidence are recorded in the Release record.",
         "If explicit decommission approval is withheld, this stage remains unexecuted without blocking operation of the validated replacement."
       ]
+    },
+    {
+      "id": "STAGE-20",
+      "sequence": 20,
+      "title": "Restore post-decommission recovery readiness and operational accuracy",
+      "depends_on": ["STAGE-19"],
+      "targets": [
+        "paused Free-plan Steady backups Supabase project in Sydney",
+        "current production PostgreSQL logical backup and private encrypted Storage object",
+        "empty PostgreSQL 17 restore rehearsal and sanitized recovery evidence",
+        "post-decommission Release record and active operational runbooks"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Resume only the existing Steady backups Free-plan project, verify its Sydney region, private database-backups bucket, retained ciphertext inventory, and unchanged plan without upgrading any account.",
+        "Export the current production roles without passwords, schema, and data; require aggregate counts to match the live source and package them with the reviewed authenticated-encryption workflow without exposing credentials, subjects, notes, or plaintext in durable evidence.",
+        "Upload only a new ciphertext object, download it separately, verify its outer checksum, authenticate and decrypt it, restore it into an empty disposable PostgreSQL 17 target, and verify migrations, constraints, forced RLS, policies, exact aggregate counts, and application-read compatibility.",
+        "Remove the exact disposable target and all plaintext scratch material while retaining the encrypted object and sanitized evidence.",
+        "Amend the active Release record and operational runbooks to state that Heroku/MongoDB rollback no longer exists, recovery uses the retained encrypted PostgreSQL backup, Free projects may auto-pause, and operators must resume and verify the backup project before backup or recovery work.",
+        "Run relevant backup tests, artefact validators, patch-hygiene checks, and credential-pattern scans."
+      ],
+      "definition_of_done": [
+        "A current production backup is retained as private ciphertext in the separate Sydney Supabase project and its checksum-qualified empty-target PostgreSQL 17 restore has passed.",
+        "The backup project is reachable for the approved operation without any account-plan upgrade, and Free-plan auto-pause behavior plus the current restore window are accurately documented.",
+        "Active operational records describe post-decommission recovery rather than the removed legacy rollback path.",
+        "REV-FINAL-001 and REV-FINAL-002 have sufficient evidence for targeted re-review; no unrelated production behavior, schema, traffic, identity, or account plan is changed."
+      ]
     }
   ],
   "accepted_complexity": [
@@ -540,7 +567,7 @@
   "approval": {
     "status": "approved",
     "by": "Vinicius Delascio",
-    "at": "2026-08-24",
-    "reason": "The original execution-plan approvals from 2026-08-13 and 2026-08-17 remain recorded in repository history. On 2026-08-24, Vinicius Delascio explicitly approved the amendment that inserts remediation rehearsal, repeated Review, and Release gates before moving production cutover to STAGE-17, observation to STAGE-18, and separately authorized decommissioning to STAGE-19. This approval permits Stage 14 implementation but does not authorize any production mutation."
+    "at": "2026-09-08",
+    "reason": "The original execution-plan approvals remain recorded in repository history. On 2026-09-08, after the final Review identified an overdue recovery point and stale post-decommission operating records, Vinicius Delascio explicitly approved the bounded Stage 20 remediation: resume the existing Free backup project, create and fully restore-test a current encrypted backup, and update post-decommission records without upgrading an account. This approval authorizes only those named operations and no unrelated production behavior, schema, traffic, identity, deletion, or plan change."
   }
 }

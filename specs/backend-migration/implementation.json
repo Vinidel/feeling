@@ -1381,6 +1381,59 @@
         }
       ],
       "notes": "Stage 19 is complete under Vinicius Delascio's explicit approval of every exact destructive target. www.delasc.io remains healthy on Azure and the final authenticated read-only journal and weekly journeys pass; Heroku app stormy-cliffs-52671, Atlas Cluster0, both scoped Atlas database users, the rollback-operator Keychain password, and the named Go/Heroku repository artifacts are retired. The empty Atlas project, Azure, Supabase, Auth0, DNS, all seven encrypted backup objects and keys, current application code, migration/restore tooling, runbooks, AI-OS evidence, and Git history remain retained. In-place legacy rollback no longer exists; recovery depends on the two final checksum-qualified encrypted backups whose complete disposable restores passed before deletion. The implementation artefact is structurally valid; aggregate --ready remains unavailable only because the historical failed direct-IPv6 probe is retained truthfully alongside its approved, passing TLS Supavisor fallback."
+    },
+    {
+      "id": "STAGE-20",
+      "status": "complete",
+      "files_changed": [
+        "specs/backend-migration/plan.json",
+        "specs/backend-migration/stage-20-recovery-remediation.md",
+        "specs/backend-migration/release.json",
+        "docs/runbooks/backup.md",
+        "docs/runbooks/restore.md",
+        "docs/runbooks/monitoring-support.md",
+        "docs/runbooks/breach-response.md",
+        "docs/runbooks/operator-audit.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Record the explicitly approved Stage 20 plan amendment and run structural plus readiness validation",
+          "result": "pass",
+          "details": "Vinicius Delascio approved the exact bounded remediation on 2026-09-08. Stage 20 records the existing Free backup-project resume, current encrypted backup, full new-target restore, cleanup, and operational-record correction without an account upgrade or unrelated production change. The amended plan passes deterministic structure and readiness validation."
+        },
+        {
+          "command": "Resume only Supabase project dabuqchfkqbsgymbspvk and verify provider, Keychain-reference, production-count, RLS, bucket-privacy, retained-object, and current-doc/changelog preconditions",
+          "result": "pass",
+          "details": "Steady backups moved from INACTIVE through COMING_UP to ACTIVE_HEALTHY in Sydney on PostgreSQL 17.6.1.155 without a plan change. Its hostname had a bounded DNS wake-up delay, then the private database-backups bucket and original seven ciphertexts were reachable. Production remained ACTIVE_HEALTHY at 116 feelings, four weekly trackers, nine policies, and two forced-RLS tables. Required Keychain items were present by name only; no value was printed. Current Supabase documentation confirms Free auto-pause/resume behavior, and no relevant current breaking change was found."
+        },
+        {
+          "command": "Create password-free PostgreSQL 17 roles/schema/data exports, run credential-marker checks, and package/upload/download/authenticate the first immutable candidate",
+          "result": "pass",
+          "details": "The new owner-only export matched PostgreSQL 17.6, three migrations, 116/4 rows, and contained no password, SCRAM, or MD5 marker. The first object database/20260908T035825Z/steady-production-weekly-20260908T035825Z.steady.enc is 56,417 bytes with SHA-256 7723373154c6493b0894d1747e47752380f3b48c01e467fc8ccc36abb2555df6. Upload, separate download, byte checksum, authenticated decryption, and component checksums passed. The empty-target gate then correctly prevented qualification because raw role output retained duplicate Supabase-internal grantor semantics that plain PostgreSQL cannot restore. The object remains immutable and explicitly unqualified."
+        },
+        {
+          "command": "Remove only Supabase-internal duplicate role grants, confirm unchanged 116/4 production counts, and create/upload/download/authenticate a second new ciphertext",
+          "result": "pass",
+          "details": "All three password-free application roles, safe attributes, and application memberships were preserved. The qualified object is database/20260908T041928Z/steady-production-weekly-20260908T041928Z.steady.enc, 56,095 bytes, SHA-256 b35f03b7ffb9786d8fc6d170186e7b98dc67b86e11095e0f0bbdccf910895056. Its strict manifest records PostgreSQL 17.6, pinned Supabase CLI 2.114.0, Sydney-to-Sydney, all three migrations, and 116/4 rows. Separate download, outer checksum, AES-GCM authentication, decryption, and internal checksums passed."
+        },
+        {
+          "command": "Restore the qualified object from the beginning into a new network-isolated PostgreSQL 17 target and run Stage 4 plus restored-identity verification",
+          "result": "pass",
+          "details": "The restore completed with ON_ERROR_STOP and exactly 116 feelings, four weekly trackers, nine policies, two forced-RLS tables, and all three least-privilege application roles. The full Stage 4 test passed ownership, grants, constraints, indexes, generated defaults, unique identifiers, weekly upsert, forbidden privileges, missing-identity denial, forced-owner RLS, and cross-user denial. A transaction-local identity then read its own real restored rows and no different subject row."
+        },
+        {
+          "command": "Verify final Supabase project/advisor/Storage state, remove exact disposable and plaintext artifacts, run the eight pinned backup tests, and smoke public health/readiness",
+          "result": "pass",
+          "details": "Both Sydney projects are ACTIVE_HEALTHY and both Security and Performance Advisor sets are empty. The private bucket retains nine application/octet-stream ciphertexts totalling 369,619 bytes; no object was overwritten or deleted. The exact restore container and owner-only scratch directory, including plaintext SQL, decrypted components, downloads, and local ciphertexts, are absent. All eight Deno 2.9.4 backup tests passed. www.delasc.io health returned 200 after the known 23.45-second scale-to-zero start and readiness returned 200 warm in 0.09 seconds."
+        },
+        {
+          "command": "Update post-decommission backup, restore, monitoring, incident, operator-audit, Release, and Stage 20 evidence; validate artefacts and scan repository hygiene",
+          "result": "pass",
+          "details": "Active records now state that Heroku/MongoDB rollback no longer exists, define new-target PostgreSQL recovery, and add Free-project resume/reachability preflights without recommending an upgrade. The amended Release record names the exact decommission and qualified/unqualified backup outcomes and remains pending targeted Review rather than self-approval. Structural JSON validation and git diff hygiene pass; final validators and credential-pattern scans are recorded at stage completion."
+        }
+      ],
+      "notes": "Stage 20 is complete under Vinicius Delascio's explicit 2026-09-08 approval. The existing Free backup project was resumed without an upgrade, and the current qualified 116/4 production recovery point passed full download, checksum, authenticated decryption, empty PostgreSQL 17 restore, schema, privilege, forced-RLS, and ownership verification. The earlier Stage 20 candidate remains private but unqualified after the restore gate exposed non-portable Supabase-internal duplicate grants. All local plaintext and disposable resources are gone. Review findings REV-FINAL-001 and REV-FINAL-002 now have remediation evidence; targeted Review and amended Release approval remain separate lifecycle gates."
     }
   ],
   "unresolved_questions": []

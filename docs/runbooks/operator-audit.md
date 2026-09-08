@@ -14,8 +14,13 @@ the application deliberately has no operator API.
   membership. Never use an administrative credential in the browser or API.
 - Auth0: use the tenant Dashboard for callback/origin settings and logs. Do not
   copy access tokens into tickets or records.
-- MongoDB/Heroku: use only to operate the retained rollback source until
-  decommissioning receives separate approval.
+- Backup Storage: use the operator-only Storage credential and separate
+  encryption key only for approved backup/restore work. The `Steady backups`
+  Free project may auto-pause; recording its resume, health, bucket privacy,
+  inventory, upload, checksum, and restore result is part of the change record.
+- MongoDB/Heroku: both operational resources were decommissioned in Stage 19.
+  They are not operator-access or rollback paths; retain only their historical
+  evidence and encrypted migration/decommission backup objects.
 
 ## Change record
 
@@ -40,9 +45,10 @@ migration, deployment, and deletion actions each require explicit authority.
   retention immediately before Release; the Free plan currently retains one
   day. See https://auth0.com/docs/deploy-monitor/logs/log-data-retention.
 
-Before Release, reauthenticate the isolated Azure CLI profile using the default
-browser-based modern-auth flow, verify it names the personal subscription, and
-capture the current Container App, revision, secret-name-only, role assignment,
-budget, and Log Analytics retention state. New tenants with Security Defaults
-block device-code flow from July 2026; do not disable Security Defaults to make
-that legacy flow work. Never print secret values while collecting evidence.
+Before a release or production change, reauthenticate the isolated Azure CLI
+profile using the default browser-based modern-auth flow, verify it names the
+personal subscription, and capture the current Container App, revision,
+secret-name-only, role assignment, budget, and Log Analytics retention state.
+New tenants with Security Defaults block device-code flow from July 2026; do
+not disable Security Defaults to make that legacy flow work. Never print secret
+values while collecting evidence.

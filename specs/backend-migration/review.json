@@ -6,77 +6,82 @@
     "specs/backend-migration/plan.json",
     "specs/backend-migration/implementation.json",
     "specs/backend-migration/current-state.md",
-    "specs/backend-migration/stage-13-review-readiness.md",
+    "specs/backend-migration/release.json",
     "specs/backend-migration/stage-14-remediation.md",
-    "supabase/migrations/20260817053317_create_private_feelings_and_weekly_schema.sql",
-    "supabase/migrations/20260818040229_allow_migration_owner_to_assume_runtime.sql",
-    "supabase/migrations/20260819004100_add_rollback_reconciliation_role.sql",
+    "specs/backend-migration/stage-17-cutover.md",
+    "specs/backend-migration/stage-18-observation.md",
+    "specs/backend-migration/stage-19-decommission.md",
     "api/Dockerfile",
     "api/src",
     "api/tests",
+    "supabase/migrations",
+    "tools/backup",
     "tools/migrate",
     "tools/rollback",
-    "tools/backup",
     "tools/legacy-security",
-    "server/retired_routes_test.go",
-    "docs/runbooks"
+    "client/package.json",
+    "client/src",
+    "docs/runbooks",
+    "Git commit a3a66bb",
+    "Read-only Azure, Supabase, Heroku, and MongoDB provider checks performed 2026-09-08",
+    "https://supabase.com/docs/guides/platform/free-project-pausing"
   ],
-  "verdict": "pass",
+  "verdict": "needs_changes",
   "findings": [
     {
-      "id": "REV-001",
+      "id": "REV-FINAL-001",
       "severity": "high",
-      "status": "resolved",
-      "summary": "The owner-approved Free-plan logical-backup contract is implemented and restored successfully without a managed-backup claim.",
-      "evidence": "The approved 2026-08-24 Define and Design amendments now require authenticated-encrypted PostgreSQL logical backups, private ciphertext Storage in a separate Sydney project, checksums, retention evidence, and a full empty-target restore rehearsal, while explicitly stating that this is not managed backup or PITR. Stage 14 exported password-free roles plus schema and data, packed exactly three checksummed SQL components, encrypted them with AES-256-GCM, uploaded only 52,785 bytes of ciphertext, downloaded and verified SHA-256 7c80298cb21b5a48138c554052b9be44189472f8a80d27348d3a241fb440b0b7, authenticated and decrypted it, and restored PostgreSQL 17 with 114 feelings, 2 weekly trackers, three migration versions, constraints, nine forced-RLS policies, two-subject isolation, API smoke, and unchanged final counts. Review reran all eight backup tests on pinned Deno 2.9.4. On 2026-08-27 both Supabase projects remained ACTIVE_HEALTHY on PostgreSQL 17.6 in ap-southeast-2, the bucket reported public=false, and the Stage 14 ciphertext path remained present. The current Supabase changelog contains no breaking change applicable to this private-schema, direct-Postgres, operator-Storage workflow.",
+      "status": "open",
+      "summary": "The only retained database-recovery path is overdue and currently inaccessible because the Free-plan backup project is paused.",
+      "evidence": "Production Supabase is ACTIVE_HEALTHY in Sydney and currently contains 116 feelings and 4 weekly trackers. The separate Sydney backup project is INACTIVE, its SQL endpoint timed out, and its Storage hostname could not be resolved while paused. The latest durable inventory contains seven private ciphertext objects; the latest qualified full-restore backup is database/20260827T231728Z/steady-production-decommission-20260827T231728Z.steady.enc and contains 115 feelings and 3 weekly trackers. The Release contract required the first post-cutover weekly backup by 2026-09-03T05:50:46Z, so the recovery point is overdue and omits one current feeling and one current tracker. Heroku and MongoDB have already been explicitly decommissioned, making this the sole recovery system. Supabase documents that inactive Free projects can be resumed without an account upgrade within the applicable retention window. Remediation must resume the existing project, create a current authenticated-encrypted logical backup, upload only ciphertext, download and checksum it, authenticate and decrypt it, complete an empty PostgreSQL 17 restore rehearsal, remove plaintext artifacts, and record the evidence.",
       "owner": "Vinicius Delascio"
     },
     {
-      "id": "REV-002",
-      "severity": "high",
-      "status": "resolved",
-      "summary": "The retained Heroku rollback source now has an approved, tested browser-only isolation contract for the retired machine routes.",
-      "evidence": "The amended Design SEC-004 and Stages 14/17 require maintenance mode before token removal, config-name-only verification that CHAT_INGEST_TOKEN and AGENT_API_TOKEN are absent, maintenance throughout observation, data verification before maintenance is disabled for rollback, four browser-route smoke checks, and permanent non-restoration of retired tokens. Review reran five legacy-security tests and the complete Go suite: both retired routes fail closed before handlers when tokens are absent, browser routes are independent of the tokens, unsafe event ordering is rejected, and token restoration is impossible in the executable state model. The production runbook contains exact stop and rollback conditions. A 2026-08-27 read-only check deliberately still found maintenance off, both token names configured, and unauthenticated retired routes returning 401; this confirms the separately authorized Stage 17 gate has not been misrepresented as executed. Stage 17 blocks traffic switching unless maintenance is on, both names are absent, and the hostname cannot serve a retired handler. The original Review finding required this precise approved control before cutover, which is now present and tested; production execution remains a Release/cutover precondition rather than an unresolved design gap.",
-      "owner": "Vinicius Delascio"
-    },
-    {
-      "id": "REV-003",
-      "severity": "high",
-      "status": "resolved",
-      "summary": "Least-privilege Mongo browser-rollback and operator-reconciliation roles are defined, tested, and ordered as mandatory cutover gates.",
-      "evidence": "The amended Design SEC-005 defines two separately held users: steady_legacy_runtime in Heroku only and steady_rollback_operator in the operator secret store only, each with exactly readWrite on database feeling and no Atlas, admin, cross-database, user-management, project, or infrastructure privilege. Review reran the exact-policy tests, which reject atlasAdmin, readWriteAnyDatabase, extra roles, cross-database access, and shared custody. Stage 14 additionally exercised real disposable MongoDB 7 users: each passed required CRUD in feeling and was denied admin usersInfo and cross-database reads. The production runbook orders baseline counts, runtime-user creation and browser verification, operator-user creation and reconciliation verification, and only then old atlasAdmin revocation; any failure stops cutover and preserves the prior credential. Production Atlas was intentionally not mutated during Review. Stage 17 makes creation, verification, separate custody, and broad-user revocation hard preconditions, so the prior missing-control finding is resolved without a waiver or a claim that rotation has already happened.",
-      "owner": "Vinicius Delascio"
-    },
-    {
-      "id": "REV-004",
+      "id": "REV-FINAL-002",
       "severity": "medium",
       "status": "open",
-      "summary": "The shipped legacy React client has direct and transitive dependency advisories tracked outside this migration.",
-      "evidence": "A refreshed 2026-08-27 npm audit reports 82 findings across 1,415 dependencies: 15 low, 17 moderate, 42 high, and 8 critical. Direct affected packages previously identified are axios, moment, postcss, and react-scripts, with many high/critical findings in transitive build tooling. Review does not infer exploitability from package severity and does not silently waive the result. The migration's fixed same-origin API, strict server validation, and passing browser tests are compensating context, not remediation. Vinicius Delascio explicitly assigned reachability analysis and modernization to separately Defined FOLLOWUP-REACT-001; it remains owned, visible, unwaived work outside backend-migration.",
+      "summary": "Current operational records still describe the deleted Heroku and MongoDB systems as available rollback paths.",
+      "evidence": "specs/backend-migration/release.json still identifies Heroku and MongoDB as the rollback source and records the backup project as ACTIVE_HEALTHY. docs/runbooks/monitoring-support.md still says decommissioning is incomplete and instructs operators to roll back to the legacy service; docs/runbooks/breach-response.md and docs/runbooks/operator-audit.md also preserve assumptions about the legacy resources. Historical cutover and rollback runbooks may remain as migration evidence, but the active Release record and operational runbooks must state that legacy rollback no longer exists and that recovery now means restoring the encrypted PostgreSQL backup into the target architecture. Stage 19's definition of done explicitly requires the removal actions, recovery properties, owners, and evidence to be recorded in the Release record.",
       "owner": "Vinicius Delascio"
     },
     {
-      "id": "REV-005",
-      "severity": "info",
-      "status": "resolved",
-      "summary": "Azure deployment, identity, audit, cost, and rollback evidence is sufficient for the dark non-production target.",
-      "evidence": "Stage 13 verified the isolated personal subscription, Australia East placement, healthy immutable revisions, managed-identity AcrPull with ACR admin disabled, secret references rather than values, 30-day Log Analytics retention, budget alerting, zero recent restarts, sanitized logs, and revision rollback. The unrelated subscription was not used. These checks concern the already-created dark non-production target and do not authorize production deployment or traffic.",
-      "owner": "Vinicius Delascio"
-    },
-    {
-      "id": "REV-006",
-      "severity": "info",
-      "status": "resolved",
-      "summary": "Current history size does not require pagination, and scale-to-zero latency is documented as an explicit cost trade-off.",
-      "evidence": "The largest hosted history remains documented at 106 records and approximately 50,464 JSON bytes, below the 500-row/250-KiB guardrail. The approximately 26-second observed cold start and approximately 0.09-second warm checks are documented in the monitoring runbook. A minimum-replica change remains a separately approved cost/infrastructure decision.",
-      "owner": "Vinicius Delascio"
-    },
-    {
-      "id": "REV-007",
-      "severity": "info",
+      "id": "REV-FINAL-003",
+      "severity": "medium",
       "status": "open",
-      "summary": "Production isolation, credential rotation, backup, migration, deployment, and traffic controls remain intentionally unexecuted until separate authority is granted.",
-      "evidence": "Review verified that Stage 14 changed no production state and that the current Heroku machine-token and maintenance state is still the legacy state. This is expected before Release, not a waiver. Stages 16 and 17 must retain named stop gates for the fresh restorable backup, scoped Mongo users and broad-user revocation, Heroku maintenance and token removal, write freeze, 100-percent data reconciliation or explicitly approved exceptions, deployment, frontend/public traffic switch, Auth0/browser smoke, and both rollback modes. Review approval alone authorizes none of those mutations.",
+      "summary": "The retained React client has unresolved direct and transitive dependency advisories tracked outside this backend migration.",
+      "evidence": "A refreshed 2026-09-08 npm audit reports 83 findings across 1,415 dependencies: 15 low, 17 moderate, 43 high, and 8 critical. Direct axios and transitive legacy build-tool packages are affected. Package severity alone does not establish runtime exploitability, and the passing browser suite, same-origin deployment, strict server validation, and separately tracked modernization work are useful context but are not remediation or a waiver. This remains visible, owned follow-up work and does not negate the backend behavioural evidence.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "id": "REV-FINAL-004",
+      "severity": "info",
+      "status": "resolved",
+      "summary": "The aggregate implementation readiness validator preserves a historical failed direct-IPv6 probe even though the approved Supavisor fallback succeeded.",
+      "evidence": "brief.json, design.json, plan.json, and implementation.json pass structural validation, and plan.json passes readiness validation. implementation.json readiness continues to report STAGE-03.test_evidence[7].result because that evidence truthfully records a failed direct-IPv6 connectivity attempt. The same stage records the approved TLS Supavisor fallback as passing, and current production uses that tested route. Historical evidence was not rewritten merely to make the aggregate validator green.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "id": "REV-FINAL-005",
+      "severity": "info",
+      "status": "resolved",
+      "summary": "Azure scale-to-zero cold-start latency remains a known and accepted Free/low-cost operating trade-off.",
+      "evidence": "On 2026-09-08, one cold /healthz request exceeded 30 seconds; /readyz then returned 200 and an immediate warm /healthz retry returned 200 in approximately 0.094 seconds. Production observation already documented this behavior and the owner explicitly preferred not to upgrade accounts. No minimum-replica cost change is proposed by this Review.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "id": "REV-FINAL-006",
+      "severity": "info",
+      "status": "resolved",
+      "summary": "Production cutover, observation, and exact-scope legacy decommission completed under separate named approvals.",
+      "evidence": "Stages 17 through 19 record the approved production migration, live Auth0 browser journeys, complete reconciliation, observation, and explicit deletion authority. The final user-driven journal and weekly-tracker checks passed; no unexpected writes were recorded. Read-only provider evidence then showed Heroku not_found and zero Atlas clusters after deletion while the Azure/Supabase target remained healthy. Backup ciphertext was retained. The repository is synchronized with origin at commit a3a66bb.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "id": "REV-FINAL-007",
+      "severity": "info",
+      "status": "resolved",
+      "summary": "Current frontend checks pass; current Deno suite evidence is retained because the local container daemon was unavailable for an independent rerun.",
+      "evidence": "On 2026-09-08 the React suite passed 5 suites and 9 tests and the production build succeeded. The current implementation evidence at the reviewed commit records all 28 Deno API tests passing, plus passing backup and legacy-security suites. An attempted independent rerun could not start because the local Docker/Colima daemon was stopped; this is an environment availability result, not a test failure. No runtime implementation changed after the recorded passing API evidence; Stage 19 removed the retired Go tree and updated migration records and dead client tooling.",
       "owner": "Vinicius Delascio"
     }
   ],
@@ -84,78 +89,78 @@
     {
       "ac_id": "AC-1",
       "status": "pass",
-      "evidence": "Stages 7, 8, 11, and the Stage 15 rerun of all 28 Deno tests prove authenticated complete history, deterministic ordering, exact response mapping, empty-array normalization, and same-user isolation."
+      "evidence": "Stages 7, 8, 11, 17, and 18 prove authenticated complete feeling history, deterministic ordering, approved response mapping and timestamps, empty-array normalization, and same-user isolation in tests and the live browser journey."
     },
     {
       "ac_id": "AC-2",
       "status": "pass",
-      "evidence": "Stages 7, 8, and 11 prove strict supported input, one durable write, verified-sub ownership, rejection of client-selected identity, subsequent read, and two-subject isolation."
+      "evidence": "Stages 7, 8, 11, 17, and 18 prove strict supported input, exactly one durable user-owned write, rejection of client-selected identity, the approved response, and successful subsequent reads in tests and production."
     },
     {
       "ac_id": "AC-3",
       "status": "pass",
-      "evidence": "Stages 9 and 11 and the rerun weekly contract tests prove 200 with {ok:true,record:null} for an absent user/week without cross-user disclosure."
+      "evidence": "Stages 9 and 11 prove the approved successful no-record response {ok:true,record:null} for an absent user/week without cross-user disclosure."
     },
     {
       "ac_id": "AC-4",
       "status": "pass",
-      "evidence": "Stages 4, 9, and 11 prove the unique user/week constraint, atomic upsert, version and timestamp mapping, concurrency behavior, and complete browser journey."
+      "evidence": "Stages 4, 9, 11, 17, and 18 prove the unique user/week constraint, atomic upsert, tracker-version and timestamp semantics, concurrency behavior, and the complete live weekly-tracker journey without unintended duplicates."
     },
     {
       "ac_id": "AC-5",
       "status": "pass",
-      "evidence": "Stages 6, 7, 9, and 11 prove RS256 issuer/audience/expiry/sub validation, missing/invalid/mismatched credential responses, no-write failures, and cross-user RLS denial."
+      "evidence": "Stages 6, 7, 9, 11, and 17 prove RS256 issuer, audience, expiry, and subject verification; approved missing, invalid, and mismatched credential failures; no-write denial; and cross-user RLS isolation."
     },
     {
       "ac_id": "AC-6",
       "status": "pass",
-      "evidence": "Repository/config inventories and Vinicius Delascio's owner confirmation establish that OpenClaw no longer exists and no active caller depends on the three machine routes. No contrary evidence appeared. Stage 14 and the amended cutover gate safely isolate the still-retained rollback source."
+      "evidence": "Repository inventories and Vinicius Delascio's confirmation established that OpenClaw no longer exists and no active caller depended on the three machine routes. Pre-release and pre-decommission checks found no contrary caller evidence."
     },
     {
       "ac_id": "AC-7",
       "status": "pass",
-      "evidence": "Stages 10, 13, and the Stage 15 API rerun prove the replacement exposes none of the chat, agent, ping, or operator paths and accepts none of their secret/header configuration or privileged identity behavior."
+      "evidence": "Stages 10, 13, 17, and 19 prove the replacement exposes none of the chat, agent, ping, or operator paths, accepts none of their shared-secret or allowlist configuration, and the retired Go handlers were ultimately removed only after explicit approval."
     },
     {
       "ac_id": "AC-8",
       "status": "pass",
-      "evidence": "Stages 8, 11, and 12 plus the Stage 15 React rerun prove retained Auth0 login/session/logout, feelings and weekly journeys, production same-origin and local split-origin behavior, 5 suites/9 tests, and a successful production build."
+      "evidence": "Stages 8, 11, 12, 17, and 18 prove retained Auth0 login, session, and logout plus feelings and weekly journeys in local, non-production, and production same-origin operation without account relinking or re-registration. The current frontend suite passes 5 suites/9 tests and its production build passes."
     },
     {
       "ac_id": "AC-9",
       "status": "pass",
-      "evidence": "Stages 1, 7, 9, 10, and 11 prove the approved normalizations: empty array, strict request validation, structured 400/401/403/404/500 errors, pre-handler CORS rejection, deterministic ordering, and ping removal."
+      "evidence": "Stages 1, 7, 9, 10, and 11 prove the approved normalizations: empty arrays, strict request validation, structured 400/401/403/404/500 errors, pre-handler CORS rejection, deterministic ordering, and removal of the unused ping call and route."
     },
     {
       "ac_id": "AC-10",
       "status": "pass",
-      "evidence": "Stages 3 through 5, 11, and 14 prove Sydney placement, deterministic 114-feeling/2-weekly migration and reconciliation, five preserved ownership keys, approved normalization, zero remaining exceptions/target-only rows, repeat-import idempotency, and a downloaded/checksummed/decrypted successful empty-target PostgreSQL 17 restore."
+      "evidence": "Stages 3 through 5, 11, 14, and 17 prove Australian placement, deterministic import and reconciliation, preserved ownership and timestamps, approved normalization, repeat-import idempotency, zero unapproved discrepancies, and a downloaded, checksummed, authenticated-decrypted, empty-target PostgreSQL 17 restore rehearsal. The original migration acceptance is met; REV-FINAL-001 separately records that the ongoing weekly recovery point is now overdue."
     },
     {
       "ac_id": "AC-11",
       "status": "pass",
-      "evidence": "Stages 4, 6, 7, 9, 11, 12, and 14 prove a private non-Data-API schema, non-BYPASSRLS runtime roles, forced RLS, nine policies, two-subject direct/API denial, no operator application route, and exact least-privilege legacy rollback roles."
+      "evidence": "Stages 4, 6, 7, 9, 11, 12, 14, and current live checks prove a private non-Data-API schema, non-BYPASSRLS runtime, forced RLS, nine policies, two-subject direct/API denial, no client privileged credentials, no operator application route, and cloud-provider-only operator access."
     },
     {
       "ac_id": "AC-12",
       "status": "pass",
-      "evidence": "Stage 11 provides full non-production verification: 114/2 counts, keyed reconciliation, contracts, negative security matrix, browser journey, and no unapproved discrepancy. Stage 15 regressions remain green."
+      "evidence": "Stages 11, 15, 17, and 18 provide passing contract, negative-security, browser, count, and field-level reconciliation evidence with no unapproved migration discrepancy."
     },
     {
       "ac_id": "AC-13",
       "status": "pass",
-      "evidence": "Stage 12 proves healthy Azure revision reversal, the pre-commit procedure, disposable post-write target-to-Mongo reconciliation, second-run idempotency, forward zero-discrepancy accounting, and preserved Auth0 boundaries. Stage 14 adds browser-only Heroku rollback sequencing without retired tokens."
+      "evidence": "Stage 12 proved Azure revision reversal, pre-write rollback, post-write reconciliation into MongoDB, repeat-run idempotency, zero-discrepancy accounting, and preserved Auth0 boundaries before production. This was correctly exercised while the legacy source still existed."
     },
     {
       "ac_id": "AC-14",
       "status": "pass",
-      "evidence": "The Go/Heroku implementation remains deployed and recoverable; owners, secret-name inventory, monitoring, support, audit, incident, cutover, and rollback procedures are recorded; the approved Free-plan encrypted logical-backup control is private in Australia and has passed checksum and full restore rehearsal without a managed-backup claim; provider audit/breach defaults and limitations are documented; and no Review activity changed production infrastructure, data, environment, deployment, endpoint, traffic, or resources."
+      "evidence": "At production Release proposal, the Go/Heroku implementation remained recoverable; migration and rollback owners, secret-name inventory, the Australian private encrypted-backup control, successful restore rehearsal, operator-audit and breach-response controls, monitoring, and support were documented; and every production mutation had separate explicit authority. Heroku and MongoDB were removed only later in Stage 19 under Vinicius Delascio's explicit deletion approval. REV-FINAL-001 and REV-FINAL-002 identify post-release operational drift rather than retroactively changing those release-entry facts."
     }
   ],
   "approval": {
-    "status": "approved",
-    "by": "Vinicius Delascio",
-    "at": "2026-08-27",
-    "reason": "Vinicius Delascio explicitly approved the Stage 15 independent Review on 2026-08-27. The pass verdict has no open critical/high finding. REV-004 remains visible, unwaived, separately Defined work; REV-007 records that all production mutations remain separately gated. This approval permits progression to the Release-decision stage but is not Release approval and authorizes no production action."
+    "status": "pending",
+    "by": "",
+    "at": "",
+    "reason": "Final post-decommission Review approval is pending. REV-FINAL-001 is an open high-severity recovery-readiness finding; REV-FINAL-002 and REV-FINAL-003 remain open medium findings. This Review recommends a bounded remediation stage that does not require an account upgrade, followed by targeted re-review."
   }
 }

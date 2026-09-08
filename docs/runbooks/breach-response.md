@@ -11,15 +11,16 @@ high-severity incident.
    who is responding. Do not paste tokens, credentials, comments, notes, raw
    Auth0 subjects, database URLs, or request bodies into the record.
 2. Preserve Azure application/resource logs, Azure Activity Log, Supabase
-   project/account logs, Auth0 tenant logs, Heroku logs, deployment identifiers,
-   migration history, and backup checksums before their provider retention
-   windows expire.
+   project/account logs, Auth0 tenant logs, deployment identifiers, migration
+   history, and backup checksums before their provider retention windows
+   expire. Heroku and MongoDB are decommissioned and provide no live evidence.
 3. If confidentiality or ownership is uncertain, suspend writes and remove
-   production traffic from the suspect revision. Use the correct rollback
-   runbook; do not delete the target or rollback source.
+   production traffic from the suspect revision. Preserve the suspect target
+   and restore a qualified encrypted backup into a new empty PostgreSQL 17
+   target; the former Heroku/Mongo rollback source no longer exists.
 4. Identify the boundary involved: Auth0 credential/session, Azure operator or
-   app secret, Supabase database role, backup Storage operator key, MongoDB
-   credential, or Heroku configuration.
+   app secret, Supabase database role, backup Storage operator key, or backup
+   encryption key.
 5. Revoke or rotate only the affected credential through its provider, update
    the named server-side secret under explicit production authority, restart
    the minimum affected workload, and prove old access fails. Never expose the
@@ -39,11 +40,14 @@ high-severity incident.
   Service Health, and subscription support.
 - Supabase: project logs, Account Audit Log, Security Advisor, project pause or
   credential controls, status page, and support. Free projects do not have Team
-  or Enterprise Platform Audit Logs or managed daily database backups.
+  or Enterprise Platform Audit Logs or managed daily database backups. The
+  separate Free backup project may auto-pause; resume and verify it before
+  relying on its private Storage inventory.
 - Auth0: tenant logs, session/client credential controls, status page, and
   support. Short log retention makes prompt preservation important.
-- Heroku and MongoDB Atlas: retain logs/configuration and rollback data until
-  explicit decommissioning approval.
+- Heroku and MongoDB Atlas were removed in Stage 19. Historical repository
+  evidence and encrypted migration/decommission backups are retained, but
+  neither provider is an operational rollback path.
 
 After containment, return any changed requirement, new access rule, or risk
 acceptance to Define. Emergency response authority does not authorize resource

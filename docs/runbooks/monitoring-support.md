@@ -45,24 +45,25 @@ took 26 seconds, while warm readiness and unauthorized API checks took about
 not evidence of database latency. Review may require `minReplicas=1`, but that
 would be a separately approved infrastructure and cost change.
 
-## Cutover observation
+## Current operation and recovery
 
-During cutover, the owner watches every signal continuously, performs the
-authenticated smoke journey, and records sanitized timestamps and results.
-Any stop trigger in `stage-12-cutover.md` selects the pre-commit or post-write
-rollback procedure. In ordinary operation, check provider health and recent
-errors after each use and at least monthly; run Supabase advisors and a restore
-rehearsal before each release and after any database change.
+Heroku and MongoDB were decommissioned under the separately approved Stage 19.
+They are historical migration evidence, not available rollback targets. The
+production system is Azure Container Apps, Auth0, and Supabase Postgres.
+Operational recovery means restoring a qualified encrypted PostgreSQL backup
+into a new empty PostgreSQL 17 target and verifying it before changing traffic;
+never attempt an in-place restore over production.
 
-Stage 18 has no fixed elapsed observation window for this sole-user pilot.
-Completing its initial stable checkpoint does not end these checks and does not
-authorize decommissioning. The owner continues the after-use/monthly checks,
-the weekly encrypted-backup schedule, and the pre-release/pre-migration backup
-and restore gates for as long as the replacement is production.
+Check provider health and recent errors after each use and at least monthly;
+run Supabase advisors and a restore rehearsal before each release and after any
+database change. Continue the weekly encrypted-backup schedule and the
+pre-release/pre-migration backup gate for as long as the replacement is
+production.
 
-Heroku has no durable log drain. A Stage 13 CLI query returned no retained
-router lines, so historic request rate and error rate cannot be reconstructed
-reliably. Heroku documents Logplex as a short retention buffer, not durable
-storage: https://devcenter.heroku.com/articles/logging. The thresholds above
-are deliberately absolute and replacement-focused rather than invented from a
-missing source baseline.
+The separate backup project is on Supabase Free and may auto-pause after low
+activity. Before every scheduled backup or recovery exercise, inspect its state
+and, when needed, resume only `Steady backups`, wait for `ACTIVE_HEALTHY`, and
+verify the private bucket plus inventory are reachable. A pause or DNS wake-up
+delay is an investigate condition; a missed backup or failed restore is a
+recovery-readiness failure that blocks data-affecting work. Do not silently
+upgrade an account.
