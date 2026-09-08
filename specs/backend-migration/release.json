@@ -1,14 +1,15 @@
 {
   "work_id": "backend-migration",
   "source_review": "specs/backend-migration/review.json",
-  "deployment_strategy": "The completed production architecture is the standalone Deno TypeScript API and React client on Azure Container Apps in Australia East, Supabase Postgres project Steady non-prod in Sydney ap-southeast-2, Auth0 as the retained identity provider, and a separate private Supabase Storage project Steady backups in Sydney for operator-encrypted logical backups. www.delasc.io routes to Azure. Heroku and MongoDB were decommissioned under the separately approved Stage 19 and are not rollback targets. No account-plan upgrade is approved or required. Recovery is a restore into a new empty PostgreSQL 17 target from a qualified AES-256-GCM ciphertext, followed by schema, RLS, count, and application verification before any traffic decision.",
+  "deployment_strategy": "The completed production architecture is the standalone Deno TypeScript API and React client on Azure Container Apps in Australia East, Supabase Postgres project Steady non-prod in Sydney ap-southeast-2, Auth0 as the retained identity provider, and a separate private Supabase Storage project Steady backups in Sydney for operator-encrypted logical backups. www.delasc.io routes to Azure. Heroku and MongoDB were decommissioned under the separately approved Stage 19 and are not rollback targets. No account-plan upgrade is approved or required. Recovery is a restore into a new empty PostgreSQL 17 target from a qualified AES-256-GCM ciphertext, followed by schema, RLS, count, and application verification before any traffic decision. This amended Release is an operational-readiness record for the already-running production system; it requests no deployment, migration, feature-flag, environment, identity, traffic, schema, data, deletion, or account-plan mutation.",
   "rollout": [
     "Stages 1 through 16 characterized the Go service, built and verified the Deno/Supabase replacement, rehearsed migration and both pre-commit and post-write rollback while the legacy source still existed, completed independent Review, and recorded the original Release approval.",
     "Stage 17 executed the separately authorized production backup, write freeze, final Mongo reconciliation, Azure deployment, Auth0 checks, and public traffic cutover. The source-of-truth commit point was recorded on 2026-08-27 and all supported browser journeys passed.",
     "Stage 18 completed the approved sole-user observation checkpoint with healthy Azure/Supabase state, passing Auth0 journeys, forced RLS, clean advisors, complete data accounting, sanitized logs, and retained browser-only legacy rollback readiness.",
     "Stage 19 executed only after Vinicius Delascio separately approved every destructive target. www.delasc.io was preserved on Azure; Heroku app stormy-cliffs-52671, Atlas Cluster0, both scoped Atlas users, the local rollback credential, and the Go/Heroku repository artifacts were removed. The empty Atlas project, Azure, Supabase, Auth0, DNS, encrypted backups, keys, current application, tools, runbooks, specifications, and Git history were retained.",
     "Stage 20 responded to final Review findings on 2026-09-08. The existing Free Steady backups project was resumed without a plan change, its Sydney placement and private bucket were verified, and production was re-exported at 116 feelings and 4 weekly trackers. A first immutable candidate exposed a Supabase-internal grantor portability error during disposable restore and remains explicitly unqualified. A second object, database/20260908T041928Z/steady-production-weekly-20260908T041928Z.steady.enc, is the current qualified recovery point: 56,095 bytes, SHA-256 b35f03b7ffb9786d8fc6d170186e7b98dc67b86e11095e0f0bbdccf910895056, PostgreSQL 17.6, three migrations, Sydney-to-Sydney, and 116/4 rows.",
-    "The qualified Stage 20 object downloaded byte-for-byte, passed authenticated decryption and every internal checksum, restored into a new network-isolated PostgreSQL 17 target, and passed the full schema/constraint/privilege/RLS suite, nine-policy and forced-RLS checks, exact counts, least-privilege role checks, and a restored-row ownership smoke. The disposable target and every local plaintext, decrypted, downloaded, and local ciphertext artifact were then removed; all nine private remote ciphertext objects were retained."
+    "The qualified Stage 20 object downloaded byte-for-byte, passed authenticated decryption and every internal checksum, restored into a new network-isolated PostgreSQL 17 target, and passed the full schema/constraint/privilege/RLS suite, nine-policy and forced-RLS checks, exact counts, least-privilege role checks, and a restored-row ownership smoke. The disposable target and every local plaintext, decrypted, downloaded, and local ciphertext artifact were then removed; all nine private remote ciphertext objects were retained.",
+    "The final targeted Review was approved by Vinicius Delascio on 2026-09-08 with verdict pass. REV-FINAL-001 and REV-FINAL-002 are resolved and no critical or high finding remains. REV-FINAL-003 remains visible as owned, open, and unwaived medium React dependency work outside the backend migration. Release preflight reconfirmed both Sydney projects ACTIVE_HEALTHY, production at 116/4 with the three expected migrations, the private nine-object/369,619-byte backup inventory with exactly one matching current qualified object, and public health/readiness at HTTP 200."
   ],
   "monitoring": [
     {
@@ -53,13 +54,11 @@
     "Supabase Storage contains operator-encrypted logical backups, not managed backups or PITR. The separate Free project may auto-pause and must be resumed and verified before backup/recovery work. Weekly retention is 12 months and no account upgrade is approved.",
     "The legacy React dependency advisories remain separately tracked and are not represented as remediated or waived by this backend migration."
   ],
-  "blockers": [
-    "Targeted final Review must verify Stage 20 evidence and resolve REV-FINAL-001 and REV-FINAL-002 before this amended Release record can be approved."
-  ],
+  "blockers": [],
   "approval": {
-    "status": "pending",
-    "by": "",
-    "at": "",
-    "reason": "The 2026-08-27 release and later production/decommission actions retain their historical approvals. This materially amended post-decommission operating and recovery record is pending targeted Review and explicit approval by Vinicius Delascio; Stage 20 implementation cannot approve its own Release record."
+    "status": "approved",
+    "by": "Vinicius Delascio",
+    "at": "2026-09-08T09:07:55Z",
+    "reason": "Vinicius Delascio explicitly approved the amended post-decommission Release decision on 2026-09-08. The approved targeted Review has verdict pass with no unresolved critical/high finding, rollback/recovery is defined, monitoring and support ownership are recorded, and Release preflight is green. REV-FINAL-003 remains visible, owned, open, and unwaived medium React dependency work outside this backend migration. This approval records readiness of the already-running production system and does not authorize or trigger any deployment, migration, environment, identity, traffic, schema, data, deletion, or account-plan mutation."
   }
 }
