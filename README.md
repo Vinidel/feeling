@@ -1,166 +1,137 @@
 # Steady
 
-[![Live](https://img.shields.io/badge/Live-www.delasc.io-7056bf?logo=heroku&logoColor=white)](https://www.delasc.io/)
+[![Live](https://img.shields.io/badge/Live-www.delasc.io-2563eb)](https://www.delasc.io/)
 
-A personal mood and activity tracker. Log how you feel day to day, note related activities, review your history on a timeline, and keep a weekly check-in.
+Steady is a personal mood, activity, and weekly-goal tracker. The production
+application is available at [www.delasc.io](https://www.delasc.io/).
 
-**Live app:** [https://www.delasc.io/](https://www.delasc.io/)
+## Current architecture
 
-## What it does
+| Responsibility | Current service |
+| --- | --- |
+| Browser application | React 16, Tailwind CSS, Auth0 React SDK |
+| API and static hosting | Standalone TypeScript API on Deno 2.9.4 |
+| Application data | Supabase Postgres in Sydney, in the private `steady` schema |
+| Authentication | Auth0 (`dev-vin.au.auth0.com`) |
+| Compute hosting | Azure Container Apps in Australia East |
+| Encrypted backups | A separate private Supabase Storage project in Sydney |
 
-Steady lets you:
+The Deno container serves both the built React application and its HTTP API.
+It validates Auth0 access tokens and accesses Postgres with a restricted runtime
+role. Forced row-level security and explicit application predicates both enforce
+row ownership.
 
-- **Log daily feelings** on a 0–4 mood scale (Rough → Low → Steady → Good → Great), with optional notes and activity tags (bow, run, lift, swim, cycle).
-- **Review mood history** as a 30-day step timeline with summary stats.
-- **Track weekly goals** — cardio, strength, mobility, build, archery, hunt — plus short notes on wins, challenges, and plans for next week.
-
-Authentication is handled by [Auth0](https://auth0.com/). Each user only sees their own data.
-
-## Architecture
-
-| Layer | Stack |
-|-------|-------|
-| Frontend | React 16, Tailwind CSS, Auth0 React SDK |
-| Backend | Go 1.23, Gin |
-| Database | MongoDB Atlas |
-| Auth | Auth0 (`dev-vin.au.auth0.com`) |
-| Deployment | Heroku (Docker container) |
-
-In production, the Go server serves both the built React app and the REST API from a single container.
-
+```text
+Browser / React ── Auth0 access token ──▶ Deno TypeScript API ──▶ Supabase Postgres
+                                              │
+                                              └── serves the built React files
 ```
-┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  React SPA  │────▶│  Go API (Gin)    │────▶│  MongoDB Atlas  │
-│  (client/)  │     │  (server/)       │     │  database: feeling │
-└─────────────┘     └──────────────────┘     └─────────────────┘
-                           │
-                           ▼
-                    Auth0 (JWT)
-```
+
+The retired Go API, Heroku application, and MongoDB runtime are no longer part
+of the live system. Their final encrypted migration and decommission backups
+are retained according to the project runbooks.
 
 ## Project structure
 
+```text
+api/                       Deno TypeScript API and production OCI image
+client/                    React browser application
+supabase/                  Postgres migrations and local Supabase configuration
+tools/backup/              Encrypted backup and restore tooling
+tools/migrate/             MongoDB-to-Postgres migration tooling
+tools/rollback/            Migration reconciliation and rollback tooling
+docs/runbooks/             Deployment, backup, restore, and operations guides
+specs/backend-migration/   AI Engineering OS migration contracts and evidence
 ```
-├── client/          React frontend (Create React App)
-├── server/          Go API and static file serving
-│   ├── main.go      Server setup, auth middleware, routes
-│   ├── handlers.go  API handlers
-│   └── web/         Built frontend (generated, gitignored)
-├── Dockerfile       Multi-stage build for Heroku
-├── heroku.yml       Heroku container deploy config
-└── app.json         Heroku app metadata
-```
 
-## Database
+## HTTP interface
 
-Data is stored in **MongoDB Atlas** (`cluster0.8pqgj.mongodb.net`).
+The user-facing routes require a valid Auth0 access token:
 
-| Setting | Value |
-|---------|-------|
-| Database | `feeling` |
-| Collections | `feelings`, `weekly_trackers` |
-| Credentials | Set via `DB_USER` and `DB_PASS` environment variables |
+| Method | Path | Behaviour |
+| --- | --- | --- |
+| `GET` | `/api/feelings` | List the authenticated user's feelings |
+| `POST` | `/api/feelings` | Create one feeling |
+| `GET` | `/api/weekly-tracker?weekOf=YYYY-MM-DD` | Read the user's tracker for a week |
+| `POST` | `/api/weekly-tracker` | Create or update the user's tracker for a week |
 
-The connection string is built in `server/main.go` from those two env vars. You need a MongoDB Atlas account with access to the cluster, or your own cluster with the same database/collection names.
+`GET /healthz` checks process liveness and `GET /readyz` checks database
+readiness. Retired chat, agent, and ping routes are intentionally absent.
 
 ## Running locally
 
-You need Go 1.23+, Node 20+, and MongoDB credentials (`DB_USER`, `DB_PASS`).
+Prerequisites are Node.js 20+, npm, Deno 2.9.4, and access to a suitable local
+or hosted Postgres database with the migrations under `supabase/migrations/`
+applied.
 
-### Option A — Development mode (recommended)
-
-Run the React dev server and Go API separately. The frontend talks to the API on port 8080.
-
-**Terminal 1 — API:**
+Run the API from `api/`:
 
 ```bash
-cd server
-export DB_USER=your_mongodb_user
-export DB_PASS=your_mongodb_password
-export PORT=8080
-go run main.go handlers.go
+deno task start
 ```
 
-**Terminal 2 — Frontend:**
+Run the browser application from a second terminal:
 
 ```bash
 cd client
-npm install
+npm ci
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The React app proxies API calls to `http://localhost:8080` automatically (see `client/src/config.js`).
+The development browser runs at
+[http://localhost:3000](http://localhost:3000) and sends API requests to
+`http://localhost:8080`. See [api/README.md](api/README.md) for the complete
+security, database, and test contract.
 
-### Option B — Production-like single server
-
-Build the frontend into `server/web/` and serve everything from Go:
-
-```bash
-cd client
-npm install
-npm run build-serve   # builds and copies to ../server/web
-
-cd ../server
-export DB_USER=your_mongodb_user
-export DB_PASS=your_mongodb_password
-export PORT=8080
-go run main.go handlers.go
-```
-
-Open [http://localhost:8080](http://localhost:8080).
-
-### Option C — Docker
-
-Build and run the same container image used on Heroku:
+To build the same combined image used by Azure, run from the repository root:
 
 ```bash
-docker build -t steady .
-docker run -p 8080:8080 \
-  -e DB_USER=your_mongodb_user \
-  -e DB_PASS=your_mongodb_password \
-  -e PORT=8080 \
-  steady
+docker build -f api/Dockerfile -t steady-api .
 ```
 
-## Environment variables
+## Server configuration
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DB_USER` | Yes | MongoDB Atlas username |
-| `DB_PASS` | Yes | MongoDB Atlas password |
-| `PORT` | No | HTTP port (default `8080`) |
-| `CORS_ORIGINS` | No | Allowed origins, comma-separated. In production, include `https://www.delasc.io`. Defaults to `http://localhost:3000` and the Heroku URL. |
-| `CHAT_INGEST_TOKEN` | No | Shared secret for the chat ingest API (`x-ingest-token` header) |
-| `AGENT_API_TOKEN` | No | Shared secret for the agent API (`x-agent-token` header) |
-| `AGENT_ALLOWED_USER_IDS` | No | Comma-separated Auth0 user IDs allowed to use the agent API |
+Secrets belong in the deployment provider and must not be committed. The API
+recognizes these environment variable names:
 
-## API
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Restricted `steady_runtime` Supavisor transaction-pooler URL |
+| `DATABASE_SSL_MODE` | Database TLS mode; hosted environments require `require` |
+| `AUTH0_ISSUER` | Exact Auth0 token issuer |
+| `AUTH0_AUDIENCE` | Exact Auth0 API audience |
+| `CORS_ORIGINS` | Comma-separated exact browser origins |
+| `DEPLOYMENT_VERSION` | Release identifier used in operational logs |
+| `HOST` | Listener address; defaults to `0.0.0.0` |
+| `PORT` | Listener port; defaults to `8080` |
+| `STATIC_ROOT` | Built browser assets in the combined container |
 
-All user-facing endpoints require a valid Auth0 JWT in the `Authorization` header.
+The Auth0 audience intentionally remains the historical Heroku URL identifier.
+It is an opaque Auth0 API identifier, not a network dependency, and changing it
+requires a separately planned authentication migration.
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| `GET` | `/api/feelings` | JWT | List the authenticated user's feelings |
-| `POST` | `/api/feelings` | JWT | Create a new feeling entry |
-| `GET` | `/api/weekly-tracker?weekOf=YYYY-MM-DD` | JWT | Get weekly tracker for a given week |
-| `POST` | `/api/weekly-tracker` | JWT | Create or update a weekly tracker |
-| `GET` | `/api/chat/capabilities` | Ingest token | Describe chat ingest schema |
-| `POST` | `/api/chat/feeling` | Ingest token | Log a feeling from an external chat integration |
-| `GET` | `/api/agent/feelings` | Agent token | Fetch feelings for a user (requires `x-user-id` header) |
+## Verification
 
-## Deployment
-
-The app is deployed on **Heroku** as a Docker container:
-
-- **App URL:** [https://www.delasc.io/](https://www.delasc.io/)
-- **Heroku app:** `stormy-cliffs-52671` ([https://stormy-cliffs-52671.herokuapp.com](https://stormy-cliffs-52671.herokuapp.com))
-- **Config:** `heroku.yml` + root `Dockerfile`
-- **Stack:** Container
-
-Heroku config vars must include at least `DB_USER` and `DB_PASS`. Set them in the Heroku dashboard or via the CLI:
+API checks, from `api/`:
 
 ```bash
-heroku config:set DB_USER=... DB_PASS=... -a stormy-cliffs-52671
+deno task fmt:check
+deno task lint
+deno task check
+deno task test
 ```
 
-Deploys are triggered by pushing to the connected GitHub branch or manually via `git push heroku master`.
+Frontend checks, from `client/`:
+
+```bash
+CI=true npm test -- --watchAll=false
+npm run build
+```
+
+## Operations and migration references
+
+- [Azure Container Apps runbook](docs/runbooks/azure-container-apps.md)
+- [Backup runbook](docs/runbooks/backup.md)
+- [Restore runbook](docs/runbooks/restore.md)
+- [Host migration guide](docs/host-migration-guide.md)
+- [Monitoring and support runbook](docs/runbooks/monitoring-support.md)

@@ -1,6 +1,7 @@
 .git
 .idea
+.tmp
+api/.env
+api/.env.*
 client/build
 client/node_modules
-server/main
-server/web

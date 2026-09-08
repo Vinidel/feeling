@@ -1227,8 +1227,34 @@
     },
     {
       "id": "STAGE-19",
-      "status": "in_progress",
+      "status": "complete",
       "files_changed": [
+        ".dockerignore",
+        "README.md",
+        "Dockerfile",
+        "app.json",
+        "client/package.json",
+        "heroku.yml",
+        "server/api_characterization_test.go",
+        "server/cors_abort_test.go",
+        "server/cors_get_post_test.go",
+        "server/feelings_contract_test.go",
+        "server/go.mod",
+        "server/go.sum",
+        "server/handlers.go",
+        "server/main",
+        "server/main.go",
+        "server/retired_routes_test.go",
+        "server/web/asset-manifest.json",
+        "server/web/favicon.ico",
+        "server/web/index.html",
+        "server/web/static/css/main.51ed11bc.css",
+        "server/web/static/css/main.51ed11bc.css.map",
+        "server/web/static/js/main.371ab20d.js",
+        "server/web/static/js/main.371ab20d.js.map",
+        "server/web/static/js/main.b09a0b1c.js",
+        "server/web/static/js/main.b09a0b1c.js.map",
+        "server/weekly_contract_test.go",
         "specs/backend-migration/stage-19-decommission.md",
         "specs/backend-migration/implementation.json"
       ],
@@ -1272,9 +1298,89 @@
           "command": "Verify www.delasc.io SPA, liveness, readiness, auth boundary, retired route, CORS, Auth0 session, journal history, and weekly-tracker browser journey without writes",
           "result": "pass",
           "details": "Against Azure ingress, the SPA, /healthz, and /readyz returned 200 with verified TLS; missing-token feelings and weekly requests returned 401; retired /api/ping returned 404; and allowed-origin preflight returned 204 with the exact custom origin. A transient normal curl 503 was proven to use a workstation-cached Heroku IP while authoritative DNS already pointed to Azure. The in-app browser resolved Azure, completed the existing Auth0 session, loaded 107 journal entries and the weekly-tracker screen, and made no production write."
+        },
+        {
+          "command": "Record Vinicius Delascio's recovery-creation approval; scan the current Supabase changelog and backup documentation; discover CLI syntax; verify both Sydney projects, private bucket, aggregate source counts, migration versions, and required secret-entry presence without values",
+          "result": "pass",
+          "details": "The approval covers fresh encrypted Supabase and frozen Mongo exports, private Sydney upload/download, and disposable restores only. No relevant Supabase breaking change applies. Both projects are ACTIVE_HEALTHY on PostgreSQL 17.6 in ap-southeast-2, the bucket remains public=false, production is 115/3 with the three expected migration versions, and all required separately held operator entries are present without being displayed."
+        },
+        {
+          "command": "Fresh owner-only Supabase CLI role/schema/data export; strict AES-256-GCM pack; new private Storage upload/download; byte and SHA-256 verification; authenticated unpack; empty PostgreSQL 17 restore; Stage 4 schema/RLS suite; rolled-back Deno service smoke",
+          "result": "pass",
+          "details": "The new object is database/20260827T231728Z/steady-production-decommission-20260827T231728Z.steady.enc, 53,134 bytes, SHA-256 3f4657892de20f577fec0336bde00ecbdb030936b8db153fb964ea8a9fb4f4b4. Its content-free manifest records PostgreSQL 17.6, Supabase CLI 2.114.0, Sydney-to-Sydney placement, all three migrations, and 115/3 rows. Download matched byte-for-byte, authenticated decryption and every checksum passed, and the fresh restore preserved owners, grants, nine policies, forced RLS, constraints, indexes, full Stage 4 tests, and service behavior with final counts still 115/3."
+        },
+        {
+          "command": "Fresh scoped mongoexport of both frozen collections; checksummed content-free manifest; AES-256-GCM encryption; new private Storage upload/download; authenticated decryption; disposable MongoDB 8 import; canonical full-document comparison",
+          "result": "pass",
+          "details": "The new object is mongo/20260827T231728Z/steady-mongo-decommission-20260827T231728Z.tar.gz.enc, 15,736 bytes, SHA-256 c49058afe82abf085830928728ec4d0e731df4cf2e0e0239009d2946813a48b2. Its Sydney-to-Sydney manifest records mongoexport 100.18.0, project 5f891a6c6940e56d2d915ab0, Cluster0, database feeling, and 114/2 documents. The component hashes exactly match the Stage 17 frozen checkpoint. Download matched byte-for-byte, authenticated decryption and checksums passed, the fresh MongoDB 8 restore contained exactly the two collections at 114/2, and canonically sorted full documents matched the source."
+        },
+        {
+          "command": "Read-only migration reconciliation from the fresh frozen Mongo export to production Supabase; final private object metadata and bucket-visibility verification",
+          "result": "pass",
+          "details": "Reconciliation accepted all 114 feelings and two weekly trackers, rejected none, retained five pseudonymous identities, reported only the two approved Go-zero-time transformations, matched 114/2, inserted zero, and found exactly one expected post-commit target-only feeling and weekly tracker. Both new objects report application/octet-stream in the private bucket. The bucket now retains seven ciphertexts totalling 257,107 bytes; no backup was overwritten or deleted."
+        },
+        {
+          "command": "Remove the exact disposable PostgreSQL/Mongo containers, isolated network, and owner-only plaintext scratch; verify retained Heroku rollback and Azure health boundaries",
+          "result": "pass",
+          "details": "Both named restore containers, their network, SQL/JSON exports, decrypted files, reports, command logs, downloaded/local ciphertexts, and the exact git-ignored scratch directory are absent. The two new private Storage objects remain. Heroku maintenance is still on, both Basic dynos remain up, and its non-secret DB_USER remains steady_legacy_runtime. Public DNS still points www.delasc.io to Azure; direct Azure custom-host health/readiness return 200 with verified TLS. The workstation resolver still caches Heroku and the Atlas CLI session expired; the successful scoped Mongo export proves Cluster0 and steady_rollback_operator access remained active, while Atlas CLI reauthentication is required before any future retirement command."
+        },
+        {
+          "command": "Reauthenticate Atlas CLI and re-resolve the exact Heroku app, Atlas cluster, database users, retained project, replacement health, production counts, and private backup inventory immediately before deletion",
+          "result": "pass",
+          "details": "The destructive gate still resolved exactly one Heroku app stormy-cliffs-52671, exactly one non-protected Atlas cluster Cluster0 with provider backup disabled, and exactly the two scoped users steady_legacy_runtime and steady_rollback_operator, each only readWrite@feeling. The retained production database remained 115/3 and the private backup bucket retained seven ciphertexts totalling 257,107 bytes. No unrelated target appeared."
+        },
+        {
+          "command": "Delete Heroku app stormy-cliffs-52671 with exact-name confirmation; verify provider not_found; verify www.delasc.io still resolves to Azure and custom-host liveness remains HTTP 200 with valid TLS",
+          "result": "pass",
+          "details": "The explicitly approved app was permanently deleted, including its dynos, releases, configuration, Git endpoint, Heroku hostname, and stale custom-domain attachment. A subsequent Heroku lookup returned not_found. The live custom domain remained on Azure and /healthz returned 200 after deletion."
+        },
+        {
+          "command": "Delete Atlas Cluster0 with exact project/name scope and wait for completion; delete the two exact database users; verify zero clusters and zero database users while retaining the Atlas project",
+          "result": "pass",
+          "details": "Cluster0 and both approved scoped users were permanently deleted. Provider inventories now contain zero clusters and zero database users in project 5f891a6c6940e56d2d915ab0. The empty Atlas project remains as the approved audit shell; no other Atlas resource was targeted."
+        },
+        {
+          "command": "Delete Keychain item feeling/mongodb/steady-rollback-operator-password only after Atlas user revocation and verify absence",
+          "result": "pass",
+          "details": "The separately held rollback-operator password was removed from Keychain after its provider identity no longer existed. A subsequent lookup confirmed absence without displaying any secret value."
+        },
+        {
+          "command": "Remove the three exact root Go/Heroku deployment files and all 20 tracked server files; update README, Docker ignore rules, and remove the dead client build-to-server script",
+          "result": "pass",
+          "details": "The version-controlled Go implementation, its characterization tests and binary, embedded legacy frontend build, and Heroku deployment manifests are removed. Current Deno/Azure/Supabase architecture and operating links replace legacy instructions. The current React client, Deno API, Supabase schema, migration/rollback/backup tools, runbooks, specifications, and Git history remain retained."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 container: deno task fmt:check; deno task lint; deno task check; deno task test",
+          "result": "pass",
+          "details": "Formatting checked 29 files, lint checked 27 files, all API and test modules type-checked, and the isolated HTTP/auth/schema/static/feelings/weekly suite passed 28 tests with zero failures. The suite confirms exactly four authenticated browser routes, fail-closed Auth0 behavior, ownership isolation, strict schemas, normalized retired-route 404s, static SPA serving, and sanitized operational responses after removal of the Go tree."
+        },
+        {
+          "command": "React client: CI=true npm test -- --watchAll=false; npm run build",
+          "result": "pass",
+          "details": "Five suites and nine tests passed with zero failures, covering feelings and weekly journeys, API contracts, configuration, and application rendering. The optimized production build compiled successfully after removal of the dead build-to-server script. The existing caniuse-lite age notice is informational and did not affect the build."
+        },
+        {
+          "command": "Post-deletion Heroku/Atlas/Keychain absence checks; retained Atlas project; Azure custom-host health/readiness; Supabase project/count/RLS/advisor and private Storage inventory checks",
+          "result": "pass",
+          "details": "Heroku returns not_found for the exact retired app. Atlas project feeling remains with zero clusters and zero database users, and the retired Keychain item is absent. www.delasc.io /healthz and /readyz return 200 with valid TLS from Azure. Both Sydney Supabase projects are ACTIVE_HEALTHY on PostgreSQL 17.6; production remains 115 feelings, three weekly trackers, nine policies, and forced RLS on both tables; security and performance advisors are empty; the private bucket remains public=false with all seven ciphertext objects totalling 257,107 bytes."
+        },
+        {
+          "command": "Resume final post-deletion browser verification at www.delasc.io and follow the Auth0 redirect without making a write",
+          "result": "pass",
+          "details": "The Azure-hosted SPA loaded and its sign-in control redirected to the retained dev-vin.au.auth0.com tenant with the approved client, audience identifier, and www.delasc.io callback. After Vinicius Delascio renewed the expired session, the authenticated journal loaded 108 check-ins and the weekly tracker loaded the week of 2026-08-31. Both screens showed the retained Auth0 identity and expected controls; no Save control was used and no production write occurred."
+        },
+        {
+          "command": "2026-09-02 retained-state refresh: Supabase project/count/RLS/advisor/Storage queries; Heroku exact-app lookup; Azure custom-host health/readiness; Atlas inventory refresh attempt",
+          "result": "pass",
+          "details": "Both Sydney Supabase projects remain ACTIVE_HEALTHY on PostgreSQL 17.6. Production has advanced through normal post-decommission use to 116 feelings and four weekly trackers; nine policies and forced RLS on both tables remain, and both advisor sets are empty. The private bucket remains public=false with all seven ciphertexts totalling 257,107 bytes. Heroku still returns not_found, while Azure health and readiness return 200 with valid TLS. The Atlas CLI session had expired again, so no new Atlas assertion is made; the durable immediate post-deletion provider result remains zero clusters and zero database users with the project retained."
+        },
+        {
+          "command": "Final implementation structural/readiness validation, patch hygiene, and credential-pattern scan",
+          "result": "pass",
+          "details": "Structural validation and git diff --check pass. The credential-pattern scan found only explicitly synthetic loopback PostgreSQL URLs in API compatibility tests and no private key, hosted database credential, or JWT. The --ready audit continues to report the truthful historical Stage 3 direct-IPv6 failure; the approved TLS Supavisor fallback passed and has served production, but historical evidence is not rewritten merely to make the aggregate readiness validator green."
         }
       ],
-      "notes": "Stage 19 is in progress but destructive execution is not authorized. The approved www.delasc.io migration prerequisite is complete: DNS, Azure CORS and managed TLS, Auth0 session, supported reads, and health boundaries passed while Heroku remains retained as rollback. Before any deletion, fresh current Supabase and final Mongo encrypted backup/restore evidence plus final reconciliation are still required, followed by a new explicit approval naming every destructive target."
+      "notes": "Stage 19 is complete under Vinicius Delascio's explicit approval of every exact destructive target. www.delasc.io remains healthy on Azure and the final authenticated read-only journal and weekly journeys pass; Heroku app stormy-cliffs-52671, Atlas Cluster0, both scoped Atlas database users, the rollback-operator Keychain password, and the named Go/Heroku repository artifacts are retired. The empty Atlas project, Azure, Supabase, Auth0, DNS, all seven encrypted backup objects and keys, current application code, migration/restore tooling, runbooks, AI-OS evidence, and Git history remain retained. In-place legacy rollback no longer exists; recovery depends on the two final checksum-qualified encrypted backups whose complete disposable restores passed before deletion. The implementation artefact is structurally valid; aggregate --ready remains unavailable only because the historical failed direct-IPv6 probe is retained truthfully alongside its approved, passing TLS Supavisor fallback."
     }
   ],
   "unresolved_questions": []
