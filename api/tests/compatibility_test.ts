@@ -3,6 +3,7 @@ import { createRemoteJWKSet, jwtVerify, SignJWT } from "jose";
 import postgres from "postgres";
 import { z } from "zod";
 import { parseRuntimeConfig } from "../src/config.ts";
+import { postgresSsl } from "../src/database.ts";
 import { createLogRecord } from "../src/log.ts";
 
 Deno.test("Zod strict schemas run under the pinned Deno runtime", () => {
@@ -41,12 +42,18 @@ Deno.test("postgres.js creates a lazy TLS-capable client without native addons o
   const sql = postgres("postgres://runtime:synthetic@127.0.0.1:5432/steady", {
     max: 1,
     prepare: false,
-    ssl: "require",
+    ssl: { rejectUnauthorized: true },
   });
   assert.equal(typeof sql, "function");
   assert.equal(sql.options.prepare, false);
-  assert.equal(sql.options.ssl, "require");
+  assert.deepEqual(sql.options.ssl, { rejectUnauthorized: true });
   await sql.end({ timeout: 0 });
+});
+
+Deno.test("hosted database TLS verifies the peer certificate", () => {
+  assert.deepEqual(postgresSsl(), { rejectUnauthorized: true });
+  assert.deepEqual(postgresSsl("require"), { rejectUnauthorized: true });
+  assert.equal(postgresSsl("disable"), false);
 });
 
 Deno.test("runtime configuration is strict and defaults to the permitted container listener", () => {

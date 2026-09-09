@@ -9,7 +9,7 @@ if (!databaseUrl) {
 const sql = postgres(databaseUrl, {
   max: 1,
   prepare: false,
-  ssl: "require",
+  ssl: { rejectUnauthorized: true },
 });
 
 class ExpectedRollback extends Error {}

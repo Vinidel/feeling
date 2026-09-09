@@ -49,8 +49,8 @@ inventory is recorded in `specs/backend-migration/stage-10-api-inventory.md`.
   field, so body data cannot select an identity.
 - The runtime connects with only the `steady_runtime` PostgreSQL role through
   Supavisor transaction mode. postgres.js uses `prepare: false`, a four-client
-  application pool, bounded connection lifetime/timeouts, TLS, and short
-  transactions.
+  application pool, bounded connection lifetime/timeouts, TLS with certificate
+  verification, and short transactions.
 - Every user transaction parameterizes
   `set_config('app.auth0_sub', <verified-sub>, true)` before data access. Query
   callers must also bind `transaction.userId` in an explicit `user_id`
@@ -88,7 +88,7 @@ example file contains names only and no secret values.
 | Variable             | Required | Classification and owner                                                                                                                            |
 | -------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DATABASE_URL`       | Yes      | Secret; deployment operator; `steady_runtime` transaction-pooler TLS URL only                                                                       |
-| `DATABASE_SSL_MODE`  | No       | `require` by default; `disable` is permitted only for disposable local Supabase verification                                                        |
+| `DATABASE_SSL_MODE`  | No       | `require` by default (verified TLS); `disable` is permitted only for disposable local Supabase verification                                         |
 | `AUTH0_ISSUER`       | Yes      | Non-secret security configuration; must retain the existing `https://dev-vin.au.auth0.com/` issuer                                                  |
 | `AUTH0_AUDIENCE`     | Yes      | Non-secret security configuration; must retain the existing `https://stormy-cliffs-52671.herokuapp.com/api` API identifier until separately changed |
 | `CORS_ORIGINS`       | No       | Non-secret deployment configuration; comma-separated exact origins; defaults to `http://localhost:3000`                                             |

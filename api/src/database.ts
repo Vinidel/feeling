@@ -5,6 +5,16 @@ export type DatabaseOptions = Readonly<{
   ssl?: "require" | "disable";
 }>;
 
+export type PostgresSsl =
+  | false
+  | { readonly rejectUnauthorized: true };
+
+export function postgresSsl(
+  mode?: "require" | "disable",
+): PostgresSsl {
+  return mode === "disable" ? false : { rejectUnauthorized: true };
+}
+
 export type QueryValue = boolean | Date | number | string | null;
 export type QueryRow = Record<string, QueryValue>;
 
@@ -63,7 +73,7 @@ export function createDatabase(options: DatabaseOptions): Database {
     max: 4,
     max_lifetime: 30 * 60,
     prepare: false,
-    ssl: options.ssl === "disable" ? false : "require",
+    ssl: postgresSsl(options.ssl),
   });
 
   return {

@@ -32,8 +32,8 @@ Required secret environment values:
 
 Optional values:
 
-- `ROLLBACK_DATABASE_SSL_MODE`: defaults to `require`; `disable` is disposable
-  local testing only;
+- `ROLLBACK_DATABASE_SSL_MODE`: defaults to `require` (verified TLS); `disable`
+  is disposable local testing only;
 - `ROLLBACK_MONGODB_DATABASE`: defaults to `feeling`.
 
 Run the tool in a dedicated container which mounts only the two checkpoint

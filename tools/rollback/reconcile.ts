@@ -202,7 +202,9 @@ export async function reconcileTargetToMongo(options: {
   const sql = postgres(options.databaseUrl, {
     max: 1,
     prepare: false,
-    ssl: options.databaseSslMode === "require" ? "require" : false,
+    ssl: options.databaseSslMode === "require"
+      ? { rejectUnauthorized: true }
+      : false,
   });
   const mongo = new MongoClient(options.mongoUrl, {
     connectTimeoutMS: 10_000,

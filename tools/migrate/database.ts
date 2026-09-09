@@ -127,7 +127,7 @@ export async function importAndReconcile(
   const sql = postgres(databaseUrl, {
     max: 1,
     prepare: false,
-    ssl: sslMode === "require" ? "require" : false,
+    ssl: sslMode === "require" ? { rejectUnauthorized: true } : false,
   });
 
   try {

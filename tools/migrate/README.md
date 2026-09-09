@@ -26,8 +26,8 @@ Set these values through an operator-only secret mechanism:
 - `MIGRATION_DATABASE_URL`: required only for `import` and `reconcile`; use the
   `steady_migration_owner` session connection, never the request-serving
   credential.
-- `MIGRATION_DATABASE_SSL_MODE`: `require` by default; `disable` is allowed only
-  for a disposable local PostgreSQL test.
+- `MIGRATION_DATABASE_SSL_MODE`: `require` by default (verified TLS); `disable`
+  is allowed only for a disposable local PostgreSQL test.
 
 Run Deno with only the two input paths, two output paths, exact environment
 names, and target database host permitted. For example:
