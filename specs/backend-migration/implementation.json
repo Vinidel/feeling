@@ -1,0 +1,1440 @@
+{
+  "work_id": "backend-migration",
+  "source_plan": "specs/backend-migration/plan.json",
+  "stages": [
+    {
+      "id": "STAGE-01",
+      "status": "complete",
+      "files_changed": [
+        "server/api_characterization_test.go",
+        "server/go.mod",
+        "client/src/apiContract.test.js",
+        "tests/contract/fixtures.json",
+        "tests/contract/run.mjs",
+        "tests/contract/README.md",
+        "specs/backend-migration/characterization.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/server:/work -w /work golang:1.23 go test ./...",
+          "result": "pass",
+          "details": "Untouched pre-change Go baseline passed in the official Go 1.23 container. The host has no Go executable, so the container is the reproducible test runtime."
+        },
+        {
+          "command": "cd client && npm test -- --watchAll=false",
+          "result": "pass",
+          "details": "Untouched pre-change React baseline passed: 1 suite and 1 test. It emitted the existing TitleComponent componentWillMount warning."
+        },
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/server:/work -w /work golang:1.23 go test -count=1 -v ./...",
+          "result": "pass",
+          "details": "Final uncached source characterization passed. It covers real JWT/JWKS middleware for missing, malformed, valid, matching, mismatched, expired, wrong-audience, and missing-subject credentials; feelings and weekly success/empty/invalid/identity/query/upsert behavior through real Gin handlers with Mongo wire mocks; and legacy CORS plus unmatched ping behavior."
+        },
+        {
+          "command": "cd client && npm test -- --watchAll=false",
+          "result": "pass",
+          "details": "Final React suite passed: 2 suites and 3 tests. New tests verify current Auth0 audience, bearer and x-user-id headers, routes, query parameters, and feelings/weekly request payloads. The pre-existing TitleComponent lifecycle warning remains characterized and unchanged."
+        },
+        {
+          "command": "node --check tests/contract/run.mjs",
+          "result": "pass",
+          "details": "The base-URL-driven source/target smoke runner is syntactically valid. It requires explicit CONTRACT_BASE_URL and optional isolated test credentials at execution time and embeds no credentials."
+        },
+        {
+          "command": "python3 -m json.tool tests/contract/fixtures.json >/dev/null",
+          "result": "pass",
+          "details": "Runtime-neutral contract fixtures are valid JSON and contain only synthetic identities and content."
+        },
+        {
+          "command": "python3 .ai-os/validate.py specs/backend-migration/plan.json .ai-os/schemas/plan.schema.json --ready",
+          "result": "pass",
+          "details": "The source plan remained structurally valid, ready, and approved while Stage 1 was implemented."
+        }
+      ],
+      "notes": "Stage 1 changed tests, test-only module metadata, fixtures, and migration documentation only; server/main.go, server/handlers.go, and runtime React behavior were not modified. Characterized source quirks include null empty feelings, unsorted feeling reads, permissive/inconsistent validation errors, empty-200 CORS rejection, and an unmatched client ping. The replacement must follow the approved normalized design rather than copy those quirks. Repository search plus Vinicius Delascio's Define-stage confirmation provides the current evidence that the OpenClaw/chat/agent routes have no caller; no production logs, secrets, private data, or external systems were accessed."
+    },
+    {
+      "id": "STAGE-02",
+      "status": "complete",
+      "files_changed": [
+        ".dockerignore",
+        "api/Dockerfile",
+        "api/README.md",
+        "api/deno.json",
+        "api/deno.lock",
+        "api/src/app.ts",
+        "api/src/config.ts",
+        "api/src/log.ts",
+        "api/src/main.ts",
+        "api/tests/app_test.ts",
+        "api/tests/compatibility_test.ts",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "docker run --rm --entrypoint /usr/bin/deno denoland/deno:debian-2.9.4 --version",
+          "result": "pass",
+          "details": "Pinned runtime reports Deno 2.9.4 stable, V8 15.0.245.2-rusty, and TypeScript 6.0.3. The official image resolves to denoland/deno@sha256:c777b4b225501a61074837e90a826a58f99124837824023cd60334b1e2374498."
+        },
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/api:/app -w /app denoland/deno:debian-2.9.4 task fmt:check",
+          "result": "pass",
+          "details": "Deno formatter checked all eight Stage 2 source, test, configuration, and documentation files with no differences."
+        },
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/api:/app -w /app denoland/deno:debian-2.9.4 task lint",
+          "result": "pass",
+          "details": "Deno lint checked all six TypeScript source and test files with no findings."
+        },
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/api:/app -w /app denoland/deno:debian-2.9.4 task check",
+          "result": "pass",
+          "details": "Frozen dependency resolution and TypeScript checking passed for src/main.ts and all tests."
+        },
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/api:/app -w /app denoland/deno:debian-2.9.4 task test",
+          "result": "pass",
+          "details": "Seven tests passed. They verify the health-only HTTP surface, absence of business and retired routes, strict Zod schemas, JOSE signing/verification and remote-JWKS support, lazy TLS postgres.js compatibility with prepared statements disabled, strict runtime configuration, and log field redaction."
+        },
+        {
+          "command": "docker run --rm -v /Users/vinny/workspace/personal/feeling/api:/app:ro -w /app --entrypoint /usr/bin/deno denoland/deno:debian-2.9.4 audit",
+          "result": "pass",
+          "details": "Deno reported no known vulnerabilities in the lockfile. The lock contains only the three explicit zero-transitive-dependency packages: Zod 4.4.3, JOSE 6.2.9, and postgres.js 3.4.9."
+        },
+        {
+          "command": "docker build --no-cache -f api/Dockerfile -t feeling-api:stage-2 .",
+          "result": "pass",
+          "details": "A clean OCI build passed from the digest-pinned official Deno image using deno ci --prod, the frozen integrity lockfile, and an in-image type check. No lifecycle scripts, node_modules directory, native addons, or unpinned base tag are required."
+        },
+        {
+          "command": "curl --fail --silent --show-error --dump-header - http://127.0.0.1:18082/healthz",
+          "result": "pass",
+          "details": "The final local container returned HTTP 200, cache-control no-store, application/json, and {\"status\":\"ok\"}."
+        },
+        {
+          "command": "docker exec feeling-api-stage2-final id",
+          "result": "pass",
+          "details": "The final image ran as uid/gid 1993 (deno)."
+        },
+        {
+          "command": "docker inspect --format '{{json .Config.Cmd}}' feeling-api-stage2-final",
+          "result": "pass",
+          "details": "The final command uses frozen cached dependencies, no prompts, environment access only for DEPLOYMENT_VERSION/HOST/PORT, ignored ambient PG* reads, and network permission only to listen on 0.0.0.0:8080; no filesystem, subprocess, FFI, system, or broad environment permission is granted."
+        },
+        {
+          "command": "docker stop --timeout 10 feeling-api-stage2-final",
+          "result": "pass",
+          "details": "SIGTERM produced sanitized server_shutdown_started and server_shutdown_complete JSON events and the ephemeral container exited cleanly. Startup and health request logs contained only allowlisted operational fields."
+        },
+        {
+          "command": "docker build -f Dockerfile -t feeling-go:stage-2-regression .",
+          "result": "pass",
+          "details": "The unchanged legacy Go API and React production image still builds after adding the root .dockerignore, preserving the rollback source. Its existing npm dependency installation reported 82 audit findings (15 low, 17 moderate, 42 high, and 8 critical); Stage 2 did not alter or waive them."
+        }
+      ],
+      "notes": "Stage 2 selects native Deno.serve rather than an HTTP framework, native Deno.test with node:assert/strict, Zod 4.4.3, JOSE 6.2.9, and postgres.js 3.4.9. Deno config-file permission sets were evaluated but not retained because Deno 2.9 still marks them experimental; stable explicit CLI permissions provide the approved least-privilege boundary. postgres.js probes conventional PG* environment names even with an explicit URL, so those reads are explicitly ignored rather than granted. The foundation exposes only GET /healthz and structured allowlisted logs. Auth0 middleware, real database connectivity, feelings, weekly tracker, Data API, Edge Functions, Storage, jobs, and operator behavior remain unimplemented. No Supabase resource, cloud infrastructure, credential, production data, environment, endpoint, or traffic was accessed or changed."
+    },
+    {
+      "id": "STAGE-03",
+      "status": "complete",
+      "files_changed": [
+        ".gitignore",
+        "api/.env.example",
+        "supabase/.gitignore",
+        "supabase/config.toml",
+        "specs/backend-migration/stage-03-supabase.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "python3 .ai-os/validate.py specs/backend-migration/plan.json .ai-os/schemas/plan.schema.json --ready",
+          "result": "pass",
+          "details": "The approved source plan remained structurally valid and ready before Stage 3 provisioning began."
+        },
+        {
+          "command": "supabase --version; supabase --help; supabase projects create --help; Supabase changelog and current region, connection, backup, Data API, and audit documentation review",
+          "result": "pass",
+          "details": "CLI discovery was performed before commands were locked. Homebrew Supabase CLI was upgraded from 2.75.0 to current 2.114.0. The breaking-change scan confirmed explicit Data API grants for new tables and supports the private-schema/no-Data-API design."
+        },
+        {
+          "command": "supabase projects create Steady non-prod --org-id <non-secret-org-id> --region ap-southeast-2 (database password generated into Keychain; value omitted)",
+          "result": "pass",
+          "details": "After Vinicius Delascio's separate explicit authorization, the empty Free project was created in SuperVin Systems. It reports ACTIVE_HEALTHY in Sydney ap-southeast-2; no production resource was changed."
+        },
+        {
+          "command": "supabase init --yes; supabase link --project-ref qzsdmhptclzqndzsqpax --password <Keychain reference> --yes",
+          "result": "pass",
+          "details": "The versioned Supabase workspace was initialized and linked. Temporary link metadata is ignored, and no credential or connection URL is tracked."
+        },
+        {
+          "command": "supabase ssl-enforcement update --project-ref qzsdmhptclzqndzsqpax --enable-db-ssl-enforcement --experimental --yes; supabase ssl-enforcement get ...",
+          "result": "pass",
+          "details": "Hosted external database SSL enforcement was enabled and the provider returned database=true."
+        },
+        {
+          "command": "supabase backups list --project-ref qzsdmhptclzqndzsqpax --output json",
+          "result": "pass",
+          "details": "The Free project reports Sydney region, WAL-G enabled, no physical backups, and PITR disabled. Vinicius accepted a manual process; an encrypted Australian backup destination and restore rehearsal are required before representative data is loaded."
+        },
+        {
+          "command": "docker run --rm -e DATABASE_URL=<Keychain-composed-transaction-pooler-url> --entrypoint /usr/bin/deno feeling-api:stage-2 eval --cached-only <TLS probe>",
+          "result": "pass",
+          "details": "The pinned Deno 2.9.4 container connected through the Sydney Supavisor transaction endpoint using postgres.js 3.4.9, TLS, max one connection, and prepare=false. The sanitized query reported database postgres, role postgres, and ssl=true. The privileged bootstrap role is not a runtime credential and will be replaced by the Stage 4 least-privilege role."
+        },
+        {
+          "command": "docker run --rm -e DATABASE_URL=<Keychain-composed-direct-url> --entrypoint /usr/bin/deno feeling-api:stage-2 eval --cached-only <TLS probe>; dig AAAA/A; route -n get -inet6 default",
+          "result": "fail",
+          "details": "The direct endpoint has an IPv6 AAAA record but the host and local container network have no IPv6 default route, so direct DNS/transport could not be completed. Project TLS enforcement is verified, but the approved direct migration path still needs an IPv6-capable execution environment or a separately approved connection-design adjustment."
+        },
+        {
+          "command": "supabase db query --linked --output json <sanitized schema/TLS metadata queries>",
+          "result": "pass",
+          "details": "Management-API database queries confirmed TLS is active, no app or steady schema exists, and no explicit authenticator pgrst.db_schemas override exists. The project remains empty of application objects."
+        },
+        {
+          "command": "Authenticated Supabase Dashboard: Integrations > Data API > Overview > Enable Data API",
+          "result": "pass",
+          "details": "After Vinicius Delascio disabled and saved the hosted Data API, the Dashboard showed the switch off and the authoritative warning that no schemas can be queried and /rest/v1/ returns errors. No service-role or browser database credential was introduced."
+        },
+        {
+          "command": "docker run --rm -e DATABASE_URL=<Keychain-composed-session-pooler-url> --entrypoint /usr/bin/deno feeling-api:stage-2 eval --cached-only <TLS probe>",
+          "result": "pass",
+          "details": "The pinned Deno container connected successfully over TLS through the Sydney Supavisor session endpoint on the IPv4-only local network. On 2026-08-17 Vinicius Delascio explicitly approved this migration fallback while retaining direct TLS as preferred from IPv6-capable environments."
+        },
+        {
+          "command": "python3 .ai-os/validate.py specs/backend-migration/{design,plan,implementation}.json .ai-os/schemas/<matching>.schema.json [--ready where applicable]",
+          "result": "pass",
+          "details": "After recording the approved DATA-004 amendment and reconciling the Stage 3 verification contract, the design and plan passed structural plus readiness validation and the implementation evidence passed structural validation."
+        }
+      ],
+      "notes": "Stage 3 is complete. The separately authorized empty Free project is active in Sydney; hosted and local Data APIs are disabled; database TLS enforcement is enabled; transaction-pooled runtime and session-pooled migration paths were verified from the pinned Deno container without credential output; and non-secret configuration, secret references, backup/restore posture, audit controls, and operator access are documented. The direct endpoint remains preferred but is IPv6-only; Vinicius approved TLS Supavisor session mode for migrations from IPv4-only environments. No application schema, representative data, production resource, environment, endpoint, or traffic was changed. The encrypted Australian manual-backup destination remains a required decision before Stage 5 loads representative data."
+    },
+    {
+      "id": "STAGE-04",
+      "status": "complete",
+      "files_changed": [
+        "supabase/config.toml",
+        "supabase/migrations/20260817053317_create_private_feelings_and_weekly_schema.sql",
+        "supabase/seed.sql",
+        "supabase/tests/stage_04_schema_test.sql",
+        "supabase/tests/stage_04_rollback.sql",
+        "supabase/tests/stage_04_remote_runtime_test.ts",
+        "specs/backend-migration/stage-04-database.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Supabase current CLI help, changelog, database migration, RLS, role, pooling, and advisor documentation review",
+          "result": "pass",
+          "details": "Stage 4 used Supabase CLI 2.114.0 and PostgreSQL 17. The breaking-change scan confirmed explicit Data API grants for new objects; the migration instead uses a private schema, blocks anon/authenticated/service_role, and keeps the hosted Data API disabled. Current RLS and Postgres guidance informed forced RLS, optimized transaction-local identity lookup, constraints, composite indexes, and least-privilege roles."
+        },
+        {
+          "command": "supabase db reset --local; psql -v ON_ERROR_STOP=1 < supabase/tests/stage_04_schema_test.sql",
+          "result": "pass",
+          "details": "A zero-state PostgreSQL 17 rebuild applied the single versioned migration and the transaction-wrapped SQL suite passed. It verifies exact schema metadata, UUID/default behavior, status/mood/version constraints, legacy uniqueness, query index, atomic weekly upsert, timestamps, grants, five RLS policies, two Auth0 subjects, missing identity, cross-subject insertion, ownership reassignment, delete denial, and forced-RLS behavior for the owner. All fixtures rolled back."
+        },
+        {
+          "command": "psql -v ON_ERROR_STOP=1 < supabase/tests/stage_04_rollback.sql; metadata absence query; supabase db reset --local; Stage 4 SQL suite",
+          "result": "pass",
+          "details": "The disposable local rollback removed exactly the steady schema and both Stage 4 roles; the absence query returned false for all three objects. A fresh reset then recreated them solely from migration history and the full SQL suite passed again. No hosted rollback was performed."
+        },
+        {
+          "command": "supabase db advisors --local --type all --level info --fail-on warn --output json",
+          "result": "pass",
+          "details": "Local performance and security advisors reported no issues after the clean rebuild. An initial RLS init-plan warning was corrected by placing current_setting inside a scalar select; the final migration contains the optimized policy expression."
+        },
+        {
+          "command": "supabase migration list --db-url <Keychain session URL>; empty-target metadata query; supabase db push --db-url <Keychain session URL> --dry-run",
+          "result": "pass",
+          "details": "Before the authorized non-production change, the Sydney project had no steady schema, no non-platform tables, and no remote migration. The dry run listed exactly 20260817053317_create_private_feelings_and_weekly_schema.sql with no seeds or role files."
+        },
+        {
+          "command": "supabase db push --db-url <Keychain session URL> --yes",
+          "result": "pass",
+          "details": "Under Vinicius Delascio's explicit Stage 4 authorization, the one reviewed migration was applied to the empty Steady non-prod project. No representative or production data, production database, endpoint, environment variable, traffic, or Heroku resource was accessed or changed."
+        },
+        {
+          "command": "ALTER ROLE through admin TLS session; macOS Keychain credential storage; sanitized migration-owner and runtime connection probes",
+          "result": "pass",
+          "details": "Independent generated passwords and composed URLs were stored only in Keychain. The migration-owner authenticated over the Sydney Supavisor TLS session endpoint and the runtime role over the TLS transaction endpoint. Both reported ssl=on and saw zero rows without app.auth0_sub; no secret value was logged or committed."
+        },
+        {
+          "command": "deno fmt/check/lint supabase/tests/stage_04_remote_runtime_test.ts; Deno rollback-only remote smoke test using the Keychain runtime URL",
+          "result": "pass",
+          "details": "The pinned Deno 2.9.4/postgres.js 3.4.9 client connected with prepare=false through Supavisor transaction mode. It proved generated/default values, atomic weekly upsert, same-user visibility, cross-user invisibility, and cross-user insert rejection. The enclosing transaction intentionally rolled back all synthetic rows."
+        },
+        {
+          "command": "Remote sanitized metadata query; supabase db advisors --linked --type all --level info --fail-on warn; supabase migration list --db-url <Keychain session URL>",
+          "result": "pass",
+          "details": "Post-validation counts were zero in both tables. Both custom roles are non-superuser/non-owner-bypass roles, forced RLS is active on both tables, Data API roles lack schema usage, destructive runtime grants are absent, advisors reported no issues, and local/remote migration version 20260817053317 matches."
+        },
+        {
+          "command": "docker run ... denoland/deno:debian-2.9.4 task fmt:check/lint/check/test; docker run ... golang:1.23 go test -count=1 ./...",
+          "result": "pass",
+          "details": "The replacement Deno foundation remained formatted, lint-clean, type-safe, and 7/7 tests passed. The unchanged legacy Go API characterization suite also passed, preserving the active rollback implementation."
+        },
+        {
+          "command": "AI-OS design/plan readiness validation; implementation structural validation; git diff --check; repository secret-pattern scan; supabase stop --project-id steady-backend-migration --no-backup",
+          "result": "pass",
+          "details": "The approved design and plan remain ready, implementation.json is structurally valid, JSON parsing and patch whitespace checks pass, and no credential, database URL, private key, or JWT pattern was found in Stage 4 files. Housekeeping stopped only the disposable steady-backend-migration local stack without a backup; it can be recreated entirely from versioned migrations."
+        }
+      ],
+      "notes": "Stage 4 is complete. The private steady schema reproduces only the retained feelings and weekly-tracker responsibilities with durable constraints, deterministic indexes, generated UUIDs, nullable unique legacy IDs, and atomic weekly upserts. The runtime role has only the approved operations and forced RLS uses transaction-local app.auth0_sub; application-level transaction wiring remains Stage 6/7 work. Local ports were moved from 5432x to 5532x to coexist with the user's unrelated running car-chronicle Supabase project, which was not modified. The hosted project remains empty, Data API remains disabled, and the Go/Heroku source remains available. The encrypted Australian manual-backup destination and restore rehearsal remain required before Stage 5 loads representative data."
+    },
+    {
+      "id": "STAGE-05",
+      "status": "complete",
+      "files_changed": [
+        ".gitignore",
+        "supabase/migrations/20260818040229_allow_migration_owner_to_assume_runtime.sql",
+        "supabase/tests/stage_04_rollback.sql",
+        "supabase/tests/stage_04_schema_test.sql",
+        "specs/backend-migration/stage-05-data-migration.md",
+        "specs/backend-migration/implementation.json",
+        "tools/backup/crypto.ts",
+        "tools/backup/crypto_test.ts",
+        "tools/migrate/README.md",
+        "tools/migrate/database.ts",
+        "tools/migrate/deno.json",
+        "tools/migrate/deno.lock",
+        "tools/migrate/fixtures/conflict/feelings.json",
+        "tools/migrate/fixtures/invalid/feelings.json",
+        "tools/migrate/fixtures/invalid/weekly_trackers.json",
+        "tools/migrate/fixtures/valid/feelings.json",
+        "tools/migrate/fixtures/valid/weekly_trackers.json",
+        "tools/migrate/hashing.ts",
+        "tools/migrate/main.ts",
+        "tools/migrate/parse.ts",
+        "tools/migrate/report.ts",
+        "tools/migrate/tests/migration_test.ts",
+        "tools/migrate/types.ts"
+      ],
+      "test_evidence": [
+        {
+          "command": "Supabase changelog and current region, Storage bucket, Free-plan, and backup documentation review",
+          "result": "pass",
+          "details": "No current breaking change blocks the backup project. The review confirmed Sydney ap-southeast-2 is a specific data-residency region, Storage origin follows the project region, buckets are private by default when public=false, and Free projects require an operator-managed logical backup process."
+        },
+        {
+          "command": "supabase projects list --output json; supabase projects create 'Steady backups' --org-id <non-secret-org-id> --db-password <generated Keychain value> --region ap-southeast-2 --output json",
+          "result": "pass",
+          "details": "The account had one active project and an available second Free slot. Under Vinicius Delascio's explicit authorization, Steady backups was created in Sydney with reference dabuqchfkqbsgymbspvk and reported ACTIVE_HEALTHY. The generated database password and project reference were stored in macOS Keychain without credential output."
+        },
+        {
+          "command": "supabase ssl-enforcement update/get --project-ref <backup-project-ref> --enable-db-ssl-enforcement --experimental --yes",
+          "result": "pass",
+          "details": "External database TLS enforcement was enabled and the provider returned database=true."
+        },
+        {
+          "command": "Create and inspect database-backups through the Supabase Storage API using an ephemeral server-only key",
+          "result": "pass",
+          "details": "The database-backups bucket was created with public=false. Its server-only operator key is stored only in macOS Keychain and is unavailable to the browser, request-serving API, repository, and reports."
+        },
+        {
+          "command": "Synthetic private-bucket upload/download/unauthenticated-denial/removal probe",
+          "result": "pass",
+          "details": "A random synthetic object uploaded and downloaded byte-for-byte through operator authorization, unauthenticated access did not return 200, and the probe object was removed and confirmed absent. No application, MongoDB, Auth0, comment, note, or backup content was uploaded."
+        },
+        {
+          "command": "deno fmt --check tools/backup; deno lint tools/backup; deno test tools/backup",
+          "result": "pass",
+          "details": "The pinned Deno 2.9.4 runtime reports both dependency-free backup helper files formatted and lint-clean. Three tests prove AES-256-GCM round trip, ciphertext does not contain the synthetic plaintext, tampering and wrong keys fail authentication, and only a valid base64-encoded 32-byte key is accepted."
+        },
+        {
+          "command": "supabase db dump --db-url <Keychain TLS session URL> for roles, schema steady, and data-only; generate checksummed manifest; encrypt with tools/backup/crypto.ts",
+          "result": "pass",
+          "details": "Read-only logical dumps captured role definitions without password values, the private steady schema, and zero-row data. A private-content-free manifest records PostgreSQL 17.6, source migration 20260817053317, Sydney source region, zero feelings/weekly rows, and SHA-256 values for each component. The archive was authenticated-encrypted locally with a Keychain-held 256-bit key; no secret was logged or written to the repository."
+        },
+        {
+          "command": "Upload encrypted archive to private Storage; download with operator key; verify SHA-256; decrypt; verify archive and component checksums",
+          "result": "pass",
+          "details": "The retained private object is database/20260818T020203Z/steady-nonprod-20260818T020203Z.tar.gz.enc, 2,669 bytes, SHA-256 a873d7ece7f3dcfb27706c8d4ee0c5844e1cf8203121b5d0e39e7097db4b6e30. The downloaded ciphertext matched exactly, authenticated decryption succeeded, and all internal dump checksums matched the encrypted manifest."
+        },
+        {
+          "command": "Restore verified schema.sql and data.sql to disposable PostgreSQL 17 stage5_restore; run metadata assertions and supabase/tests/stage_04_schema_test.sql",
+          "result": "pass",
+          "details": "The restore recreated both retained tables with zero rows, five policies, forced RLS, migration-owner ownership, approved runtime grants, and no DELETE grant. The complete constraint, uniqueness, atomic-upsert, missing-identity, two-subject isolation, ownership-reassignment, and forced-RLS suite passed with all synthetic rows rolled back."
+        },
+        {
+          "command": "dropdb stage5_restore; supabase stop --project-id steady-backend-migration --no-backup; remove exact ignored Stage 5 scratch directory; inspect retained Storage object metadata",
+          "result": "pass",
+          "details": "The disposable restore database and local containers were removed. All plaintext SQL, decrypted archives, downloaded copies, and local encrypted copies were permanently removed from the exact scratch directory. The private Sydney Storage object remains available with the expected path, size, and application/octet-stream content type."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 deno install/fmt/lint/check/test for tools/migrate; least-permission valid and invalid CLI dry-runs",
+          "result": "pass",
+          "details": "The integrity lock contains only postgres.js 3.4.9. Five unit tests pass for strict relaxed Extended JSON mapping/defaults, complete classification of malformed/orphaned/mixed-type/unknown/duplicate records, deterministic non-content reports, private sentinel and raw-subject exclusion, exact report-key length, and rejection of existing output before database configuration is read. The valid CLI dry-run returned 0 with five accepted records; the invalid run returned 2 with ten source records mapped to ten sanitized exceptions. Both outputs are reserved mode 0600 before database writes, incomplete outputs are removed on failure, and scans found no raw Auth0 subject, comment/note sentinel, database URL, or migration secret name."
+        },
+        {
+          "command": "Apply migrations to disposable local PostgreSQL 17; run synthetic import twice; insert two forced-RLS target-only rows; run reconcile; run conflicting repeat import",
+          "result": "pass",
+          "details": "The first migration-owner import explicitly assumed steady_runtime and inserted 3 feelings plus 2 weekly trackers; the identical second import inserted zero, matched all five, retained stable structural hashes, and produced no duplicate legacy IDs. Reconcile inserted zero and reported one synthetic target-only row per collection. A changed comment under an existing legacy ID returned 2 with one sanitized target_conflict and the transaction rolled back; zero conflicting values persisted. Reports contained no private fixture content, raw subject, or connection string."
+        },
+        {
+          "command": "supabase db reset --local; Stage 4 SQL suite; local rollback plus absence assertions; reset/reapply plus SQL suite; local advisors",
+          "result": "pass",
+          "details": "Both migrations rebuilt from zero. The updated suite verifies the NOINHERIT/no-BYPASSRLS migration owner can explicitly assume steady_runtime and retains all schema, constraint, privilege, forced-RLS, and two-subject isolation guarantees. Rollback revoked the membership and removed exactly the steady schema and two roles; counts were zero before a clean reapply and second passing suite. Local advisors found no issue."
+        },
+        {
+          "command": "supabase db push --db-url <Keychain admin TLS session URL> --dry-run then --yes; linked metadata query; linked advisors; migration list",
+          "result": "pass",
+          "details": "The dry run listed only reversible migration 20260818040229, then it was applied to the authorized empty Steady non-prod project. Hosted metadata confirms the migration owner is a member of steady_runtime, remains without BYPASSRLS, and both application tables still contain zero rows. Local and remote migration history match both versions and hosted advisors found no issue. No representative or production data was read or written."
+        },
+        {
+          "command": "Pinned Deno migration dependency audit; API foundation 7-test regression; backup crypto 3-test regression; unchanged Go characterization regression",
+          "result": "pass",
+          "details": "Deno reported no known vulnerability in the migration lockfile. The standalone API remained formatted, lint-clean, type-safe, and 7/7 tests passed; backup encryption remained 3/3; and the unchanged Go API characterization suite passed. The active Go/Heroku rollback source remains available."
+        },
+        {
+          "command": "AI-OS design/plan readiness validation; implementation structural validation; JSON parsing; git diff --check; scoped secret-pattern scan; supabase stop --no-backup",
+          "result": "pass",
+          "details": "The approved design and plan remain structurally valid and ready, implementation evidence is structurally valid, all new JSON parses, patch whitespace checks pass, and no local test password, credential-bearing PostgreSQL URL, JWT, or private key pattern exists in the Stage 5 migration files or artifacts. Housekeeping removed only the disposable local steady-backend-migration stack without a backup; it contains no retained data and can be rebuilt from migrations."
+        },
+        {
+          "command": "Vinicius Delascio read-only source authorization; authenticated Heroku metadata/config-name lookup; Atlas collection/count query; owner-only relaxed Extended JSON export; real-source CLI dry-run",
+          "result": "pass",
+          "details": "The current Sydney Atlas source contains only 114 feelings and 2 weekly_trackers; no retired chat or agent collection exists. The dry-run accounted for all 116 records: 112 feelings plus both weekly trackers accepted and two feelings rejected because createdat is the canonical BSON representation of Go zero time. Five pseudonymous identities exist; the dominant identity has 104 accepted feelings, both weekly trackers, and both exceptions, while four low-volume identities have 2, 1, 3, and 2 accepted feelings. No record body or raw identity was printed or committed, and the ignored owner-only plaintext export and reports were removed after capturing sanitized evidence."
+        },
+        {
+          "command": "Vinicius Delascio production credential-rotation approval; Atlas database-user password update; heroku config:set DB_PASS; Atlas count probe; Heroku dyno and HTTP verification; pending-secret cleanup",
+          "result": "pass",
+          "details": "A mongoexport connection error exposed the prior database credential in private task output, so it was treated as compromised. After explicit approval, a new random value was applied to Atlas and Heroku without display. Atlas reads returned the unchanged 114/2 counts, Heroku matched the pending value, both web and worker dynos restarted to up, and the production root returned HTTP 200. The pending file, pending Keychain item, and clipboard state were removed; the verified replacement is retained only in Atlas, Heroku, and the named operator Keychain entry. No database record was changed. The pre-existing application user still has broad atlasAdmin@admin access and requires a separately scoped least-privilege decision."
+        },
+        {
+          "command": "Vinicius Delascio representative identity-scope decision",
+          "result": "pass",
+          "details": "Vinicius explicitly directed the migration to include all data. All five pseudonymous identities and all 116 source records remain in scope; the eight feelings belonging to four low-volume identities must not be excluded or quarantined solely because of identity distribution. The two zero-time records remain in scope but still require an explicit timestamp transformation decision before import."
+        },
+        {
+          "command": "Vinicius Delascio zero-time normalization decision; pinned Deno fmt/lint/check and 6-test suite; fresh authorized export and real-source dry-run",
+          "result": "pass",
+          "details": "Vinicius explicitly approved replacing each of the two Go-zero createdat values with the timestamp encoded in that record's MongoDB ObjectId. The parser applies only that exact transformation, reports go_zero_time_to_object_id_time by sanitized source ID, and rejects other canonical numeric dates. Six unit tests pass. The fresh real-source dry-run accepted all 114 feelings and both weekly trackers, rejected zero, reported exactly two transformations, and retained all five identities. Reports were mode 0600 and contained no raw identity, content, connection string, or secret; the second plaintext export and reports were removed after sanitized evidence was captured."
+        },
+        {
+          "command": "Vinicius Delascio production-derived non-production load approval; fresh owner-only export and dry-run; hosted import twice; hosted read-only reconciliation",
+          "result": "pass",
+          "details": "Vinicius explicitly approved loading all 116 records with the two documented timestamp normalizations into the empty Steady non-production project. The fresh dry-run accepted 114 feelings and 2 weekly trackers with zero exceptions. The first forced-RLS transaction inserted and matched all 116 with zero target-only rows; the identical second import inserted zero, matched all 116, and preserved both structural hashes. Read-only hosted reconciliation again matched 114/2 with zero conflicts or target-only rows. MongoDB remained unchanged and Go/Heroku remained available."
+        },
+        {
+          "command": "Owner logical role/schema/data dump; checksummed manifest; AES-256-GCM encryption; private Sydney Storage upload/download; exact ciphertext checksum verification",
+          "result": "pass",
+          "details": "The post-import manifest records PostgreSQL 17.6, migration 20260818040229, Sydney residency, 114 feelings, and 2 weekly trackers; the role dump contains no password material. The retained object database/20260818T054525Z/steady-nonprod-post-import-20260818T054525Z.tar.gz.enc is 20,115 bytes with SHA-256 cb1fe709653235362bf57b52bac3277cfedcbbd2a4cbc4a742a3af4564ea76e7. An authenticated download matched exactly. No plaintext or credential was uploaded."
+        },
+        {
+          "command": "Decrypt downloaded post-import backup; verify component hashes; restore to disposable PostgreSQL 17; Stage 4 SQL suite; full source reconciliation; remove disposable restore",
+          "result": "pass",
+          "details": "Authenticated decryption and all manifest checks passed. The restore contained 114 feelings, 2 weekly trackers, five policies, and forced RLS on both tables. The full constraint/grant/two-subject SQL suite passed, and reconciliation matched all 116 records with zero exceptions or target-only rows. The exact disposable restore container was removed."
+        },
+        {
+          "command": "supabase db advisors --linked --type all --level warn --fail-on warn --output json",
+          "result": "pass",
+          "details": "The hosted Steady non-production project reported no security or performance advisor issue after the representative import."
+        },
+        {
+          "command": "Pinned Deno migration fmt/lint/check/test; backup fmt/lint/test; unchanged Go characterization regression; remove exact ignored Stage 5 scratch directory",
+          "result": "pass",
+          "details": "The migration CLI is formatted, lint-clean, type-safe, and 6/6 tests pass; authenticated backup encryption is formatted, lint-clean, and 3/3 tests pass; and the unchanged Go suite passes. After the retained encrypted backup and restore evidence were verified, the owner-only plaintext exports, reports, SQL dumps, decrypted archive, downloaded and local encrypted copies, temporary logs, package cache, and disposable restore scratch were permanently removed from the exact ignored directory. MongoDB and both retained private Storage objects remain recoverable."
+        },
+        {
+          "command": "AI-OS approved design/plan readiness validation; implementation structural validation; JSON parse; git diff --check; generic credential-pattern scan with documented synthetic fixture exclusion; exact non-disclosing Keychain-value scan",
+          "result": "pass",
+          "details": "The approved design and plan remain structurally valid and ready, implementation.json is structurally valid, JSON parsing and patch whitespace checks pass, and no operator Keychain secret appears in any tracked or unignored repository file. The generic scan is clean after excluding the existing compatibility test's intentionally synthetic localhost PostgreSQL URL."
+        }
+      ],
+      "notes": "Stage 5 is complete. Vinicius authorized read-only source access, inclusion of all five identities and all 116 records, exact ObjectId timestamp normalization for the two Go-zero records, and the production-derived load into Steady non-production. The hosted target contains 114 feelings and 2 weekly trackers; first import, idempotent repeat import, and read-only reconciliation all match every record with no exception, duplicate, conflict, or target-only row. Synthetic tests retain target-only rollback reporting and transaction rollback coverage. A post-import AES-256-GCM logical backup is retained in the approved private Sydney Storage project and has passed exact download, authenticated decryption, PostgreSQL 17 restore, schema/RLS tests, and full 116-record reconciliation. MongoDB remains unchanged, Go/Heroku remains available, and no production traffic or endpoint changed. Plaintext migration and restore scratch was removed after evidence capture."
+    },
+    {
+      "id": "STAGE-06",
+      "status": "complete",
+      "files_changed": [
+        "api/.env.example",
+        "api/Dockerfile",
+        "api/README.md",
+        "api/deno.json",
+        "api/src/app.ts",
+        "api/src/auth.ts",
+        "api/src/config.ts",
+        "api/src/database.ts",
+        "api/src/errors.ts",
+        "api/src/log.ts",
+        "api/src/main.ts",
+        "api/src/schemas.ts",
+        "api/tests/app_test.ts",
+        "api/tests/auth_test.ts",
+        "api/tests/compatibility_test.ts",
+        "api/tests/database_integration.ts",
+        "api/tests/schemas_test.ts",
+        "specs/backend-migration/stage-06-security-boundary.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Approved Design/Plan review; current Supabase breaking-change scan; Auth0 access-token/JWKS and JOSE remote-JWKS documentation review; Supabase connection, prepared-statement, short-transaction, least-privilege, and RLS guidance review",
+          "result": "pass",
+          "details": "Stage 6 dependencies were complete and the approved boundary required the existing Auth0 access-token contract, a standalone Deno verifier, private direct PostgreSQL access, explicit application predicates, forced RLS, sanitized HTTP behavior, and no business route. No current Supabase breaking change affects this private-schema direct-Postgres design. The pinned JOSE API supports exact issuer/audience/algorithm/required-claim verification and bounded remote JWKS caching."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 fmt --check; lint; check src/main.ts tests/; test with loopback-only network; audit",
+          "result": "pass",
+          "details": "All 15 API files are formatted, 13 TypeScript files are lint-clean and type-safe, 13 tests pass, and Deno reports no known dependency vulnerability. Tests cover controlled RS256/JWKS verification and cache reuse; missing, malformed, expired, wrong-signature, wrong-issuer, wrong-audience, missing-expiry, missing-subject, blank-subject, matching-header, and mismatching-header cases; strict body/query schemas and client-identity rejection; liveness/readiness; normalized errors; CORS allow/deny behavior; no business or retired routes; and structured-log field sanitization."
+        },
+        {
+          "command": "Run api/tests/database_integration.ts through the Keychain-held steady_runtime TLS transaction-pooler URL with exact Deno env/network permissions",
+          "result": "pass",
+          "details": "The hosted rollback-only test proved readiness, parameterized transaction-local app.auth0_sub, explicit user_id predicates, same-user visibility, cross-user insert rejection, ownership-reassignment rejection, DELETE rejection, transaction rollback, and identity replacement across user A, user B, then user A pooled transactions. No synthetic write committed and no credential or raw production identity was printed."
+        },
+        {
+          "command": "Hosted transaction-wrapped Stage 4 schema/RLS suite; least-permission owner count probe; supabase db advisors --linked --type all --level warn --fail-on warn",
+          "result": "pass",
+          "details": "The complete hosted grants, constraints, forced-RLS, two-subject isolation, ownership-reassignment, DELETE-denial, and rollback suite passed after Stage 6. The target remained exactly 114 feelings and 2 weekly trackers. Supabase reported no security or performance advisor issue."
+        },
+        {
+          "command": "docker build --no-cache -f api/Dockerfile -t feeling-api:stage-6 .; run local smoke container with authorized runtime credential; health/readiness/CORS/disabled-route/log/user assertions; remove container",
+          "result": "pass",
+          "details": "The clean digest-pinned image installed only the unchanged locked dependencies and type-checked in-image. It ran as non-root deno with exact environment and network permissions. Liveness and hosted-database readiness returned 200, a disallowed origin returned 403 before dependency handling, and /api/feelings remained disabled with 404. Logs contained no database URL, token, raw Auth0 subject, comment, note, or connection-string pattern. The exact disposable smoke container and response files were removed."
+        },
+        {
+          "command": "docker run golang:1.23 go test -count=1 ./...; npm test -- --watchAll=false --runInBand src/apiContract.test.js",
+          "result": "pass",
+          "details": "The unchanged Go/Auth0/Mongo characterization suite passes and remains the active rollback implementation. Both React API contract tests pass, confirming current feelings and weekly payloads, Auth0 access-token acquisition, bearer header, and optional x-user-id remain compatible with the strict Stage 6 schemas."
+        },
+        {
+          "command": "AI-OS approved design/plan readiness validation; implementation structural validation; JSON parse; git diff --check; temporary-probe cleanup; generic credential-pattern scan with documented synthetic fixture exclusion; exact non-disclosing Keychain-value scan",
+          "result": "pass",
+          "details": "The approved design and plan remain structurally valid and ready, implementation.json is structurally valid, JSON and whitespace checks pass, and the temporary owner count probe is absent. No operator Keychain secret occurs in any tracked or unignored file. The generic scan is clean after excluding only the pre-existing compatibility test's intentional localhost PostgreSQL fixture URL."
+        }
+      ],
+      "notes": "Stage 6 is complete. The shared Deno boundary now provides strict server-only configuration, RS256 Auth0/JWKS verification with exact retained issuer/audience/expiry/sub, matching optional x-user-id enforcement, strict request/query schemas that reject client-selected identity, normalized errors and CORS, sanitized request logging, separate liveness/readiness, and a least-privilege postgres.js transaction wrapper that parameterizes transaction-local app.auth0_sub before tagged SQL. Hosted rollback-only tests prove explicit ownership predicates, forced-RLS isolation, denied ownership reassignment and DELETE, and no pooled identity leak. The migrated target remains 114/2 and advisors are clean. No business or retired route is enabled, no secret value is committed, and no deployment, production environment, endpoint, traffic, Auth0 tenant, MongoDB, or Heroku change occurred."
+    },
+    {
+      "id": "STAGE-07",
+      "status": "complete",
+      "files_changed": [
+        "api/Dockerfile",
+        "api/README.md",
+        "api/src/app.ts",
+        "api/src/feelings.ts",
+        "api/src/main.ts",
+        "api/tests/app_test.ts",
+        "api/tests/feelings_app_test.ts",
+        "api/tests/feelings_contract_test.ts",
+        "api/tests/feelings_integration.ts",
+        "server/feelings_contract_test.go",
+        "tests/contract/README.md",
+        "tests/contract/feelings.mjs",
+        "specs/backend-migration/stage-07-feelings.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Pinned Deno 2.9.4 fmt --check; lint; check src/main.ts tests/; test with loopback-only network; audit",
+          "result": "pass",
+          "details": "All API files are formatted, 17 TypeScript files are lint-clean and type-safe, 19 tests pass, and Deno reports no known dependency vulnerability. Stage 7 cases cover empty/populated GET, all five statuses and activities, neutral defaults, exactly one service call, malformed and strict-validation failures with no persistence call, two-subject isolation, header mismatch, and the reusable URL-level target contract. Stage 6 Auth0, CORS, readiness, schema, dependency, and log-sanitization regressions also pass."
+        },
+        {
+          "command": "Run api/tests/feelings_integration.ts through the Keychain-held steady_runtime TLS transaction-pooler URL with exact Deno env/network permissions",
+          "result": "pass",
+          "details": "The hosted rollback-only test used the real Postgres mapper and least-privilege transaction boundary. It proved one insert produces a count delta of exactly one, returned all nested camel-case fields and a string status, exposed the insert on the subsequent read, ordered created_at descending then UUID descending, retained explicit user_id predicates, and left both synthetic subjects empty after rollback. No credential or private migrated content was printed."
+        },
+        {
+          "command": "docker run golang:1.23 go test -count=1 ./... with server and shared contract fixtures mounted",
+          "result": "pass",
+          "details": "The unchanged Go handlers and prior characterization suite pass. A new ephemeral Gin HTTP test runs the Stage 1 synthetic feelings fixture and equivalent missing/malformed auth, empty, create/read, mismatched-identity, permissive-status, and second-subject cases through real Go handlers backed by Mongo wire mocks. The source's permissive status quirk is retained only as comparison evidence."
+        },
+        {
+          "command": "cd client && npm test -- --watchAll=false --runInBand src/apiContract.test.js",
+          "result": "pass",
+          "details": "Both React API contract tests pass. The current Auth0 token acquisition, bearer plus optional x-user-id headers, feeling payload, and response-consuming journey require no frontend change for the target slice."
+        },
+        {
+          "command": "docker build --no-cache -f api/Dockerfile -t feeling-api:stage-7 .; disposable local image smoke against hosted readiness; non-root/log assertions; stop and remove container",
+          "result": "pass",
+          "details": "The clean digest-pinned image installed only locked dependencies and type-checked in-image. Running as uid/gid 1993, it returned 200 for health and hosted readiness, 401 for unauthenticated GET /api/feelings, and 404 for the still-disabled weekly route. Captured logs contained only allowlisted operational fields; the disposable container was stopped and removed."
+        },
+        {
+          "command": "node --check tests/contract/feelings.mjs; JSON parse; git diff --check; AI-OS design/plan readiness and implementation structural validation",
+          "result": "pass",
+          "details": "The reusable base-URL contract is syntactically valid, repository JSON and patches are clean, the approved design and plan remain ready, and the Stage 7 implementation hand-off is structurally valid. No production deployment, endpoint, traffic, environment, data, Auth0, Heroku, or MongoDB change was performed."
+        }
+      ],
+      "notes": "Stage 7 is complete. The Deno service now enables only GET/POST /api/feelings with retained Auth0 identity, strict React-compatible input, append-only least-privilege Postgres persistence, forced-RLS isolation, deterministic history ordering, empty-array normalization, and existing camel-case/nested response mapping. URL-level Go and Deno evidence makes the approved source quirks explicit. Weekly and retired routes remain disabled, the hosted test committed no synthetic data, and Go/Heroku remains intact and runnable."
+    },
+    {
+      "id": "STAGE-08",
+      "status": "complete",
+      "files_changed": [
+        "api/README.md",
+        "api/tests/feelings_contract_test.ts",
+        "api/tests/feelings_differential_integration.ts",
+        "client/src/feelingsJourney.test.js",
+        "server/feelings_contract_test.go",
+        "tests/contract/README.md",
+        "tests/contract/compare-feelings.mjs",
+        "tests/contract/feelings.mjs",
+        "specs/backend-migration/stage-08-differential-verification.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Current Supabase breaking-change changelog scan; Supabase CLI 2.114.0 discovery; disposable supabase start/db reset/stop --no-backup",
+          "result": "pass",
+          "details": "No current breaking change affects the private-schema direct-Postgres differential or reconciliation path. A disposable local Supabase Postgres stack rebuilt solely from the two versioned migrations, received only synthetic Stage 8 rows through the least-privilege runtime login and forced RLS, and was stopped and removed without backup after comparison."
+        },
+        {
+          "command": "Capture isolated Go/Mongo-mock and Deno/Postgres URL observations; node tests/contract/compare-feelings.mjs <source> <target>",
+          "result": "pass",
+          "details": "The same eight synthetic HTTP cases ran through real Go Gin handlers with Mongo wire mocks and the real Deno handler/schema/Postgres mapper with a disposable database. The comparator found zero unexplained differences. It allowed only null-to-empty-array, equivalent canonical RFC3339 millisecond serialization, and strict out-of-range status rejection. Auth failures, saved/read fields, identity mismatch, isolation, status, comments, activities, and timestamp instants otherwise matched."
+        },
+        {
+          "command": "Fresh owner-only mongoexport 100.17.0; pinned migration CLI reconcile through Keychain-held migration TLS session URL; sanitized report inspection",
+          "result": "pass",
+          "details": "The fresh read-only source contained 114 feelings and 2 weekly trackers. Reconcile accepted all 116, rejected zero, inserted zero, matched 114/114 feelings and 2/2 weekly trackers exactly, and found zero target-only rows. Exact matching covers legacy ID, owner, normalized timestamp, status, complete comment, and all activity booleans; safe aggregates and the two approved Go-zero timestamp transformations are recorded in the Stage 8 report."
+        },
+        {
+          "command": "CI=true npm test -- --watchAll=false --runInBand",
+          "result": "pass",
+          "details": "All 3 React suites and 5 tests pass. The new parameterized journey runs against configurable Go-null and Deno-empty-array endpoint profiles and proves save, authenticated headers, automatic history refresh, success feedback, history and trend/chart rendering, remount/reload, and persisted readback. The pre-existing TitleComponent lifecycle warning remains unchanged."
+        },
+        {
+          "command": "Pinned Deno API fmt/lint/check/test; pinned migration test; full Go go test -count=1 ./... after target shutdown; hosted Supabase advisors",
+          "result": "pass",
+          "details": "Twenty API files are formatted, 18 TypeScript files are lint-clean and type-safe, all 19 API tests pass, all 6 migration tests pass, and the complete Go characterization/contract suite passes after the ephemeral Deno service and local target were disabled. Hosted Supabase security and performance advisors reported no issue."
+        },
+        {
+          "command": "Owner-only scratch verification and exact cleanup; JSON/Node syntax and patch checks; AI-OS design/plan readiness and implementation structural validation",
+          "result": "pass",
+          "details": "Plaintext Mongo exports, export logs, ephemeral HMAC report and key, exception manifest, and synthetic source/target observation files were removed from the exact ignored Stage 8 scratch directory after safe evidence capture. No raw subject, private content, credential, token, or connection URL entered repository artifacts. Lifecycle artifacts remain valid, and no deployment or production mutation occurred."
+        }
+      ],
+      "notes": "Stage 8 is complete. Isolated HTTP differential testing found no unexplained feelings behavior difference, fresh source-to-target reconciliation matched every one of 114 feelings with zero exception or target-only row, and the React save/history/trend/reload journey passes against both source and target response profiles. The only accepted differences are the approved empty-array and strict-validation normalizations plus timestamp-equivalent canonical RFC3339 serialization. The Deno test target was disabled and destroyed while the complete Go rollback source remained runnable. No hosted write, deployment, production endpoint, traffic, environment, Auth0, MongoDB, Heroku, or backup change occurred."
+    },
+    {
+      "id": "STAGE-09",
+      "status": "complete",
+      "files_changed": [
+        "api/README.md",
+        "api/src/app.ts",
+        "api/src/main.ts",
+        "api/src/weekly.ts",
+        "api/tests/app_test.ts",
+        "api/tests/feelings_app_test.ts",
+        "api/tests/feelings_contract_test.ts",
+        "api/tests/feelings_differential_integration.ts",
+        "api/tests/weekly_app_test.ts",
+        "api/tests/weekly_concurrency_integration.ts",
+        "api/tests/weekly_contract_test.ts",
+        "api/tests/weekly_integration.ts",
+        "server/weekly_contract_test.go",
+        "tests/contract/README.md",
+        "tests/contract/weekly.mjs",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Pinned Deno 2.9.4 fmt/check, lint, type-check, and loopback-only API test suite",
+          "result": "pass",
+          "details": "All 24 API and shared-contract files are formatted, 23 TypeScript files are lint-clean and type-safe, and all 24 regular tests pass. Weekly cases cover null/existing GET envelopes, exact user/week arguments, complete supported fields, neutral defaults, create/edit responses, strict invalid and unknown-field rejection with no persistence call, two authenticated subjects, mismatch rejection, and the reusable target URL contract. Existing Auth0, CORS, readiness, feelings, schemas, and log-sanitization regressions remain green."
+        },
+        {
+          "command": "Run api/tests/weekly_integration.ts through the Keychain-held steady_runtime TLS transaction-pooler URL with exact Deno env/network permissions",
+          "result": "pass",
+          "details": "The hosted Sydney non-production rollback-only test used the real SQL mapper and least-privilege forced-RLS transaction boundary. It proved no-record read, create, edit of the same user/week, complete field mapping, tracker version 1, database-generated parseable updatedAt, subsequent read equality, exactly one row, two-subject isolation, and absence of both synthetic subjects after rollback. No credential or migrated private content was printed."
+        },
+        {
+          "command": "Disposable local Supabase start; 12 concurrent weekly service upserts through steady_runtime; count/read assertions; supabase stop --no-backup",
+          "result": "pass",
+          "details": "Twelve simultaneous writes for one synthetic subject and week completed through independent least-privilege transactions. The UNIQUE(user_id, week_of) key plus INSERT ON CONFLICT produced exactly one row whose final complete value matched one submitted write. The isolated steady-backend-migration stack and its synthetic row were then stopped and destroyed without backup; the unrelated car-chronicle stack was not touched."
+        },
+        {
+          "command": "Cached Go 1.23 container gofmt and go test -count=1 ./...",
+          "result": "pass",
+          "details": "The complete Go characterization suite passes. The new weekly source contract exercises missing/malformed auth, null read, create, populated read, edit, header mismatch, permissive invalid mood, and second-subject isolation through the real Gin handlers with Mongo wire mocks and the shared synthetic fixture. Go handlers and production code remain unchanged."
+        },
+        {
+          "command": "CI=true npm test -- --runInBand",
+          "result": "pass",
+          "details": "All 3 React suites and 5 tests pass, including both API contract tests and the feelings journey. The current weekly GET query, POST payload, Auth0 audience/token acquisition, bearer header, optional x-user-id, checks, notes, mood, and trackerVersion require no frontend change. The pre-existing TitleComponent lifecycle warning remains unchanged."
+        },
+        {
+          "command": "Pinned Deno dependency audit; Node contract syntax; JSON parse; git diff --check; AI-OS design/plan readiness and implementation structural validation",
+          "result": "pass",
+          "details": "Deno reports no known vulnerability in the unchanged integrity lock. The reusable weekly module parses, implementation.json is valid JSON, patches contain no whitespace error, the approved design and plan remain ready, and the implementation hand-off is structurally valid. Overall implementation --ready correctly remains unavailable because Stages 10 through 16 and a pre-existing Stage 3 environment probe are not complete; Stage 9 does not claim authority to advance directly to Review."
+        }
+      ],
+      "notes": "Stage 9 is complete. The Deno service now enables GET/POST /api/weekly-tracker with retained Auth0 identity, strict React-compatible validation, private Postgres persistence, database-generated timestamps, forced-RLS ownership, and atomic one-row-per-user/week upsert. The intentional source quirk allowing arbitrary mood is retained only in comparison evidence and normalized to a target 400 with no write. The hosted test rolled back all synthetic work and the disposable local database was destroyed. Retired routes remain disabled; Go/Heroku/Mongo remain intact and runnable; no deployment, production environment, endpoint, traffic, data, Auth0 tenant, Heroku, or MongoDB change occurred."
+    },
+    {
+      "id": "STAGE-10",
+      "status": "complete",
+      "files_changed": [
+        "api/Dockerfile",
+        "api/README.md",
+        "api/src/app.ts",
+        "api/tests/app_test.ts",
+        "api/tests/compatibility_test.ts",
+        "api/tests/weekly_differential_integration.ts",
+        "client/src/App.js",
+        "client/src/App.test.js",
+        "client/src/components/PingComponent.js (removed)",
+        "client/src/components/TitleComponent.js (removed)",
+        "server/weekly_contract_test.go",
+        "tests/contract/README.md",
+        "tests/contract/compare-feelings.mjs",
+        "tests/contract/compare-weekly.mjs",
+        "tests/contract/feelings.mjs",
+        "tests/contract/run.mjs",
+        "specs/backend-migration/stage-10-api-inventory.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Capture isolated Go/Mongo-mock and Deno/disposable-Postgres feelings and weekly observations; run compare-feelings.mjs and compare-weekly.mjs",
+          "result": "pass",
+          "details": "All 17 supported source/target cases passed with zero unexplained difference: 8 feelings cases and 9 weekly cases. Approved differences are limited to empty feelings null-to-array, timestamp-equivalent canonical/database serialization, strict feeling-status validation, and strict weekly-mood validation. The target used the real Deno handler, mapper, least-privilege role, forced RLS, and Postgres. The exact four owner-only synthetic observation files and disposable local database were destroyed after comparison."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 fmt/check, lint, type-check, and loopback-only API/contract test suite",
+          "result": "pass",
+          "details": "All 31 API/shared-contract files are formatted, 24 TypeScript files are lint-clean and type-safe, and all 26 regular tests pass. The suite proves malformed supported requests return structured 400 without persistence, auth failure 401, identity mismatch 403, unknown/retired/operator paths 404 without authentication, internal failures sanitized 500, disallowed CORS blocked before handlers, and exactly four registered browser method/path combinations. Existing Auth0, feelings, weekly, readiness, and logging regressions remain green."
+        },
+        {
+          "command": "CI=true npm test -- --runInBand; npm run build; replacement source static retirement scan",
+          "result": "pass",
+          "details": "All 3 React suites and 5 tests pass and the optimized production build compiles. App mount makes no retired ping request; TitleComponent and PingComponent are removed; supported feelings and weekly journeys and payloads are unchanged. A scoped scan found no ping, PingComponent, chat/agent/operator route, retired header, or retired secret name in client/src, api/src, api/Dockerfile, api/.env.example, or api/deno.json. The only build notice is the pre-existing outdated caniuse-lite advisory."
+        },
+        {
+          "command": "Build feeling-api:stage-10 from the digest-pinned Deno image; inspect image environment/command; Deno audit",
+          "result": "pass",
+          "details": "The clean replacement image installed only the three integrity-locked dependencies and type-checked in-image. Inspection shows only HOST, PORT, and DEPLOYMENT_VERSION defaults and exact permission names for Auth0, CORS, runtime database, deployment version, host, and port; network permission is limited to the listener, Auth0 JWKS, and Sydney Supavisor. No retired secret/header, Data API, Edge Function, Storage, queue, scheduler, worker, job, operator, service-role, or Mongo compatibility path exists. Deno reports no known dependency vulnerability."
+        },
+        {
+          "command": "Go 1.23 container gofmt and go test -count=1 ./... with both synthetic source snapshots enabled",
+          "result": "pass",
+          "details": "The complete legacy Go characterization and source contracts pass while producing the equivalent feelings and weekly observations used by the differential comparators. Go handlers, Heroku configuration, MongoDB behavior, and retired rollback routes remain intact and runnable; no replacement dependency on them was introduced."
+        },
+        {
+          "command": "Repository caller/configuration inventory and accountable-owner retirement evidence review",
+          "result": "pass",
+          "details": "No active caller evidence appeared. Repository search still finds no client, worker, scheduler, or integration caller for chat/agent routes, and Vinicius Delascio's Define-stage confirmation that the OpenClaw instance no longer exists remains the accountable evidence. The replacement inventory records exactly four browser routes, seven runtime configuration names, separate health/readiness probes, intentionally absent responsibilities, operator-only backup Storage, and the untouched rollback boundary."
+        },
+        {
+          "command": "JSON and Node syntax; git diff --check; ignored-scratch absence; AI-OS design/plan readiness and implementation structural validation",
+          "result": "pass",
+          "details": "The lifecycle JSON and reusable comparison modules parse, patches contain no whitespace error, the exact Stage 10 scratch directory is absent, the approved design and plan remain ready, and implementation.json is structurally valid. Overall implementation readiness is intentionally deferred because Stages 11 through 16 and their human gates remain incomplete; Stage 10 does not advance to Review automatically."
+        }
+      ],
+      "notes": "Stage 10 is complete. Every supported browser API behavior is equal to the source or differs only by an approved normalization. The Deno replacement is mechanically restricted to GET/POST feelings and GET/POST weekly tracker, with structured 400/401/403/404/500 behavior and constrained CORS. The dead React ping request and both ping-only components are removed. Retired chat/agent/ping/operator routes, headers, secrets, and privileged compatibility paths are absent from the replacement and remain only in the untouched Go/Heroku rollback source. No active retired caller appeared. No hosted data, production deployment, environment, endpoint, traffic, Auth0 tenant, Heroku, or MongoDB resource was changed."
+    },
+    {
+      "id": "STAGE-11",
+      "status": "complete",
+      "files_changed": [
+        "api/.env.example",
+        "api/Dockerfile",
+        "api/README.md",
+        "api/deno.json",
+        "api/src/config.ts",
+        "api/src/main.ts",
+        "api/tests/compatibility_test.ts",
+        "client/src/config.js",
+        "client/src/config.test.js",
+        "client/src/weeklyJourney.test.js",
+        "tests/e2e/reverse-proxy.mjs",
+        "specs/backend-migration/stage-10-api-inventory.md",
+        "specs/backend-migration/stage-11-verification.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Fresh read-only mongoexport; hosted migration reconcile; clean local import twice; final hosted reconcile after integration tests",
+          "result": "pass",
+          "details": "The fresh source contained 114 feelings and 2 weekly trackers. All 116 records were accepted with zero exception. Hosted reconciliation matched 114/2 with zero insert or target-only row before and after the integration suite. A clean local first import inserted all 116; the identical second import inserted zero, matched all 116, and retained equal keyed structural hashes. Exactly two previously approved Go-zero-to-ObjectId timestamp transformations were reported."
+        },
+        {
+          "command": "Real Auth0 browser journey against split-origin React and Deno API on disposable local Supabase",
+          "result": "pass",
+          "details": "An existing retained Auth0 account signed in without re-registration or relinking. The browser loaded all migrated history and trends, saved a synthetic feeling, refreshed history, saved a weekly tracker, retained the authenticated session and persisted records across reload, and used only the disposable local database."
+        },
+        {
+          "command": "REACT_APP_API_URL=same-origin production build; local static reverse proxy; real Auth0 browser read/save/reload/sign-out journey",
+          "result": "pass",
+          "details": "The optimized React build used same-origin API URLs through the dependency-free local proxy. Auth0 session, feeling history/trends, feeling save, weekly read/edit/save, persisted reload, and sign-out all worked. No public URL, Auth0 tenant configuration, frontend production endpoint, or production traffic changed."
+        },
+        {
+          "command": "CI=true npm test -- --runInBand; REACT_APP_API_URL=same-origin npm run build; node --check tests/e2e/reverse-proxy.mjs",
+          "result": "pass",
+          "details": "All 5 React suites and 9 tests pass. They protect API behavior, split-origin/default/explicit/same-origin URL resolution, feeling save/history/trends/remount, and selected-week load/edit/save/remount. The optimized same-origin build compiles and the proxy module parses. Only the pre-existing outdated caniuse-lite notice remains."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 API fmt, lint, check, audit and complete regular test suite",
+          "result": "pass",
+          "details": "All 26 API/documentation files are formatted, 24 TypeScript files are lint-clean and type-safe, all 26 regular tests pass, and the integrity-locked jose, postgres.js, and Zod dependency set has no known vulnerability. Strict database TLS remains the default; disable is accepted only as an explicit disposable-local setting."
+        },
+        {
+          "command": "Hosted rollback-only database, feelings, and weekly integrations through steady_runtime; local Stage 4 schema/RLS suite; 12-write concurrent weekly test",
+          "result": "pass",
+          "details": "The hosted runtime tests proved transaction-local identity, two-subject isolation, denied operations, mapping, ordering, create/edit behavior, and rollback. The complete SQL suite passed grants, constraints, five policies, forced RLS, and isolation. Twelve local concurrent weekly upserts produced exactly one user/week row. Final full reconciliation proved no hosted synthetic row remained."
+        },
+        {
+          "command": "Go 1.23 full suite with fresh synthetic source snapshots; local Deno/Postgres snapshots; compare-feelings.mjs; compare-weekly.mjs",
+          "result": "pass",
+          "details": "The legacy rollback suite passes. Eight feelings and nine weekly URL cases compared with zero unexplained difference. Only the approved empty-array, equivalent timestamp serialization, database timestamp, strict status, and strict mood normalizations differ."
+        },
+        {
+          "command": "Pinned migration helper fmt/lint/check/6 tests; backup helper fmt/lint/3 tests; local and linked Supabase advisors",
+          "result": "pass",
+          "details": "The migration and authenticated-backup tools remain formatted, lint-clean, type-safe, and fully green. Local and Sydney linked security/performance advisors reported no issue."
+        },
+        {
+          "command": "Build and inspect feeling-api:stage-11 from digest-pinned Deno 2.9.4 image; health/readiness probes; non-root identity check",
+          "result": "pass",
+          "details": "The image builds and type-checks with frozen production dependencies, runs as UID/GID 1993, exposes only nine strict environment names including the read-only static-root path, and limits network permission to the listener, retained Auth0 JWKS host, and Sydney Supavisor. The disposable API returned healthy and ready against local Supabase."
+        },
+        {
+          "command": "Owner-only scratch cleanup; local service shutdown; lifecycle validation; JSON, secret-pattern, and patch checks",
+          "result": "pass",
+          "details": "The browser, proxy, API, local Supabase stack, fresh Mongo exports, keyed reports, synthetic snapshots, and ephemeral report keys were removed after durable sanitized evidence was recorded. The approved design/plan remain ready, implementation evidence validates structurally, patches are clean, and no secret value or private source content was committed."
+        }
+      ],
+      "notes": "Stage 11 is complete. Full non-production migration and reconciliation are 100 percent with zero exception or target-only row; the only two source transformations were explicitly approved. Real retained-Auth0 React journeys pass in split-origin and same-origin deployment shapes, and every contract, Go rollback, Deno, Postgres/RLS, migration, backup, React, advisor, and image check is green. There is no unapproved discrepancy. No production endpoint, traffic, data, environment, deployment, Auth0 configuration, Heroku resource, MongoDB record, or backup object changed. Stage 12 requires separate infrastructure and rehearsal authorization."
+    },
+    {
+      "id": "STAGE-12",
+      "status": "complete",
+      "files_changed": [
+        "api/.env.example",
+        "api/Dockerfile",
+        "api/deno.json",
+        "api/src/app.ts",
+        "api/src/config.ts",
+        "api/src/main.ts",
+        "api/src/static.ts",
+        "api/tests/static_test.ts",
+        "docs/host-migration-guide.md",
+        "docs/runbooks/azure-container-apps.md",
+        "docs/runbooks/backup.md",
+        "docs/runbooks/post-write-rollback.md",
+        "docs/runbooks/pre-commit-rollback.md",
+        "docs/runbooks/restore.md",
+        "docs/runbooks/stage-12-cutover.md",
+        "supabase/migrations/20260819004100_add_rollback_reconciliation_role.sql",
+        "supabase/tests/stage_04_rollback.sql",
+        "supabase/tests/stage_04_schema_test.sql",
+        "supabase/tests/stage_12_rollback_role_test.sql",
+        "tools/rollback/README.md",
+        "tools/rollback/deno.json",
+        "tools/rollback/deno.lock",
+        "tools/rollback/main.ts",
+        "tools/rollback/reconcile.ts",
+        "tools/rollback/tests/reconcile_test.ts",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Create Australia East Azure resource group, ACR, Container Apps environment/app, managed identity, Log Analytics workspace, and monthly budget in the isolated personal-subscription CLI profile",
+          "result": "pass",
+          "details": "Vinicius Delascio explicitly authorized the named nonproduction infrastructure and rehearsal. The user-assigned identity has only AcrPull on the admin-disabled registry; the app scales 0..1 at 0.25 CPU/0.5 GiB and has one secret reference named database-url. The 5 monthly budget has an 80 percent actual-cost owner alert and is documented as an alert rather than a spending cap. No unrelated or corporate subscription was used."
+        },
+        {
+          "command": "Clean Linux/AMD64 Buildx image build, local emulated smoke, ACR manifest inspection, digest deployment, TLS/redirect/root/SPA/readiness/unauthenticated/log checks",
+          "result": "pass",
+          "details": "The same-origin React plus Deno image was built from digest-pinned Node 20 Alpine and Deno 2.9.4 bases, verified as linux/amd64, and deployed by immutable digest sha256:bffde960b8d9eb263d72a7b02b817039bb75733dad93f533c3c77fc4a4757497. The dark Australia East URL returned TLS-verified 200 HTML, SPA fallback and readiness, redirected HTTP to HTTPS, rejected unauthenticated API access with 401, and emitted only allowlisted structured logs."
+        },
+        {
+          "command": "Azure multiple-revision traffic shift r3 to r2 and back to r3; final revision and ingress snapshot",
+          "result": "pass",
+          "details": "Both retained revisions reported Healthy and Provisioned on the same pinned digest. The dark URL served root and readiness after each shift; r3 is again at 100 percent, r2 at zero, with no production hostname or traffic involved. The reversal completed in under two minutes."
+        },
+        {
+          "command": "Local Supabase reset and complete Stage 4 schema/RLS suite plus Stage 12 rollback-role transaction test",
+          "result": "pass",
+          "details": "All three migrations apply from zero. The nologin, no-BYPASSRLS steady_rollback role can select and link only the current Auth0 subject's rows, has UPDATE only on legacy_mongo_id, cannot change private content, and cannot access another subject. All synthetic fixtures rolled back."
+        },
+        {
+          "command": "Hosted Supabase db push dry-run then apply 20260819004100; transaction-wrapped rollback-role test; aggregate counts; linked advisors",
+          "result": "pass",
+          "details": "The dry run named exactly the additive rollback-role migration. After authorized application to Steady non-prod, the hosted isolation test passed and rolled back, counts remained 114 feelings and 2 weekly trackers, and Supabase security/performance advisors reported no issue. No production Mongo data or target business row changed."
+        },
+        {
+          "command": "Disposable target-to-Mongo plan, execute, second execute, aggregate linkage checks, fresh Mongo export, and forward migration reconcile",
+          "result": "pass",
+          "details": "Starting from 3/2 source rows plus one target-only feeling, one changed weekly row, and one target-only weekly row, execute inserted the feeling and weekly row, normalized two weekly documents, and linked two target rows. The second execute wrote and linked nothing and reported all three weekly rows already matched. Mongo ended at 4/3, every target row had a legacy ID, and a fresh forward reconcile matched 4/3 with zero exception or target-only row."
+        },
+        {
+          "command": "Constrained rollback operator container permission rehearsal",
+          "result": "pass",
+          "details": "The dedicated container mounted only repository source read-only and an ignored report directory, received only explicit secrets, and limited network access to the selected PostgreSQL and Mongo endpoints plus dependency retrieval. Deno read-only system metadata was required by the MongoDB driver; no host home or secret store was mounted. Reports contained sanitized counts and keyed hashes only."
+        },
+        {
+          "command": "Pinned Deno API fmt/lint/check/28 tests; rollback helper fmt/lint/check/2 tests; migration helper 6 tests; backup crypto 3 tests; React 5 suites/9 tests; Go 1.23 regression",
+          "result": "pass",
+          "details": "All implementation and rollback-source suites are green. Static same-origin serving protects asset, HEAD, SPA, unsafe-path, API-path and unsupported-method behavior. The unchanged Go characterization remains recoverable. The React build's pre-existing dependency audit findings remain an unresolved Release input rather than an unreviewed Stage 12 upgrade."
+        },
+        {
+          "command": "Create named cutover, pre-commit rollback, post-write rollback, backup, restore, Azure target, and beginner host-migration runbooks",
+          "result": "pass",
+          "details": "The procedures name Vinicius Delascio as owner/approver, define the first replacement production request as the commit point, separate the two rollback modes, require write suspension and bidirectional reconciliation, retain Go/Heroku/Mongo, and state that rehearsal approval does not authorize production cutover or decommissioning."
+        },
+        {
+          "command": "Auth0 Dashboard allowlist inspection and real retained-account read-only browser journey through the Azure same-origin URL",
+          "result": "pass",
+          "details": "After Vinicius Delascio approved and entered the Azure preproduction origin, the exact URL was present in Auth0 callback, logout, web-origin, and CORS allowlists without replacing existing entries. Auth0 accepted the redirect, the retained account loaded the journal and weekly tracker through the Azure origin and hosted Supabase data, the session survived reload, and sign-out returned to the public screen with private history absent. No feeling, weekly tracker, account, or other business record was created or changed."
+        },
+        {
+          "command": "Remove exact disposable Stage 12 Mongo container, stop only steady-backend-migration local Supabase without backup, and delete exact ignored synthetic rehearsal files",
+          "result": "pass",
+          "details": "The synthetic Mongo container and local rehearsal database were permanently removed after sanitized evidence was recorded. Ten exact ignored exports/reports and their now-empty directory were removed. The unrelated car-chronicle local stack, hosted Supabase projects, Azure preproduction revisions, Go/Heroku rollback source, Mongo production data, and encrypted backup objects were not changed."
+        },
+        {
+          "command": "AI-OS plan readiness and implementation structural validation; implementation readiness probe; JSON, patch, cleanup, generic credential-pattern, and exact Keychain secret-value checks",
+          "result": "pass",
+          "details": "The approved plan remains structurally valid and ready, implementation.json is structurally valid, JSON and whitespace checks pass, disposable Stage 12 resources are absent, and no known Keychain secret value or generic credential pattern occurs in repository files. Full implementation readiness correctly remains closed because Stages 13 through 16 are pending and the earlier Stage 3 IPv6 direct-endpoint probe remains truthfully recorded as failed; Stage 12 does not waive or rewrite those facts."
+        }
+      ],
+      "notes": "Stage 12 is complete. The Australia East Azure target satisfies ARCH-002, the pinned same-origin image and revision rollback pass, both data rollback modes are timed and repeatable, the additive hosted rollback role remains least-privilege under forced RLS, and the real retained-Auth0 read-only browser journey passes through the dark Azure origin. All implementation, legacy rollback, migration, backup, React, database, advisor, and reconciliation checks are green. Production traffic, frontend endpoints, production environment variables, Heroku, and Mongo remain unchanged and recoverable. This rehearsal does not authorize production cutover, deployment, or decommissioning."
+    },
+    {
+      "id": "STAGE-13",
+      "status": "complete",
+      "files_changed": [
+        "specs/backend-migration/stage-10-api-inventory.md",
+        "specs/backend-migration/stage-13-review-readiness.md",
+        "docs/runbooks/monitoring-support.md",
+        "docs/runbooks/operator-audit.md",
+        "docs/runbooks/breach-response.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Trace completed STAGE-01 through STAGE-12 evidence and AC-1 through AC-14 into specs/backend-migration/stage-13-review-readiness.md",
+          "result": "pass",
+          "details": "Every stage through rehearsal has durable command/result evidence and every brief acceptance criterion maps to named stage evidence. The Stage 3 direct-IPv6 failure and approved TLS Supavisor session fallback remain visible. Review, Release, production mutations, and decommissioning remain separate gates."
+        },
+        {
+          "command": "supabase db advisors --linked --type all --level info --fail-on warn --output json; read-only hosted role/grant/RLS/policy/migration metadata query",
+          "result": "pass",
+          "details": "Security and Performance Advisors found no issue. Both application roles are non-superuser and non-BYPASSRLS; feelings and weekly_trackers have RLS enabled and forced; nine policies exist; runtime table grants are SELECT/INSERT/UPDATE; PUBLIC has no steady table grant; and hosted migrations are exactly 20260817053317, 20260818040229, and 20260819004100."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 audit --frozen for api, tools/migrate, and tools/rollback; SHA-256 lockfile fingerprint",
+          "result": "pass",
+          "details": "All three Deno audits reported no known vulnerability. Lockfile SHA-256 values are api 62d41049f5111d74c07e164bbdc3e7c349c69c3e390ea65f618a21d0958a9dda, migrate dd94feb0e011a92f48354658713d333fa5a29509d34c4109d2b98d94778503f9, and rollback 3ad690ee790f39ce0f1b4084e1beec3ce4001547ee680c649ea7768c71f97fad."
+        },
+        {
+          "command": "cd client && npm audit --json; aggregate severity and affected package names without advisory bodies",
+          "result": "pass",
+          "details": "The audit and classification completed and found 82 advisories: 15 low, 17 moderate, 42 high, and 8 critical across 1,415 dependencies. Direct affected packages include axios, moment, postcss, and react-scripts; many critical/high findings are transitive build dependencies. On 2026-08-24 Vinicius Delascio placed reachability analysis and remediation in separately Defined FOLLOWUP-REACT-001 rather than expanding backend-migration. The findings are not represented as clean or waived, and no forced dependency mutation was performed."
+        },
+        {
+          "command": "Pinned Deno API test suite; React --watchAll=false --runInBand; Go 1.23 characterization suite",
+          "result": "pass",
+          "details": "The API passed 28/28 tests, React passed 5 suites and 9/9 tests, and the unchanged Go rollback source passed. The replacement tests cover exact and retired routes, Auth0, cross-user denial, strict schemas, CORS, normalized errors, static serving, and allowlisted log behavior."
+        },
+        {
+          "command": "Read-only hosted aggregate count and API-shape JSON-size query",
+          "result": "pass",
+          "details": "Hosted counts remain 114 feelings and 2 weekly trackers across five identity groups. The largest current feeling history is 106 rows and approximately 50,464 serialized JSON bytes. This is below the documented 500-row/250-KiB pagination-review guardrail, so current evidence does not require a return to Define. No identity or private content was emitted."
+        },
+        {
+          "command": "heroku apps:info/ps/config key-only inspection; sanitized retained-log aggregation; public Heroku and Azure health checks",
+          "result": "pass",
+          "details": "Heroku remains available with one Basic web and one Basic worker running ./main; the US/container app exposes only config names AGENT_API_TOKEN, CHAT_INGEST_TOKEN, DB_PASS, and DB_USER. Logplex returned no retained router lines, so historical rate/error baselines are explicitly unavailable. Azure root returned 200 after a 26-second scale-to-zero cold start, warm readiness returned 200 in about 0.09 seconds, unauthenticated feelings returned 401, and retained Heroku root returned 200."
+        },
+        {
+          "command": "AZURE_CONFIG_DIR=<isolated-personal-profile> az containerapp show and Log Analytics metadata refresh",
+          "result": "pass",
+          "details": "On 2026-08-24 Vinicius Delascio completed Azure CLI browser-based modern authentication after the tenant correctly blocked legacy device-code flow under Security Defaults. The isolated profile identifies only the enabled personal subscription. The Australia East app is Succeeded; r2 and r3 are Healthy/Provisioned on the approved digest with r3 at 100 percent; scale remains 0..1; only database-url is a secret reference; ACR admin is disabled and the managed identity has only AcrPull; Log Analytics retention is 30 days; and the monthly 5 budget retains its 80 percent alert. Seven-day metrics contain 17 counted requests, zero restarts, maximum one replica, low CPU, and maximum eight-percent memory. No secret value, contact, or private log content was read, and the unrelated corporate subscription was not used."
+        },
+        {
+          "command": "Review Docker permission boundary, replacement route/config inventory, legacy Heroku config-name inventory, and repository retired-route/shared-secret scan",
+          "result": "pass",
+          "details": "The replacement registers four authenticated browser routes plus health/readiness, runs as UID/GID 1993, reads only its static bundle, allows nine exact environment names, and limits network access to listener/Auth0/Sydney Supavisor. Retired routes and secrets remain only in the recoverable Go source, legacy documentation, and negative tests; they are absent from replacement runtime configuration."
+        },
+        {
+          "command": "Create named monitoring/support, operator-audit, breach-response, backup/restore, cutover, and both rollback records; inspect cloud-provider defaults",
+          "result": "pass",
+          "details": "Vinicius Delascio owns every operational responsibility. The runbooks record Azure's 90-day control-plane Activity Log default, Supabase Free Account Audit/project-log limitations, Auth0 plan-dependent retention, the approved encrypted Sydney logical-backup posture, absolute low-volume alerts, incident handling, and separate authority for every production mutation."
+        },
+        {
+          "command": "AI-OS plan readiness and implementation structural validation; implementation readiness probe; JSON, patch whitespace, generic credential-pattern, and exact Keychain secret-value checks",
+          "result": "pass",
+          "details": "The approved plan remains valid and ready, implementation.json is valid JSON and structurally valid, patch whitespace is clean, and no known Keychain secret value occurs in repository files. The generic scan finds only the intentional synthetic localhost PostgreSQL fixture. After the 2026-08-24 Azure evidence refresh, full implementation readiness remains closed only by the truthful Stage 3 transport failure and pending production Stages 14 through 16; Stage 13 does not waive those gates."
+        }
+      ],
+      "notes": "Stage 13 is complete as an evidence-assembly stage, not as a Review or Release decision. Architecture, security, privacy, data, operational, environment-name, traceability, provider-default, monitoring, support, audit, incident, cutover, and rollback inputs are durable. The Deno replacement and hosted database controls are green; current data size does not require pagination. On 2026-08-24 Vinicius Delascio directed that legacy React dependency reachability and remediation be tracked as separately Defined FOLLOWUP-REACT-001; the audit findings remain explicit and unwaived. The isolated personal Azure profile was reauthenticated using browser-based modern auth with Security Defaults kept enabled, and current infrastructure/audit metadata passed. The Free-plan manual backup/audit limitations and scale-to-zero cold start are visible trade-offs. No production infrastructure, data, environment, deployment, traffic, or resource was changed or deleted; Go/Heroku/Mongo remain available."
+    },
+    {
+      "id": "STAGE-14",
+      "status": "complete",
+      "files_changed": [
+        "api/tests/stage14_restore_smoke.ts",
+        "docs/runbooks/backup.md",
+        "docs/runbooks/legacy-rollback-security.md",
+        "docs/runbooks/post-write-rollback.md",
+        "docs/runbooks/pre-commit-rollback.md",
+        "docs/runbooks/restore.md",
+        "docs/runbooks/stage-12-cutover.md",
+        "server/retired_routes_test.go",
+        "specs/backend-migration/stage-03-supabase.md",
+        "specs/backend-migration/stage-05-data-migration.md",
+        "specs/backend-migration/stage-13-review-readiness.md",
+        "specs/backend-migration/stage-14-remediation.md",
+        "tools/backup/README.md",
+        "tools/backup/archive.ts",
+        "tools/backup/archive_test.ts",
+        "tools/backup/deno.json",
+        "tools/backup/workflow.ts",
+        "tools/backup/workflow_test.ts",
+        "tools/legacy-security/deno.json",
+        "tools/legacy-security/heroku_sequence.ts",
+        "tools/legacy-security/heroku_sequence_test.ts",
+        "tools/legacy-security/mongo_role_policy.ts",
+        "tools/legacy-security/mongo_role_policy_test.ts",
+        "tools/legacy-security/mongo_role_probe.js",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Supabase changelog scan; supabase 2.114.0 --help discovery; projects list; private Storage bucket metadata check; non-disclosing Keychain-entry checks",
+          "result": "pass",
+          "details": "No current breaking change affects the operator backup. Steady non-prod and Steady backups both report ACTIVE_HEALTHY, PostgreSQL 17.6, and Sydney ap-southeast-2. The database-backups bucket reports public=false. Required database-owner, encryption, Storage operator, and project reference entries are present without values being emitted."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 tools/backup fmt, lint, check, and 8 tests",
+          "result": "pass",
+          "details": "The dependency-free workflow strictly allowlists content-free metadata and exactly three SQL components; computes and verifies SHA-256; archives only in memory; AES-256-GCM encrypts; refuses overwrite/existing restore directories; and rejects unsafe metadata, tampering, wrong keys, trailing data, and checksum mismatches. Tests prove no synthetic private marker or raw Auth0 subject appears in ciphertext or JSON evidence."
+        },
+        {
+          "command": "Fresh owner-only Supabase logical dump; workflow pack; new private Storage upload; authenticated download; outer checksum; workflow verify; strict empty PostgreSQL 17 restore; Stage 4 SQL suite; Deno service smoke; final counts",
+          "result": "pass",
+          "details": "The migration role correctly refused owner-level dumping, so the separate Keychain-held database-owner backup credential was used without display. Password-free roles, steady schema, and data recorded PostgreSQL 17.6, migrations 20260817053317/20260818040229/20260819004100, Sydney-to-Sydney regions, and 114/2 rows. Only 52,785-byte ciphertext was uploaded at database/20260825T051148Z/steady-nonprod-20260825T051148Z.steady.enc with SHA-256 7c80298cb21b5a48138c554052b9be44189472f8a80d27348d3a241fb440b0b7. Download, authenticated decryption, every component checksum, roles/schema/data restore, nine-policy forced RLS, constraints/grants/two-subject tests, and rolled-back feelings/weekly service smoke passed; final counts remained 114/2. The first incomplete plain-Postgres fixture target exposed missing Supabase platform roles and was discarded before the successful from-empty rerun."
+        },
+        {
+          "command": "Pinned Deno legacy-security fmt/lint/check/5 tests; mongosh allowed/denied probes as steady_legacy_runtime and steady_rollback_operator in disposable MongoDB 7",
+          "result": "pass",
+          "details": "Static policy rejects atlasAdmin, readWriteAnyDatabase, extra/cross-database roles, and shared custody. Each synthetic user had only readWrite on feeling, passed insert/read/update/delete, and was denied admin usersInfo and a cross-database read. The probe collection, synthetic users/passwords, and exact disposable container were removed; production Atlas and Heroku were not changed."
+        },
+        {
+          "command": "Go 1.23 TestRetiredMachineRoutesFailClosedWithoutTokens, TestBrowserRoutesRemainIndependentOfRetiredTokens, and full characterization suite",
+          "result": "pass",
+          "details": "With CHAT_INGEST_TOKEN and AGENT_API_TOKEN absent, both retired machine routes return the characterized configuration failure before their handlers run. The four isolated Auth0 browser route shapes remain runnable. The complete unchanged Go API suite passes."
+        },
+        {
+          "command": "Heroku maintenance/config:unset --help discovery; executable Heroku isolation/rollback sequence tests; create backup/restore, legacy-security, cutover, and both rollback runbooks",
+          "result": "pass",
+          "details": "The runbooks and tested state machine order maintenance-on, both-token removal, config-name-only verification, data checks before maintenance-off, browser verification, browser-only rollback without token restoration, separate scoped Mongo credential verification, and old atlasAdmin revocation only after both paths pass. Unsafe ordering and token restoration fail. Every production mutation remains explicitly reserved for Stage 17; no state-changing Heroku or Atlas command ran."
+        },
+        {
+          "command": "Pinned Deno API 28 tests; migration 6 tests; rollback 2 tests; backup 8 tests; legacy-security 5 tests; React 5 suites/9 tests; Go 1.23 suite",
+          "result": "pass",
+          "details": "All replacement, migration, rollback, backup, policy, frontend, and legacy-source regressions pass. The initial API and rollback check commands mounted only their subdirectories and could not resolve shared sibling fixtures; rerunning with the repository root mounted passed without code changes."
+        },
+        {
+          "command": "Remove steady-stage14-mongo and steady-stage14-restore; remove exact private and git-ignored Stage 14 scratch directories; verify retained Storage object metadata",
+          "result": "pass",
+          "details": "Both exact disposable databases and all local SQL, decrypted files, manifests, local/downloaded ciphertext copies, synthetic credentials, and plaintext scratch were permanently removed after durable evidence. The new private Sydney ciphertext is the only artifact retained from this rehearsal; earlier encrypted historical objects remain. This is explicitly recorded as operator-managed logical backup, not managed database backup or PITR."
+        },
+        {
+          "command": "AI-OS approved plan and implementation validation; plan/implementation stage-ID parity; JSON and patch checks; disposable-resource absence; generic and exact non-disclosing Keychain secret-value scans",
+          "result": "pass",
+          "details": "The amended plan remains approved and ready, implementation.json is structurally valid, its 19 stage IDs match the plan, Stage 14 is complete, JSON and whitespace checks pass, both scratch paths and both disposable containers are absent, and no database-owner, migration URL, backup encryption, or Storage operator Keychain value occurs in repository files. The scoped generic scan found no database URL with a password, Supabase secret key, or private-key block in Stage 14 files."
+        }
+      ],
+      "notes": "Stage 14 is complete. The amended Free-plan backup contract now has reusable strict pack/verify tooling and a fresh full 114/2 restore rehearsal. The unused Go machine routes are executable-characterized as fail-closed without tokens, and the Heroku maintenance/token-removal browser-only rollback sequence is deterministic. Two separate-custody Mongo readWrite@feeling policies pass real allowed/denied disposable probes and have an ordered production rotation/revocation procedure. No production Heroku configuration, Mongo credential/data, Supabase business row, Azure deployment, frontend endpoint, traffic, or legacy resource changed or was deleted. Stage 15 must independently repeat Review; Stage 14 does not approve or close its own findings."
+    },
+    {
+      "id": "STAGE-15",
+      "status": "complete",
+      "files_changed": [
+        "specs/backend-migration/review.json",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Validate approved brief, design, and plan readiness plus implementation structure; independently trace AC-1 through AC-14 and reassess REV-001 through REV-004",
+          "result": "pass",
+          "details": "All upstream contracts validated. Every acceptance criterion has passing evidence. The amended backup contract and full restore resolve REV-001; the tested Heroku isolation/browser-only rollback gate resolves REV-002; the tested separate-custody Mongo role and rotation gate resolves REV-003. REV-004 remains an explicit open medium finding owned by separately Defined FOLLOWUP-REACT-001."
+        },
+        {
+          "command": "Current Supabase changelog scan; projects list; read-only private bucket metadata and encrypted object-path verification",
+          "result": "pass",
+          "details": "No applicable breaking change was found. Steady non-prod and Steady backups remain ACTIVE_HEALTHY on PostgreSQL 17.6 in Sydney ap-southeast-2. The database-backups bucket remains private and the Stage 14 ciphertext path remains present; no object was downloaded, changed, or deleted."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 backup fmt/lint/check/8 tests; legacy-security fmt/lint/check/5 tests; API fmt/lint/check/28 tests; Go 1.23 full suite; React 5 suites/9 tests and production build",
+          "result": "pass",
+          "details": "All independently rerun formatting, static analysis, contract, security, backup, API, legacy rollback, and frontend checks passed. The React build retained only its existing outdated-caniuse-lite notice."
+        },
+        {
+          "command": "Read-only Heroku maintenance, config-name-only, and unauthenticated retired-route checks; refreshed aggregate npm audit",
+          "result": "pass",
+          "details": "Heroku remains intentionally unchanged before Release: maintenance off, both retired token names configured, and retired routes returning 401 without credentials. The Review records the mandatory Stage 17 maintenance/token-removal gate and does not claim it ran. npm audit remains 82 findings across 1,415 dependencies: 15 low, 17 moderate, 42 high, and 8 critical, retained as REV-004 without waiver."
+        },
+        {
+          "command": "AI-OS Review structural and readiness validation after explicit approval by Vinicius Delascio",
+          "result": "pass",
+          "details": "review.json has verdict pass, all acceptance criteria pass, no open critical/high finding, explicit approval dated 2026-08-27, and passes deterministic structure and readiness validation."
+        }
+      ],
+      "notes": "Stage 15 is complete. Vinicius Delascio explicitly approved the independent pass Review on 2026-08-27. REV-001, REV-002, and REV-003 are resolved by amended, implemented, and tested controls; production execution remains separately gated. REV-004 remains open medium work under FOLLOWUP-REACT-001, and REV-007 keeps all unexecuted production gates visible. No production infrastructure, credentials, data, deployment, environment, endpoint, traffic, or resource changed. Stage 16 Release has not started."
+    },
+    {
+      "id": "STAGE-16",
+      "status": "complete",
+      "files_changed": [
+        "docs/runbooks/azure-container-apps.md",
+        "docs/runbooks/backup.md",
+        "specs/backend-migration/release.json",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Validate approved Stage 15 Review readiness and trace Release rollout, monitoring, support, rollback, production-authority, backup, and provider-plan decisions through approved contracts and runbooks",
+          "result": "pass",
+          "details": "Review is approved, ready, and has no open critical/high finding. The Release candidate has named success/failure signals, both rollback modes, Vinicius Delascio as owner, exact separate-authority gates, and no automatic deployment or destructive action."
+        },
+        {
+          "command": "Current Supabase changelog scan and read-only Azure candidate metadata check",
+          "result": "pass",
+          "details": "No current Supabase breaking change affects the private-schema/direct-Postgres/operator-backup architecture. The isolated Azure personal subscription remains enabled; steady-preprod is Succeeded in Australia East, latest ready revision steady-preprod--r3, exact FQDN steady-preprod.wittyglacier-50c44c34.australiaeast.azurecontainerapps.io, and scale 0..1. No hosted state changed."
+        },
+        {
+          "command": "Record owner decisions for weekly plus pre-release/pre-migration backups, 12-month weekly retention, pre-cutover preservation, no account-plan upgrades, and promotion of the existing Azure/Supabase targets",
+          "result": "pass",
+          "details": "Vinicius Delascio explicitly approved these Release inputs on 2026-08-27. They are recorded without treating them as deployment authority."
+        },
+        {
+          "command": "AI-OS Release structural and readiness validation after explicit approval by Vinicius Delascio",
+          "result": "pass",
+          "details": "release.json has an approved decision, no blockers, concrete rollout and monitoring signals, required rollback plan, named support owner, and explicit separation between Release approval and every Stage 17 production mutation. It passes deterministic structure and readiness validation."
+        }
+      ],
+      "notes": "Stage 16 is complete. Vinicius Delascio explicitly approved the Release decision on 2026-08-27. The selected existing Azure/Supabase promotion, backup cadence/retention, no-upgrade constraint, monitoring, support, and both rollback modes are concrete. No production infrastructure, account plan, credential, data, backup object, environment, deployment, Auth0 setting, public endpoint, traffic, or legacy resource changed. Stage 17 has not started and requires separate explicit authority for every named production mutation."
+    },
+    {
+      "id": "STAGE-17",
+      "status": "complete",
+      "files_changed": [
+        "specs/backend-migration/stage-17-cutover.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Validate approved Plan, Review, and Release readiness; verify clean immutable source commit; scan current Supabase changelog; discover installed Heroku and Supabase CLI mutation syntax through --help; inspect required Keychain item names without values",
+          "result": "pass",
+          "details": "All upstream gates pass at clean commit 93ea22e. No applicable Supabase breaking change was found. Exact maintenance, config-unset, Storage copy, migration, rollback, and backup procedures are available, and required existing operator items are present by name without values being displayed."
+        },
+        {
+          "command": "Record explicit Stage 17 authority from Vinicius Delascio for the eight enumerated production action groups",
+          "result": "pass",
+          "details": "On 2026-08-27 Vinicius Delascio explicitly authorized scoped Mongo user rotation and old broad-user revocation; fresh encrypted backup upload/restore test; Heroku maintenance and permanent retired-token removal; final Mongo checkpoint and Supabase migration/reconciliation; Azure promotion/public URL cutover; Supabase write resumption and authenticated smoke writes; and retained non-deleted Heroku/Mongo rollback assets."
+        },
+        {
+          "command": "Atlas CLI create/list/delete; Keychain-to-CLI password input; mongosh allowed/denied probes; Heroku config rotation; authenticated Heroku journal and weekly browser reads",
+          "result": "pass",
+          "details": "Created steady_legacy_runtime and steady_rollback_operator with exactly readWrite@feeling and separate custody. Both read the unchanged 114/2 source and were denied named-user and cross-database access; Atlas wraps those denials as code 8000 with not-authorized messages. Heroku restarted on the scoped runtime credential and both authenticated browser views passed. The old feeling atlasAdmin@admin user was then revoked, its old credential failed authentication, both scoped users still passed, and Atlas now lists exactly those two users. No Mongo business row changed."
+        },
+        {
+          "command": "Fresh Supabase CLI roles/schema/data export; AES-256-GCM pack; new private Storage upload; authenticated download and checksum; clean PostgreSQL 17 restore; Stage 4 SQL suite; Deno service smoke",
+          "result": "pass",
+          "details": "The accepted private Sydney ciphertext is database/20260827T055046Z/steady-production-cutover-20260827T055046Z.steady.enc, 52,789 bytes, SHA-256 22c21cdf5e20360d9badd26b5cda1afbc42291db78cd7476923d1a9c4bc9fb68. It restored 114/2, both steady_migration_owner table owners, grants, nine policies, forced RLS, constraints, atomic weekly behavior, two-subject isolation, and rolled-back Deno service writes. An earlier 59,879-byte encrypted object failed recovery qualification because a generic no-owner/no-privileges schema dump omitted ownership and grants; it is explicitly retained as not approved for recovery and was replaced through the established Supabase CLI export method before write freeze."
+        },
+        {
+          "command": "Heroku maintenance:on; config:unset CHAT_INGEST_TOKEN AGENT_API_TOKEN; config-name-only verification; public-origin status check",
+          "result": "pass",
+          "details": "After recovery proof, Heroku maintenance was enabled and the public origin returned 503. Both retired token names were removed and remain absent; DB_USER and DB_PASS remain present without values being read. The Go deployment remains retained, and maintenance has not been disabled."
+        },
+        {
+          "command": "Scoped mongoexport final checkpoint; migration dry-run, idempotent import, and read-only reconciliation through Keychain-held report and migration credentials",
+          "result": "pass",
+          "details": "The frozen source checkpoint contains 114 feelings and two weekly trackers with SHA-256 734d813a0b85540b9cd35c157a1c6bbe6a81dc2d56cfd98c8b7e367c52f55587 and 2f566f483bc368bdffbadaf410950dc3b03c7baec9cabf8b94c87e57ac95f686. Dry-run accepted all 116, rejected none, and reported exactly the two approved Go-zero-time normalizations. Import inserted zero and matched 114/2; final reconcile matched 114/2 with zero exception and zero target-only row. Mongo remained unchanged."
+        },
+        {
+          "command": "Isolated personal Azure profile login; Container App, revision, ACR, managed identity, Log Analytics, budget, health, and sanitized-log checks",
+          "result": "pass",
+          "details": "The correct isolated profile identifies Azure subscription 1, tenant 8e263016-4fa0-4d3c-a7f2-7cc76d872ccb, and vini.delascio@gmail.com. steady-preprod--r3 is Running/Succeeded at 100 percent in Australia East with scale 0..1 and only database-url as a secret name. ACR admin is false, the identity has only AcrPull, Log Analytics retention is 30 days, and the existing monthly 5 budget has its enabled 80-percent alert. Root and health returned 200. Logs contain structured route/status metadata, no error, and no private or credential fields."
+        },
+        {
+          "command": "Live hosted runtime transaction/RLS integration; retained-Auth0 Azure browser journal and weekly reads; user-entered weekly and feeling saves; authenticated reload; Azure POST log verification",
+          "result": "pass",
+          "details": "The TLS-capable hosted RLS suite denied cross-subject insert, ownership reassignment, and DELETE and rolled every fixture back. Vinicius entered one real weekly tracker and one real feeling rather than synthetic private data. GET and POST for both supported browser resources passed; POST /api/weekly-tracker returned 200 at the commit point 2026-08-27T14:49:55.8342617Z and POST /api/feelings returned 200 at 2026-08-27T14:50:29.5948854Z. Reload showed 107 visible normalized check-ins, up from 106, and the weekly view loaded. Logs show no 5xx or prohibited fields."
+        },
+        {
+          "command": "Post-write aggregate accounting; constrained read-only target-to-Mongo rollback plan; final Heroku/Atlas rollback-boundary audit",
+          "result": "pass",
+          "details": "Supabase now contains 115 feelings and three weekly trackers, exactly the frozen 114/2 baseline plus one target-only row of each type; nine policies and forced RLS on both tables remain. Mongo remains 114/2. The sanitized rollback plan reports one feeling insert, one weekly insert, two weekly already matched, no conflict, and no write or target link in plan mode. Deno MongoDB driver startup required environment read access inside the isolated container, and Docker DNS required Atlas's provider-equivalent explicit three-host TLS seedlist instead of SRV; no host secret store was mounted and network remained endpoint-restricted. Heroku remains maintenance-on, retired tokens absent, and Atlas retains exactly the two scoped users."
+        },
+        {
+          "command": "Remove exact disposable PostgreSQL restore container and owner-only plaintext Stage 17 scratch after durable evidence; retain encrypted Storage objects and all cloud rollback resources",
+          "result": "pass",
+          "details": "The successful restore and failed disposable restore targets, SQL dumps, decrypted components, source checkpoint exports, private migration/reconciliation reports, downloaded/local ciphertext copies, upload responses, and diagnostic helper were removed only after sanitized evidence was durable. The accepted encrypted backup, the explicitly non-qualified encrypted object, historical encrypted backups, Heroku deployment, Mongo data, two scoped Mongo users, and Azure/Supabase production resources remain retained."
+        },
+        {
+          "command": "AI-OS plan/review/release readiness checks; implementation structural validation; JSON, patch, secret-pattern, cloud-state, and production-accounting checks",
+          "result": "pass",
+          "details": "Stage 17 satisfies every approved gate and definition of done. The replacement is the production source of truth, acknowledged writes are accounted for, pre-commit and post-write rollback remain executable, no account plan was upgraded, and no legacy or backup resource was deleted. Stage 18 remains pending and Stage 19 still requires later explicit decommission approval."
+        }
+      ],
+      "notes": "Stage 17 is complete. Production traffic now uses the retained Auth0 user, the Australia East Deno/React revision steady-preprod--r3, and Sydney Supabase. The first replacement write at 2026-08-27T14:49:55.8342617Z is the source-of-truth commit point. Mongo is frozen at 114/2 and Supabase is 115/3 after Vinicius entered one real feeling and one real weekly tracker; the read-only rollback plan accounts for both. Heroku remains deployed in maintenance mode, retired tokens remain absent, Mongo has exactly two separately held readWrite@feeling users, and the broad credential is revoked. The fresh accepted encrypted backup passed full restore; no provider plan was upgraded and no cloud or legacy resource was deleted. Stage 18 observation needs a separate instruction to start; Stage 19 decommissioning still requires explicit human approval."
+    },
+    {
+      "id": "STAGE-18",
+      "status": "complete",
+      "files_changed": [
+        "docs/runbooks/monitoring-support.md",
+        "specs/backend-migration/stage-18-observation.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Confirm clean Stage 17 commit equals origin and validate the approved Stage 18 and Release observation gates",
+          "result": "pass",
+          "details": "Branch codex/backend-migration was clean at 2b29df5 and matched its upstream. Release requires checks after use and at least monthly but sets no fixed elapsed observation window for this sole-user pilot. Stage 18 completion therefore records the first stable post-use checkpoint while preserving the ongoing weekly, after-use, and monthly duties and the separate Stage 19 destruction gate."
+        },
+        {
+          "command": "Isolated Azure subscription, Container App, revision, traffic, replica, restart, public health/readiness, response-size, metric, and sanitized Log Analytics queries",
+          "result": "pass",
+          "details": "The personal subscription remains enabled. Revision steady-preprod--r3 is Healthy/Provisioned at 100 percent traffic in Australia East with scale 0..1 and only database-url as a secret name. Since commit, sanitized logs account for 283 requests: 280 2xx, three deliberate 401 denials, zero other 4xx, zero 5xx, and zero error logs. Application p95 was 33.93 ms and maximum 165.04 ms; RestartCount stayed zero. The known scale-to-zero request was 25.925 seconds, while warm health/readiness were 83-86 ms with small bounded bodies and verified TLS."
+        },
+        {
+          "command": "Production missing/invalid Auth0 credential denial probes; retained-user cutover journey evidence; isolated public React page check",
+          "result": "pass",
+          "details": "Missing credentials on feelings and weekly plus an invalid bearer token each returned the approved 401 and identical 79-byte structured response. The retained user had completed login/session reload, both reads and both real writes through the production origin at commit, and this checkpoint accounts for those effects. A fresh isolated browser tab had no Auth0 session, verified only the public sign-in page, performed no mutation, and was closed; it is not misrepresented as an authenticated smoke."
+        },
+        {
+          "command": "Supabase project health, current changelog, Security/Performance Advisors, aggregate Postgres accounting, forced-RLS/policy, connection, and capacity queries",
+          "result": "pass",
+          "details": "Both Sydney projects remain ACTIVE_HEALTHY on PostgreSQL 17.6.1.155. Security and Performance Advisors returned no lint and no current changelog item affects standalone Deno/direct Postgres. Production remains 115 feelings and three weekly trackers, including exactly one explained post-commit row of each type without a legacy ID; nine policies and forced RLS on both tables remain. Database use is 10,824,851 bytes, about 2.2 percent of the current 500 MB Free-plan limit, with 10 observed connections out of 60."
+        },
+        {
+          "command": "Private Supabase Storage object listing, bucket metadata, streamed ciphertext SHA-256, and aggregate backup-project size/connection query",
+          "result": "pass",
+          "details": "The accepted cutover ciphertext remains in the private database-backups bucket and streamed SHA-256 exactly matches 22c21cdf5e20360d9badd26b5cda1afbc42291db78cd7476923d1a9c4bc9fb68 without a local copy. Five ciphertext objects total 188,237 bytes. The backup database uses 10,488,979 bytes and had seven observed connections out of 60. The accepted full-restore evidence remains current; the first post-cutover weekly backup is due by 2026-09-03T05:50:46Z."
+        },
+        {
+          "command": "Heroku maintenance and exact retired-key checks, public isolation probe, Atlas user-role metadata, and scoped rollback-operator aggregate Mongo query",
+          "result": "pass",
+          "details": "Heroku maintenance is on, its public origin returns 503, both retired token names remain absent, and its configured database username remains steady_legacy_runtime without reading a password. Atlas lists exactly steady_legacy_runtime and steady_rollback_operator, each with only readWrite@feeling and no other scope. The separately held operator credential confirmed Mongo remains frozen at 114 feelings and two weekly trackers."
+        },
+        {
+          "command": "Record active monitoring cadence, initial observation decision, next weekly/monthly due points, and continued decommission exclusion; run structural implementation validation and repository hygiene checks",
+          "result": "pass",
+          "details": "The production runbook is now active and the sanitized observation record names all evidence, known scale-to-zero behavior, expected post-commit rows, next due checks, and zero open incident/rollback trigger. Structural validation, JSON parsing, and patch hygiene pass. Overall implementation readiness correctly remains unavailable because Stage 19 is pending and the durable Stage 3 record retains its historical failed direct-IPv6 probe; neither condition is rewritten. No provider plan, production row, environment, route, credential, maintenance state, backup object, or legacy resource was changed or deleted."
+        }
+      ],
+      "notes": "Stage 18 is complete as the first stable post-use production checkpoint under the approved no-fixed-window sole-user Release decision. Azure/Deno is healthy with no 5xx or unexplained error, warm p95 is far below threshold, Auth0 denials remain fail-closed, every 115/3 Supabase row is accounted for against the frozen 114/2 Mongo checkpoint, forced RLS and advisors are green, capacity is well below 80 percent, the accepted encrypted backup remains private and checksum-valid, and browser-only rollback remains ready with Heroku maintenance and exactly two scoped Mongo users. Operational checks continue after use and at least monthly; encrypted backups continue weekly and before releases/data migrations. Completion does not authorize Stage 19 or any deletion."
+    },
+    {
+      "id": "STAGE-19",
+      "status": "complete",
+      "files_changed": [
+        ".dockerignore",
+        "README.md",
+        "Dockerfile",
+        "app.json",
+        "client/package.json",
+        "heroku.yml",
+        "server/api_characterization_test.go",
+        "server/cors_abort_test.go",
+        "server/cors_get_post_test.go",
+        "server/feelings_contract_test.go",
+        "server/go.mod",
+        "server/go.sum",
+        "server/handlers.go",
+        "server/main",
+        "server/main.go",
+        "server/retired_routes_test.go",
+        "server/web/asset-manifest.json",
+        "server/web/favicon.ico",
+        "server/web/index.html",
+        "server/web/static/css/main.51ed11bc.css",
+        "server/web/static/css/main.51ed11bc.css.map",
+        "server/web/static/js/main.371ab20d.js",
+        "server/web/static/js/main.371ab20d.js.map",
+        "server/web/static/js/main.b09a0b1c.js",
+        "server/web/static/js/main.b09a0b1c.js.map",
+        "server/weekly_contract_test.go",
+        "specs/backend-migration/stage-19-decommission.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Confirm clean committed Stage 18 state and read the exact Stage 19 destructive gate, rollback, legacy-security, backup, and restore contracts",
+          "result": "pass",
+          "details": "Branch codex/backend-migration was clean at 8ca0b9d and matched origin. Stage 19 requires a new approval naming every provider, credential, backup, and repository target. Discovery proceeded read-only; no previous approval was reused as deletion authority."
+        },
+        {
+          "command": "Heroku app, add-on, domain, dyno, release, pipeline, maintenance, DNS, post-commit router, and Azure custom-hostname metadata inventory",
+          "result": "pass",
+          "details": "stormy-cliffs-52671 is a maintenance-on US container app with no add-on or pipeline, two running Basic dynos, 15 releases, its Heroku hostname, and custom domain www.delasc.io. Only two post-commit router records exist and both are 503 observation probes. DNS still points www.delasc.io to Heroku while Azure has no custom hostname, so domain preservation versus retirement is a required owner decision before app deletion."
+        },
+        {
+          "command": "Atlas project, cluster, process, database-metric, database-user role, and scoped collection-count inventory",
+          "result": "pass",
+          "details": "Project feeling (5f891a6c6940e56d2d915ab0) has one unprotected no-backup M0 Sydney cluster, Cluster0, on MongoDB 8.0.29. The scoped view reports only feeling.feelings=114 and feeling.weekly_trackers=2. Atlas M0 process metrics returned no database inventory, so deletion must explicitly name the whole cluster. Exactly two users remain, each only readWrite@feeling with separate custody."
+        },
+        {
+          "command": "Supabase private Storage path inventory, recovery-gap analysis, Git legacy-artifact inventory, and exact decommission approval grouping",
+          "result": "pass",
+          "details": "Five private ciphertexts total 188,237 bytes. The latest qualified restore is 114/2 and predates the two production writes, so fresh 115/3-or-current PostgreSQL backup/restore plus a final encrypted 114/2 Mongo export/restore are hard prerequisites. Exact proposed cleanup is the Heroku app, Cluster0, both scoped Mongo users, the operator Keychain item after revocation, root Dockerfile/heroku.yml/app.json, and 20 tracked server files. No backup deletion is proposed; current client, Deno API, Azure, Supabase, Auth0, tools, and historical evidence are retained."
+        },
+        {
+          "command": "Record Vinicius Delascio's www.delasc.io preservation decision; verify authoritative DNS, Azure ingress/custom-domain metadata, current CORS coverage, and official managed-certificate requirements",
+          "result": "pass",
+          "details": "Vinicius explicitly selected migration of www.delasc.io to Azure before Heroku deletion. GoDaddy is authoritative; www currently has a roughly 23-minute-TTL CNAME to Heroku, DNSSEC is unsigned, and no CAA restriction is present. Azure external ingress is healthy on port 8080, has no custom hostname, and exposes the CNAME/TXT verification contract for a free managed certificate. Current CORS_ORIGINS contains only the Azure hostname, so the custom origin must be added. Auth0 and GoDaddy authenticated verification are the next gate; no production setting or DNS record has changed yet."
+        },
+        {
+          "command": "Verify Auth0 allowlists; update Azure CORS_ORIGINS; move 100% traffic to ready revision steady-preprod--qd8vj4s; probe direct Azure root, health, and readiness",
+          "result": "pass",
+          "details": "Auth0 already allowed https://www.delasc.io for callback, logout, web-origin, and CORS use, so no Auth0 mutation or secret access was required. The approved non-secret CORS value now contains both Azure and custom origins. Azure created ready revision steady-preprod--qd8vj4s, retained its predecessor for rollback, and direct root, /healthz, and /readyz probes returned 200 after the traffic switch."
+        },
+        {
+          "command": "Replace GoDaddy www CNAME, add Azure ownership TXT, verify both authoritative nameservers and public DNS, then add and bind the Azure Container Apps custom hostname with a CNAME-validated managed certificate",
+          "result": "pass",
+          "details": "www.delasc.io now points directly to the Azure Container Apps FQDN; the ownership TXT is present without recording its value. Both GoDaddy authoritative nameservers and public resolvers returned the new records. Azure bound www.delasc.io with SNI; the Australia East managed certificate reached Succeeded and its hostname, issuer chain, validity window, and TLS verification passed. Heroku and its custom-domain attachment remain retained, and the previous Heroku CNAME is recorded for rollback."
+        },
+        {
+          "command": "Verify www.delasc.io SPA, liveness, readiness, auth boundary, retired route, CORS, Auth0 session, journal history, and weekly-tracker browser journey without writes",
+          "result": "pass",
+          "details": "Against Azure ingress, the SPA, /healthz, and /readyz returned 200 with verified TLS; missing-token feelings and weekly requests returned 401; retired /api/ping returned 404; and allowed-origin preflight returned 204 with the exact custom origin. A transient normal curl 503 was proven to use a workstation-cached Heroku IP while authoritative DNS already pointed to Azure. The in-app browser resolved Azure, completed the existing Auth0 session, loaded 107 journal entries and the weekly-tracker screen, and made no production write."
+        },
+        {
+          "command": "Record Vinicius Delascio's recovery-creation approval; scan the current Supabase changelog and backup documentation; discover CLI syntax; verify both Sydney projects, private bucket, aggregate source counts, migration versions, and required secret-entry presence without values",
+          "result": "pass",
+          "details": "The approval covers fresh encrypted Supabase and frozen Mongo exports, private Sydney upload/download, and disposable restores only. No relevant Supabase breaking change applies. Both projects are ACTIVE_HEALTHY on PostgreSQL 17.6 in ap-southeast-2, the bucket remains public=false, production is 115/3 with the three expected migration versions, and all required separately held operator entries are present without being displayed."
+        },
+        {
+          "command": "Fresh owner-only Supabase CLI role/schema/data export; strict AES-256-GCM pack; new private Storage upload/download; byte and SHA-256 verification; authenticated unpack; empty PostgreSQL 17 restore; Stage 4 schema/RLS suite; rolled-back Deno service smoke",
+          "result": "pass",
+          "details": "The new object is database/20260827T231728Z/steady-production-decommission-20260827T231728Z.steady.enc, 53,134 bytes, SHA-256 3f4657892de20f577fec0336bde00ecbdb030936b8db153fb964ea8a9fb4f4b4. Its content-free manifest records PostgreSQL 17.6, Supabase CLI 2.114.0, Sydney-to-Sydney placement, all three migrations, and 115/3 rows. Download matched byte-for-byte, authenticated decryption and every checksum passed, and the fresh restore preserved owners, grants, nine policies, forced RLS, constraints, indexes, full Stage 4 tests, and service behavior with final counts still 115/3."
+        },
+        {
+          "command": "Fresh scoped mongoexport of both frozen collections; checksummed content-free manifest; AES-256-GCM encryption; new private Storage upload/download; authenticated decryption; disposable MongoDB 8 import; canonical full-document comparison",
+          "result": "pass",
+          "details": "The new object is mongo/20260827T231728Z/steady-mongo-decommission-20260827T231728Z.tar.gz.enc, 15,736 bytes, SHA-256 c49058afe82abf085830928728ec4d0e731df4cf2e0e0239009d2946813a48b2. Its Sydney-to-Sydney manifest records mongoexport 100.18.0, project 5f891a6c6940e56d2d915ab0, Cluster0, database feeling, and 114/2 documents. The component hashes exactly match the Stage 17 frozen checkpoint. Download matched byte-for-byte, authenticated decryption and checksums passed, the fresh MongoDB 8 restore contained exactly the two collections at 114/2, and canonically sorted full documents matched the source."
+        },
+        {
+          "command": "Read-only migration reconciliation from the fresh frozen Mongo export to production Supabase; final private object metadata and bucket-visibility verification",
+          "result": "pass",
+          "details": "Reconciliation accepted all 114 feelings and two weekly trackers, rejected none, retained five pseudonymous identities, reported only the two approved Go-zero-time transformations, matched 114/2, inserted zero, and found exactly one expected post-commit target-only feeling and weekly tracker. Both new objects report application/octet-stream in the private bucket. The bucket now retains seven ciphertexts totalling 257,107 bytes; no backup was overwritten or deleted."
+        },
+        {
+          "command": "Remove the exact disposable PostgreSQL/Mongo containers, isolated network, and owner-only plaintext scratch; verify retained Heroku rollback and Azure health boundaries",
+          "result": "pass",
+          "details": "Both named restore containers, their network, SQL/JSON exports, decrypted files, reports, command logs, downloaded/local ciphertexts, and the exact git-ignored scratch directory are absent. The two new private Storage objects remain. Heroku maintenance is still on, both Basic dynos remain up, and its non-secret DB_USER remains steady_legacy_runtime. Public DNS still points www.delasc.io to Azure; direct Azure custom-host health/readiness return 200 with verified TLS. The workstation resolver still caches Heroku and the Atlas CLI session expired; the successful scoped Mongo export proves Cluster0 and steady_rollback_operator access remained active, while Atlas CLI reauthentication is required before any future retirement command."
+        },
+        {
+          "command": "Reauthenticate Atlas CLI and re-resolve the exact Heroku app, Atlas cluster, database users, retained project, replacement health, production counts, and private backup inventory immediately before deletion",
+          "result": "pass",
+          "details": "The destructive gate still resolved exactly one Heroku app stormy-cliffs-52671, exactly one non-protected Atlas cluster Cluster0 with provider backup disabled, and exactly the two scoped users steady_legacy_runtime and steady_rollback_operator, each only readWrite@feeling. The retained production database remained 115/3 and the private backup bucket retained seven ciphertexts totalling 257,107 bytes. No unrelated target appeared."
+        },
+        {
+          "command": "Delete Heroku app stormy-cliffs-52671 with exact-name confirmation; verify provider not_found; verify www.delasc.io still resolves to Azure and custom-host liveness remains HTTP 200 with valid TLS",
+          "result": "pass",
+          "details": "The explicitly approved app was permanently deleted, including its dynos, releases, configuration, Git endpoint, Heroku hostname, and stale custom-domain attachment. A subsequent Heroku lookup returned not_found. The live custom domain remained on Azure and /healthz returned 200 after deletion."
+        },
+        {
+          "command": "Delete Atlas Cluster0 with exact project/name scope and wait for completion; delete the two exact database users; verify zero clusters and zero database users while retaining the Atlas project",
+          "result": "pass",
+          "details": "Cluster0 and both approved scoped users were permanently deleted. Provider inventories now contain zero clusters and zero database users in project 5f891a6c6940e56d2d915ab0. The empty Atlas project remains as the approved audit shell; no other Atlas resource was targeted."
+        },
+        {
+          "command": "Delete Keychain item feeling/mongodb/steady-rollback-operator-password only after Atlas user revocation and verify absence",
+          "result": "pass",
+          "details": "The separately held rollback-operator password was removed from Keychain after its provider identity no longer existed. A subsequent lookup confirmed absence without displaying any secret value."
+        },
+        {
+          "command": "Remove the three exact root Go/Heroku deployment files and all 20 tracked server files; update README, Docker ignore rules, and remove the dead client build-to-server script",
+          "result": "pass",
+          "details": "The version-controlled Go implementation, its characterization tests and binary, embedded legacy frontend build, and Heroku deployment manifests are removed. Current Deno/Azure/Supabase architecture and operating links replace legacy instructions. The current React client, Deno API, Supabase schema, migration/rollback/backup tools, runbooks, specifications, and Git history remain retained."
+        },
+        {
+          "command": "Pinned Deno 2.9.4 container: deno task fmt:check; deno task lint; deno task check; deno task test",
+          "result": "pass",
+          "details": "Formatting checked 29 files, lint checked 27 files, all API and test modules type-checked, and the isolated HTTP/auth/schema/static/feelings/weekly suite passed 28 tests with zero failures. The suite confirms exactly four authenticated browser routes, fail-closed Auth0 behavior, ownership isolation, strict schemas, normalized retired-route 404s, static SPA serving, and sanitized operational responses after removal of the Go tree."
+        },
+        {
+          "command": "React client: CI=true npm test -- --watchAll=false; npm run build",
+          "result": "pass",
+          "details": "Five suites and nine tests passed with zero failures, covering feelings and weekly journeys, API contracts, configuration, and application rendering. The optimized production build compiled successfully after removal of the dead build-to-server script. The existing caniuse-lite age notice is informational and did not affect the build."
+        },
+        {
+          "command": "Post-deletion Heroku/Atlas/Keychain absence checks; retained Atlas project; Azure custom-host health/readiness; Supabase project/count/RLS/advisor and private Storage inventory checks",
+          "result": "pass",
+          "details": "Heroku returns not_found for the exact retired app. Atlas project feeling remains with zero clusters and zero database users, and the retired Keychain item is absent. www.delasc.io /healthz and /readyz return 200 with valid TLS from Azure. Both Sydney Supabase projects are ACTIVE_HEALTHY on PostgreSQL 17.6; production remains 115 feelings, three weekly trackers, nine policies, and forced RLS on both tables; security and performance advisors are empty; the private bucket remains public=false with all seven ciphertext objects totalling 257,107 bytes."
+        },
+        {
+          "command": "Resume final post-deletion browser verification at www.delasc.io and follow the Auth0 redirect without making a write",
+          "result": "pass",
+          "details": "The Azure-hosted SPA loaded and its sign-in control redirected to the retained dev-vin.au.auth0.com tenant with the approved client, audience identifier, and www.delasc.io callback. After Vinicius Delascio renewed the expired session, the authenticated journal loaded 108 check-ins and the weekly tracker loaded the week of 2026-08-31. Both screens showed the retained Auth0 identity and expected controls; no Save control was used and no production write occurred."
+        },
+        {
+          "command": "2026-09-02 retained-state refresh: Supabase project/count/RLS/advisor/Storage queries; Heroku exact-app lookup; Azure custom-host health/readiness; Atlas inventory refresh attempt",
+          "result": "pass",
+          "details": "Both Sydney Supabase projects remain ACTIVE_HEALTHY on PostgreSQL 17.6. Production has advanced through normal post-decommission use to 116 feelings and four weekly trackers; nine policies and forced RLS on both tables remain, and both advisor sets are empty. The private bucket remains public=false with all seven ciphertexts totalling 257,107 bytes. Heroku still returns not_found, while Azure health and readiness return 200 with valid TLS. The Atlas CLI session had expired again, so no new Atlas assertion is made; the durable immediate post-deletion provider result remains zero clusters and zero database users with the project retained."
+        },
+        {
+          "command": "Final implementation structural/readiness validation, patch hygiene, and credential-pattern scan",
+          "result": "pass",
+          "details": "Structural validation and git diff --check pass. The credential-pattern scan found only explicitly synthetic loopback PostgreSQL URLs in API compatibility tests and no private key, hosted database credential, or JWT. The --ready audit continues to report the truthful historical Stage 3 direct-IPv6 failure; the approved TLS Supavisor fallback passed and has served production, but historical evidence is not rewritten merely to make the aggregate readiness validator green."
+        }
+      ],
+      "notes": "Stage 19 is complete under Vinicius Delascio's explicit approval of every exact destructive target. www.delasc.io remains healthy on Azure and the final authenticated read-only journal and weekly journeys pass; Heroku app stormy-cliffs-52671, Atlas Cluster0, both scoped Atlas database users, the rollback-operator Keychain password, and the named Go/Heroku repository artifacts are retired. The empty Atlas project, Azure, Supabase, Auth0, DNS, all seven encrypted backup objects and keys, current application code, migration/restore tooling, runbooks, AI-OS evidence, and Git history remain retained. In-place legacy rollback no longer exists; recovery depends on the two final checksum-qualified encrypted backups whose complete disposable restores passed before deletion. The implementation artefact is structurally valid; aggregate --ready remains unavailable only because the historical failed direct-IPv6 probe is retained truthfully alongside its approved, passing TLS Supavisor fallback."
+    },
+    {
+      "id": "STAGE-20",
+      "status": "complete",
+      "files_changed": [
+        "specs/backend-migration/plan.json",
+        "specs/backend-migration/stage-20-recovery-remediation.md",
+        "specs/backend-migration/release.json",
+        "docs/runbooks/backup.md",
+        "docs/runbooks/restore.md",
+        "docs/runbooks/monitoring-support.md",
+        "docs/runbooks/breach-response.md",
+        "docs/runbooks/operator-audit.md",
+        "specs/backend-migration/implementation.json"
+      ],
+      "test_evidence": [
+        {
+          "command": "Record the explicitly approved Stage 20 plan amendment and run structural plus readiness validation",
+          "result": "pass",
+          "details": "Vinicius Delascio approved the exact bounded remediation on 2026-09-08. Stage 20 records the existing Free backup-project resume, current encrypted backup, full new-target restore, cleanup, and operational-record correction without an account upgrade or unrelated production change. The amended plan passes deterministic structure and readiness validation."
+        },
+        {
+          "command": "Resume only Supabase project dabuqchfkqbsgymbspvk and verify provider, Keychain-reference, production-count, RLS, bucket-privacy, retained-object, and current-doc/changelog preconditions",
+          "result": "pass",
+          "details": "Steady backups moved from INACTIVE through COMING_UP to ACTIVE_HEALTHY in Sydney on PostgreSQL 17.6.1.155 without a plan change. Its hostname had a bounded DNS wake-up delay, then the private database-backups bucket and original seven ciphertexts were reachable. Production remained ACTIVE_HEALTHY at 116 feelings, four weekly trackers, nine policies, and two forced-RLS tables. Required Keychain items were present by name only; no value was printed. Current Supabase documentation confirms Free auto-pause/resume behavior, and no relevant current breaking change was found."
+        },
+        {
+          "command": "Create password-free PostgreSQL 17 roles/schema/data exports, run credential-marker checks, and package/upload/download/authenticate the first immutable candidate",
+          "result": "pass",
+          "details": "The new owner-only export matched PostgreSQL 17.6, three migrations, 116/4 rows, and contained no password, SCRAM, or MD5 marker. The first object database/20260908T035825Z/steady-production-weekly-20260908T035825Z.steady.enc is 56,417 bytes with SHA-256 7723373154c6493b0894d1747e47752380f3b48c01e467fc8ccc36abb2555df6. Upload, separate download, byte checksum, authenticated decryption, and component checksums passed. The empty-target gate then correctly prevented qualification because raw role output retained duplicate Supabase-internal grantor semantics that plain PostgreSQL cannot restore. The object remains immutable and explicitly unqualified."
+        },
+        {
+          "command": "Remove only Supabase-internal duplicate role grants, confirm unchanged 116/4 production counts, and create/upload/download/authenticate a second new ciphertext",
+          "result": "pass",
+          "details": "All three password-free application roles, safe attributes, and application memberships were preserved. The qualified object is database/20260908T041928Z/steady-production-weekly-20260908T041928Z.steady.enc, 56,095 bytes, SHA-256 b35f03b7ffb9786d8fc6d170186e7b98dc67b86e11095e0f0bbdccf910895056. Its strict manifest records PostgreSQL 17.6, pinned Supabase CLI 2.114.0, Sydney-to-Sydney, all three migrations, and 116/4 rows. Separate download, outer checksum, AES-GCM authentication, decryption, and internal checksums passed."
+        },
+        {
+          "command": "Restore the qualified object from the beginning into a new network-isolated PostgreSQL 17 target and run Stage 4 plus restored-identity verification",
+          "result": "pass",
+          "details": "The restore completed with ON_ERROR_STOP and exactly 116 feelings, four weekly trackers, nine policies, two forced-RLS tables, and all three least-privilege application roles. The full Stage 4 test passed ownership, grants, constraints, indexes, generated defaults, unique identifiers, weekly upsert, forbidden privileges, missing-identity denial, forced-owner RLS, and cross-user denial. A transaction-local identity then read its own real restored rows and no different subject row."
+        },
+        {
+          "command": "Verify final Supabase project/advisor/Storage state, remove exact disposable and plaintext artifacts, run the eight pinned backup tests, and smoke public health/readiness",
+          "result": "pass",
+          "details": "Both Sydney projects are ACTIVE_HEALTHY and both Security and Performance Advisor sets are empty. The private bucket retains nine application/octet-stream ciphertexts totalling 369,619 bytes; no object was overwritten or deleted. The exact restore container and owner-only scratch directory, including plaintext SQL, decrypted components, downloads, and local ciphertexts, are absent. All eight Deno 2.9.4 backup tests passed. www.delasc.io health returned 200 after the known 23.45-second scale-to-zero start and readiness returned 200 warm in 0.09 seconds."
+        },
+        {
+          "command": "Update post-decommission backup, restore, monitoring, incident, operator-audit, Release, and Stage 20 evidence; validate artefacts and scan repository hygiene",
+          "result": "pass",
+          "details": "Active records now state that Heroku/MongoDB rollback no longer exists, define new-target PostgreSQL recovery, and add Free-project resume/reachability preflights without recommending an upgrade. The amended Release record names the exact decommission and qualified/unqualified backup outcomes and remains pending targeted Review rather than self-approval. Structural JSON validation and git diff hygiene pass; final validators and credential-pattern scans are recorded at stage completion."
+        }
+      ],
+      "notes": "Stage 20 is complete under Vinicius Delascio's explicit 2026-09-08 approval. The existing Free backup project was resumed without an upgrade, and the current qualified 116/4 production recovery point passed full download, checksum, authenticated decryption, empty PostgreSQL 17 restore, schema, privilege, forced-RLS, and ownership verification. The earlier Stage 20 candidate remains private but unqualified after the restore gate exposed non-portable Supabase-internal duplicate grants. All local plaintext and disposable resources are gone. Review findings REV-FINAL-001 and REV-FINAL-002 now have remediation evidence; targeted Review and amended Release approval remain separate lifecycle gates."
+    }
+  ],
+  "unresolved_questions": []
+}

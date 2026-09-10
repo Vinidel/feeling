@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
-import TitleComponent from './components/TitleComponent';
 import FeelingComponent from './components/FeelingComponent';
 import WeeklyTrackerComponent from './components/WeeklyTrackerComponent';
 import LoginComponent from "./components/LoginComponent";
@@ -32,7 +31,6 @@ const App = () => {
 
   return (
     <div className="app-shell">
-      <TitleComponent />
       <div className="app-gradient" />
       <div className="app-noise" />
       <div className="app-inner">

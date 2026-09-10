@@ -1,0 +1,573 @@
+{
+  "work_id": "backend-migration",
+  "source_design": "specs/backend-migration/design.json",
+  "stages": [
+    {
+      "id": "STAGE-01",
+      "sequence": 1,
+      "title": "Characterize the existing Go API and React contract",
+      "depends_on": [],
+      "targets": [
+        "server/handlers.go and server/main.go as the unchanged system under test",
+        "server/*_test.go characterization coverage",
+        "tests/contract/ reusable black-box HTTP fixtures and assertions",
+        "client/src API call sites, payloads, Auth0 flow, and same-origin/local configuration",
+        "legacy route/configuration inventory and sanitized caller-evidence record"
+      ],
+      "acceptance_criteria": ["AC-6"],
+      "tests": [
+        "Run the current Go test suite before adding tests and retain its result as baseline evidence.",
+        "Exercise GET/POST /api/feelings and GET/POST /api/weekly-tracker against the Go service for successful, empty, invalid, missing-token, expired-token, mismatched-user, and cross-user cases using synthetic users and non-private fixtures.",
+        "Capture status, headers, JSON shape, field representation, ordering, upsert behavior, and write side effects in reusable black-box assertions; label approved normalization differences separately from behavior that must remain compatible.",
+        "Exercise allowed/disallowed CORS preflight and retired or unmatched routes, including /api/ping, without asserting accidental quirks as target requirements.",
+        "Trace every React request and Auth0 token/header dependency to the characterized contract and record sanitized evidence that the former OpenClaw/chat/agent routes have no repository caller or active production caller."
+      ],
+      "definition_of_done": [
+        "The existing Go implementation has not been behaviorally changed.",
+        "A deterministic characterization suite can run against a configurable base URL and distinguishes preserved behavior from approved normalization.",
+        "The four supported routes and all React request shapes are covered, including two-user isolation scenarios.",
+        "Route retirement evidence is recorded without tokens, subjects, notes, or other private values; contrary evidence stops retirement and returns the work to Define.",
+        "Baseline test commands and results are ready to be recorded as implementation evidence."
+      ]
+    },
+    {
+      "id": "STAGE-02",
+      "sequence": 2,
+      "title": "Establish the pinned standalone Deno foundation",
+      "depends_on": ["STAGE-01"],
+      "targets": [
+        "api/ standalone Deno TypeScript service skeleton",
+        "deno.json and deno.lock",
+        "OCI container definition and reproducible build inputs",
+        "Deno dependency and permission compatibility record"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Pin a stable Deno 2 container/runtime version, run deno check and the selected test runner, and verify lockfile integrity in a clean build.",
+        "Spike the selected HTTP, strict-schema, Auth0/JWKS, PostgreSQL, logging, and test dependencies under Deno without implementing business routes.",
+        "Build and start the OCI image with only documented filesystem, network, and environment permissions; verify an unprivileged health endpoint and graceful shutdown.",
+        "Verify production dependencies do not require unsafe lifecycle scripts, unsupported native addons, or materially broader permissions than the approved design."
+      ],
+      "definition_of_done": [
+        "Concrete Deno-compatible libraries and build commands are documented and locked.",
+        "The service starts reproducibly in an OCI container and emits sanitized structured startup/health logs.",
+        "No feelings, weekly, Data API, Edge Function, Storage, job, or operator behavior has been introduced.",
+        "Any failed compatibility spike returns the runtime or dependency choice to Design rather than adding a hidden workaround."
+      ]
+    },
+    {
+      "id": "STAGE-03",
+      "sequence": 3,
+      "title": "Provision an authorized non-production Supabase target",
+      "depends_on": ["STAGE-02"],
+      "targets": [
+        "Supabase non-production project in Sydney ap-southeast-2",
+        "supabase/ local configuration and versioned migration workspace",
+        "managed secret references for migration-owner and runtime database connections",
+        "non-production backup, restore, audit, and Data API exposure settings record"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Before creating cloud infrastructure, record the separate explicit human authorization required by AGENTS.md; plan approval alone is insufficient.",
+        "Verify the project reports Sydney ap-southeast-2 and record the chosen plan's backup behavior; for Free, document the approved manual backup/restore process and require an Australian encrypted destination before loading representative data.",
+        "Verify the preferred direct TLS migration path when the test network supports the project's IPv6 endpoint; otherwise verify the approved TLS Supavisor session fallback from the IPv4-only environment. Verify the candidate pooled/runtime connection mode without printing credentials.",
+        "Verify the application schema is absent from the Data API exposed-schema list and that no browser or service-role secret is introduced.",
+        "Run the current Supabase CLI help/version discovery and scan the current Supabase changelog for relevant breaking changes before locking provisioning commands."
+      ],
+      "definition_of_done": [
+        "A separately authorized, empty, non-production Sydney project is available and identified only by non-secret configuration references.",
+        "Managed backup availability or absence, the approved manual fallback where needed, restore access, provider audit controls, and operator access are documented without secret values.",
+        "Migration and runtime connection choices are verified against the selected container network; the TLS session fallback is used where direct IPv6 is unavailable, and prepared statements are disabled for transaction-pooled runtime traffic.",
+        "No production infrastructure, data, environment, endpoint, or traffic has changed."
+      ]
+    },
+    {
+      "id": "STAGE-04",
+      "sequence": 4,
+      "title": "Create the private Postgres schema, roles, constraints, and RLS",
+      "depends_on": ["STAGE-03"],
+      "targets": [
+        "supabase/migrations/ private feelings and weekly-tracker schema history",
+        "least-privilege migration-owner and runtime roles/grants",
+        "forced RLS policies using transaction-local app.auth0_sub",
+        "database constraint, index, and policy tests"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Apply all migrations to an empty local/test database, inspect migration history, roll back where defined, and reapply from zero.",
+        "Assert feelings types, defaults, status constraint, legacy ID uniqueness, and composite (user_id, created_at desc, id desc) index.",
+        "Assert weekly mood/version constraints, UNIQUE(user_id, week_of), timestamp behavior, and atomic INSERT ON CONFLICT update behavior.",
+        "With two synthetic Auth0 subjects, test SELECT/INSERT and weekly UPDATE USING/WITH CHECK policies, missing transaction identity, ownership reassignment, DELETE denial, and absence of BYPASSRLS/table ownership for the runtime role.",
+        "Verify the private schema is not Data API exposed, anon/authenticated/service-role grants are not used by the application, RLS is forced, and Supabase database/security advisors report no unresolved finding relevant to the schema."
+      ],
+      "definition_of_done": [
+        "The schema matches DATA-001 through DATA-005 and can be reproduced solely from version-controlled migrations.",
+        "Database tests prove durable constraints and two-subject row isolation independently of application filters.",
+        "The runtime role has only required table operations and no DELETE, owner, BYPASSRLS, or service-role capability.",
+        "No production database migration has been applied."
+      ]
+    },
+    {
+      "id": "STAGE-05",
+      "sequence": 5,
+      "title": "Build and validate the idempotent data migration path",
+      "depends_on": ["STAGE-04"],
+      "targets": [
+        "tools/migrate/ standalone Deno TypeScript Mongo-to-Postgres migration CLI",
+        "synthetic and representative non-production MongoDB export fixtures",
+        "sanitized reconciliation and exception-manifest formats",
+        "target-to-Mongo rollback reconciliation tool and fixtures"
+      ],
+      "acceptance_criteria": ["AC-10"],
+      "tests": [
+        "Dry-run valid, malformed, duplicate, orphaned, mixed-type, and repeat-input fixtures without writing private content to output.",
+        "Import representative non-production feelings and weekly trackers, preserving Auth0 sub and approved timestamps while mapping source _id to legacy_mongo_id.",
+        "Run the import twice and assert stable counts, stable non-content hashes, no duplicate target rows, and explicit reporting of every rejected or conflicting source record.",
+        "Run forward reconciliation by collection and user and exercise target-to-Mongo reconciliation on synthetic target-only writes.",
+        "Require Vinicius Delascio's explicit recorded decision for each real cleanup, transformation, quarantine, or exclusion before treating reconciliation as successful."
+      ],
+      "definition_of_done": [
+        "Every representative source record is deterministically migrated or appears in a sanitized exception manifest.",
+        "Repeatability and rollback reconciliation tests pass without duplicate or lost records.",
+        "Sydney placement plus private encrypted logical-backup, checksum, and successful disposable-restore evidence accompanies the dry-run report without being represented as a managed database backup.",
+        "The migration role and Mongo dependency exist only in the CLI and are unavailable to the request-serving service.",
+        "No production data has been read, changed, or migrated without separate authorization."
+      ]
+    },
+    {
+      "id": "STAGE-06",
+      "sequence": 6,
+      "title": "Implement the shared Auth0, authorization, and HTTP boundary",
+      "depends_on": ["STAGE-02", "STAGE-04"],
+      "targets": [
+        "api/ Auth0 access-token verification middleware",
+        "api/ transaction-local database identity and least-privilege connection wrapper",
+        "api/ strict request schemas, structured errors, CORS, logging, health, and readiness",
+        "server-only environment-variable contract without values"
+      ],
+      "acceptance_criteria": ["AC-5", "AC-11"],
+      "tests": [
+        "Validate signed RS256 tokens for exact issuer, audience, expiry, and non-empty sub using a controlled JWKS test server; deny missing, malformed, expired, wrong-issuer, and wrong-audience credentials.",
+        "Verify x-user-id is optional but conflicting values return 403 and body identity cannot override the verified sub.",
+        "Prove each database operation starts an explicit short transaction, sets parameterized transaction-local app.auth0_sub, applies an explicit user_id predicate, and cannot leak identity through the connection pool.",
+        "Run two-subject application and direct-database denial tests, including ownership reassignment and DELETE attempts.",
+        "Verify allowed local CORS behavior, disallowed-origin rejection before handlers, sanitized structured errors/logs, readiness dependency checks, and absence of tokens, raw subjects, bodies, comments, notes, or secrets in captured output."
+      ],
+      "definition_of_done": [
+        "The shared boundary passes security tests before any business route is enabled.",
+        "Auth0 accounts, token type, issuer/audience contract, and canonical sub remain unchanged.",
+        "The Deno service contains no service-role key, operator API, impersonation path, or browser database credential.",
+        "Required environment variable names, purpose, ownership, and secret classification are documented without values."
+      ]
+    },
+    {
+      "id": "STAGE-07",
+      "sequence": 7,
+      "title": "Migrate the feelings vertical API slice",
+      "depends_on": ["STAGE-05", "STAGE-06"],
+      "targets": [
+        "api/ GET /api/feelings",
+        "api/ POST /api/feelings",
+        "feelings request/response schemas and Postgres mappings",
+        "feelings contract and integration tests"
+      ],
+      "acceptance_criteria": ["AC-1", "AC-2"],
+      "tests": [
+        "Run GET tests for populated and empty histories, approved camel-case/nested fields, status string representation, timestamp semantics, and deterministic createdAt/id descending order.",
+        "Run POST tests for every supported status/activity shape, defaults, exactly-one durable insert, subsequent read visibility, unknown fields, invalid timestamps/status, and failed-request no-write behavior.",
+        "Repeat GET/POST tests with two synthetic subjects and conflicting body/header identities to prove ownership isolation.",
+        "Run the Stage 1 reusable black-box feelings contract against the Go and Deno base URLs using equivalent non-private seed data."
+      ],
+      "definition_of_done": [
+        "The Deno feelings slice satisfies its target contract without enabling weekly or retired routes.",
+        "Supported React feeling payloads require no change.",
+        "Approved normalizations are explicit; every other source/target difference is fixed or documented as a blocker.",
+        "The Go/Heroku implementation remains intact and runnable."
+      ]
+    },
+    {
+      "id": "STAGE-08",
+      "sequence": 8,
+      "title": "Differentially verify the feelings slice",
+      "depends_on": ["STAGE-07"],
+      "targets": [
+        "tests/contract/ source-versus-target feelings comparison",
+        "sanitized feelings reconciliation report",
+        "React feeling-save, history, and trend smoke paths"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Execute the same feelings cases against isolated Go/Mongo and Deno/Postgres fixtures and compare externally observable responses after applying only approved normalization rules.",
+        "Compare source/target counts, ownership keys, timestamps, status, comment presence, and activity booleans using sanitized identifiers/hashes.",
+        "Run React save, history, reload, and trend rendering against both services through configurable test endpoints.",
+        "Verify the Deno slice can be disabled without changing or deleting the Go rollback source."
+      ],
+      "definition_of_done": [
+        "No unexplained feelings contract or data discrepancy remains.",
+        "The React feelings journey succeeds against both source and target.",
+        "Evidence is sufficient to proceed to the weekly slice without switching production traffic."
+      ]
+    },
+    {
+      "id": "STAGE-09",
+      "sequence": 9,
+      "title": "Migrate the weekly-tracker vertical API slice",
+      "depends_on": ["STAGE-08"],
+      "targets": [
+        "api/ GET /api/weekly-tracker",
+        "api/ POST /api/weekly-tracker",
+        "weekly request/response schemas and atomic Postgres upsert mapping",
+        "weekly contract, concurrency, and integration tests"
+      ],
+      "acceptance_criteria": ["AC-3", "AC-4"],
+      "tests": [
+        "Run GET tests for record:null, existing tracker, exact week/user selection, approved envelope/field mapping, and cross-user isolation.",
+        "Run POST tests for create and edit, fixed mood/check/note fields, defaults, tracker version 1, database-generated updatedAt, invalid/unknown fields, and failed-request no-write behavior.",
+        "Submit concurrent writes for one user/week and assert UNIQUE plus INSERT ON CONFLICT produces one row with no unintended duplicate.",
+        "Run the Stage 1 reusable weekly contract against the Go and Deno base URLs using equivalent non-private seed data."
+      ],
+      "definition_of_done": [
+        "The Deno weekly slice satisfies the approved read/no-record/upsert contract.",
+        "Supported React weekly payloads require no change.",
+        "One-row-per-user/week and ownership guarantees are proven at both API and database layers.",
+        "The Go/Heroku implementation remains intact and runnable."
+      ]
+    },
+    {
+      "id": "STAGE-10",
+      "sequence": 10,
+      "title": "Complete differential API verification and retire unused surfaces",
+      "depends_on": ["STAGE-09"],
+      "targets": [
+        "tests/contract/ complete source-versus-target API comparison",
+        "api/ normalized validation, error, CORS, and unknown-route behavior",
+        "replacement route and configuration inventory",
+        "client/src removal of PingComponent and /api/ping request"
+      ],
+      "acceptance_criteria": ["AC-7", "AC-9"],
+      "tests": [
+        "Run all supported source/target contract cases and allow differences only for the approved empty-result, validation, structured-error, CORS, ordering, and ping normalizations.",
+        "Verify malformed requests return the approved 400 envelope without writes; auth failures return 401, identity mismatch returns 403, unknown/retired routes return 404, and internal failures return sanitized 500.",
+        "Verify the replacement has exactly four public browser routes and exposes no chat, agent, ping, shared-token, allowlist, operator, Storage, job, scheduler, Data API, or Edge Function compatibility path.",
+        "Verify CHAT_INGEST_TOKEN, AGENT_API_TOKEN, and AGENT_ALLOWED_USER_IDS are absent from replacement configuration and generated deployment manifests.",
+        "Run frontend unit/static checks proving the ping request and unused PingComponent are removed without changing supported journeys."
+      ],
+      "definition_of_done": [
+        "Every supported API behavior is equal or differs only by an approved normalization.",
+        "Retired routes and credentials are absent from the replacement while remaining available only in the untouched rollback source.",
+        "No evidence of an active retired-route caller has appeared; contrary evidence stops retirement.",
+        "The replacement route/configuration inventory is suitable for Review evidence."
+      ]
+    },
+    {
+      "id": "STAGE-11",
+      "sequence": 11,
+      "title": "Run complete data, integration, and React end-to-end verification",
+      "depends_on": ["STAGE-05", "STAGE-10"],
+      "targets": [
+        "full non-production migration and reconciliation report",
+        "tests/e2e/ Auth0-backed React user journeys",
+        "complete contract, RLS, migration, and application test suite",
+        "discrepancy register with accountable approvals"
+      ],
+      "acceptance_criteria": ["AC-8", "AC-12"],
+      "tests": [
+        "Run a full representative non-production export through migration and reconcile every feeling and weekly record by count, ownership, timestamp, and approved field-level hash.",
+        "Run sign-in, sign-out, session reload, feeling save/history/trends, week selection, and weekly save journeys in local and deployed-style same-origin configurations using Auth0 test identities.",
+        "Run the entire contract, validation, CORS, two-subject RLS/grant, repeat-import, rollback-reconciliation, Deno type/lint/unit/integration, React unit, and E2E suites from a clean environment.",
+        "Confirm no account relinking, re-registration, unapproved forced sign-in, public URL/payload change, or local-development regression is required.",
+        "Require accountable approval for every remaining discrepancy; unapproved discrepancies block cutover rehearsal."
+      ],
+      "definition_of_done": [
+        "All approved acceptance cases through AC-12 have repeatable non-production evidence.",
+        "Reconciliation is 100 percent except for explicitly approved sanitized exceptions.",
+        "The React application completes all supported journeys against the replacement.",
+        "No production endpoint, traffic, data, or environment has changed."
+      ]
+    },
+    {
+      "id": "STAGE-12",
+      "sequence": 12,
+      "title": "Rehearse deployment, cutover, and both rollback modes",
+      "depends_on": ["STAGE-11"],
+      "targets": [
+        "Australian managed-container target selected against ARCH-002",
+        "dark or pre-production Deno deployment",
+        "docs/runbooks/ cutover, pre-commit rollback, post-write rollback, backup, and restore procedures",
+        "sanitized migration checkpoint and reconciliation evidence"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Obtain separate human authorization before creating managed container infrastructure, changing a hosted environment, or performing the rehearsal.",
+        "Deploy the pinned OCI image dark or to pre-production in Australia and verify TLS, same-origin routing, secrets, health/readiness, structured logs, and deployment rollback.",
+        "Rehearse write suspension, final source checkpoint/export, idempotent import, 100 percent reconciliation or approved exceptions, contract/RLS/React smoke tests, and traffic switch in a non-production environment.",
+        "Exercise pre-commit rollback to unchanged Go/Mongo and verify all acknowledged source writes remain present.",
+        "Exercise post-write rollback by creating target-only synthetic writes, suspending writes, reconciling them idempotently to Mongo, restoring Go traffic, and proving every acknowledged write and Auth0 boundary remains intact."
+      ],
+      "definition_of_done": [
+        "The hosting provider satisfies every ARCH-002 requirement or Design is reopened.",
+        "Named, timed, repeatable cutover and both rollback procedures have passing evidence and explicit commit-point semantics.",
+        "Go/Heroku, the Mongo checkpoint, migration tools, rollback configuration, and the requirements for separate scoped runtime/operator Mongo credentials remain recoverable and explicit.",
+        "Rehearsal approval is not treated as production deployment or traffic-switch authority."
+      ]
+    },
+    {
+      "id": "STAGE-13",
+      "sequence": 13,
+      "title": "Assemble Review and Release readiness evidence",
+      "depends_on": ["STAGE-12"],
+      "targets": [
+        "implementation.json stage evidence",
+        "architecture, security, privacy, data, and operations review inputs",
+        "production environment-variable inventory without values",
+        "operational ownership, monitoring, backup/restore, audit, breach-response, cutover, and rollback records"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Verify every plan stage through rehearsal has command and result evidence and every brief acceptance criterion has a traceable test.",
+        "Run final database/security advisors and review runtime grants, forced RLS, Deno permissions, dependency lock integrity, secret exposure, log redaction, and replacement route inventory.",
+        "Verify production record-count/response-size/request/error baselines are captured sufficiently to judge unpaginated history and set coarse alerts; return to Define if pagination is required.",
+        "Verify named owners and procedures exist for migration, cutover, monitoring, support, backup/restore, operator audit, breach response, and both rollback modes.",
+        "Verify the Go/Heroku/Mongo rollback source remains available; record whether retired machine tokens and broad Mongo privileges remain live; and do not bundle any production action or resource deletion into Review or Release approval."
+      ],
+      "definition_of_done": [
+        "Evidence is ready for the separate AI-OS Review stage and all required review disciplines.",
+        "No critical security, privacy, data, architecture, or operations question is hidden or assumed accepted.",
+        "Production cutover remains blocked until Review passes, Release is approved, and each production mutation receives separate explicit authority.",
+        "This plan has not deployed or changed production."
+      ]
+    },
+    {
+      "id": "STAGE-14",
+      "sequence": 14,
+      "title": "Implement and rehearse the amended backup and rollback controls",
+      "depends_on": ["STAGE-13"],
+      "targets": [
+        "tools/backup/ complete encrypted logical-backup and disposable-restore workflow",
+        "docs/runbooks/ backup, restore, cutover, Heroku isolation, Mongo credential rotation, and rollback procedures",
+        "local or isolated Go fail-closed checks for retired chat and agent routes",
+        "least-privilege Mongo runtime/operator role specifications and verification probes",
+        "sanitized remediation evidence for REV-001, REV-002, and REV-003"
+      ],
+      "acceptance_criteria": ["AC-13", "AC-14"],
+      "tests": [
+        "Discover the installed Supabase CLI commands through --help and scan the current Supabase changelog before locking operator commands; verify both projects report Sydney and the database-backups bucket remains private.",
+        "Run the complete PostgreSQL 17 backup workflow: export roles without passwords plus private schema and data; create a content-free manifest containing versions, regions, counts, and SHA-256 component checksums; archive and AES-256-GCM encrypt locally; upload only ciphertext; download and verify its outer checksum; decrypt and verify all internal checksums; restore into an empty disposable target; reapply or verify migration history; then pass counts, constraints, forced-RLS two-subject isolation, API smoke, and reconciliation checks.",
+        "Prove plaintext SQL, decrypted archives, credentials, private field values, and raw Auth0 subjects never enter Storage, repository artefacts, logs, or reports, and remove exact plaintext scratch paths after durable ciphertext and restore evidence exist.",
+        "Run the Go service locally or in an isolated fixture with CHAT_INGEST_TOKEN and AGENT_API_TOKEN absent and prove both retired routes fail closed before their handlers while all four Auth0 browser routes remain runnable when their normal dependencies are present.",
+        "Rehearse the Heroku sequence without mutating production: maintenance on, retired-token removal, config-name verification, maintenance off only for authorized browser rollback, four-route Auth0 smoke, and no restoration of retired tokens. Resolve all commands and rollback checks without secret values.",
+        "Verify disposable or otherwise non-production Mongo users matching steady_legacy_runtime and steady_rollback_operator have only readWrite on the feeling database, use separate custody, can execute their required browser/rollback probes, and cannot perform admin, cross-database, user-management, project, or infrastructure operations.",
+        "Run all existing Go, Deno, React, contract, RLS, migration, rollback, backup, and secret-pattern checks to prove the remediation adds no externally observable behavior change."
+      ],
+      "definition_of_done": [
+        "A fresh encrypted backup has passed download, authenticated decryption, empty-target PostgreSQL 17 restore, migration, constraint, RLS, API, and reconciliation checks, and the retained evidence does not claim managed database backup coverage.",
+        "The Heroku retired-route isolation sequence and both least-privilege Mongo roles are independently rehearsed with explicit pass/fail probes and rollback steps.",
+        "Implementation evidence maps the three Review findings to concrete controls, commands, results, owners, and separate production approval gates.",
+        "No production Heroku configuration, Mongo credential, Supabase data, Azure deployment, frontend endpoint, or traffic has changed in this stage."
+      ]
+    },
+    {
+      "id": "STAGE-15",
+      "sequence": 15,
+      "title": "Repeat the independent AI-OS Review",
+      "depends_on": ["STAGE-14"],
+      "targets": [
+        "specs/backend-migration/review.json",
+        "amended brief, design, plan, and implementation evidence",
+        "architecture, security, privacy, data, operations, and quality findings",
+        "explicit disposition of REV-001, REV-002, REV-003, and separately tracked FOLLOWUP-REACT-001"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Use the AI-OS Review skill to independently trace every acceptance criterion through the amended contracts and implementation evidence.",
+        "Verify REV-001 is resolved by the owner-approved encrypted logical-backup contract and a passing full restore rehearsal, without describing it as managed backup coverage.",
+        "Verify REV-002 has a tested fail-closed mechanism, a precise Heroku maintenance/token-removal production gate, and a browser-only rollback path that never depends on restoring retired tokens.",
+        "Verify REV-003 has two separately held readWrite-on-feeling credential definitions, passing least-privilege probes, an ordered production rotation/revocation procedure, and no waiver for atlasAdmin.",
+        "Re-run the deterministic Review validators and obtain explicit accountable approval; any open high-severity finding or needs_changes verdict blocks Release."
+      ],
+      "definition_of_done": [
+        "The new Review artefact passes structure and readiness validation with an approved pass verdict and no open high-severity finding.",
+        "Any remaining medium or low finding has an explicit owner and disposition without being silently waived.",
+        "Review approval is not treated as Release approval or authority for any production mutation."
+      ]
+    },
+    {
+      "id": "STAGE-16",
+      "sequence": 16,
+      "title": "Create and approve the AI-OS Release decision",
+      "depends_on": ["STAGE-15"],
+      "targets": [
+        "specs/backend-migration/release.json",
+        "production cutover, rollback, support, and observation gates",
+        "operator logical-backup cadence and retention decision",
+        "named owners and separate-authority checklist for every production mutation"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Use the AI-OS Release skill only after Stage 15 Review is approved and verify every rollout, support, monitoring, rollback, and stop condition has a named owner.",
+        "Have Vinicius Delascio explicitly choose the ongoing Free-plan logical-backup cadence and retention duration; do not infer an RPO or deletion schedule from the repository.",
+        "Record the exact ordered cutover checklist and distinguish Release approval from the separate authorities for production credentials, environment variables, data migration, backup upload, deployment, frontend/public traffic, irreversible database changes, and later deletion.",
+        "Validate release.json structurally and for readiness; do not deploy or mutate production as part of creating the Release decision."
+      ],
+      "definition_of_done": [
+        "The Release artefact passes structure and readiness validation and is explicitly approved by the accountable human.",
+        "Backup cadence, retention, observation checks, stop triggers, support ownership, and both rollback modes are concrete.",
+        "No production action has occurred and every production mutation remains separately gated."
+      ]
+    },
+    {
+      "id": "STAGE-17",
+      "sequence": 17,
+      "title": "Execute the explicitly authorized production cutover",
+      "depends_on": ["STAGE-16"],
+      "targets": [
+        "production Supabase Postgres and private encrypted backup in the separate Sydney project",
+        "production Australian Deno container deployment",
+        "scoped Mongo runtime/operator credentials and revoked broad credential",
+        "Heroku maintenance state and retired chat/agent token configuration",
+        "production Mongo checkpoint, final migration, reconciliation, frontend traffic, and live Auth0 smoke verification"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Do not start until Review and Release are approved and explicit human authority is separately recorded for every production infrastructure, credential, environment, data, backup-upload, deployment, frontend/public-traffic, and irreversible database mutation involved.",
+        "Create steady_legacy_runtime in Atlas with readWrite only on feeling and store it only in Heroku; create steady_rollback_operator with the same database-only role and store it only in the operator secret store. Verify browser and reconciliation paths plus unchanged 114/2 source counts before revoking the old atlasAdmin credential, and stop without revocation if either probe fails.",
+        "Take a fresh production-target logical backup through the Stage 14 encrypted workflow and require successful download, checksum, authenticated decryption, empty-target restore, migration, constraints, forced-RLS, API smoke, and reconciliation before the write freeze.",
+        "At the authorized write freeze, enable Heroku maintenance mode, remove CHAT_INGEST_TOKEN and AGENT_API_TOKEN, verify both names are absent and the public Heroku hostname cannot serve a retired handler, then take the final Mongo checkpoint and execute idempotent import and 100 percent reconciliation or explicitly approved exceptions.",
+        "Deploy or promote the pinned Azure revision, switch the authorized frontend/public traffic, and before resuming writes prove the four Auth0 browser routes, React journeys, another-subject denial, sanitized logs, source/target accounting, and rollback readiness.",
+        "On any failed pre-commit gate, keep or restore traffic on Go only after disabling maintenance and passing the four browser routes; on post-write rollback, suspend writes, reconcile target-only rows to Mongo with steady_rollback_operator, then disable maintenance and pass browser smokes. Never restore the retired tokens."
+      ],
+      "definition_of_done": [
+        "Production traffic serves the approved Deno/Supabase replacement only after every separately authorized gate passes and the source-of-truth commit point is recorded.",
+        "The fresh encrypted backup is restorable, every acknowledged write is accounted for, and both rollback modes remain executable.",
+        "Heroku remains deployed but in maintenance mode with retired machine tokens absent; Mongo remains available through two separate scoped credentials and the old broad credential is revoked.",
+        "No Heroku, MongoDB, backup, or legacy deployment resource has been deleted."
+      ]
+    },
+    {
+      "id": "STAGE-18",
+      "sequence": 18,
+      "title": "Observe the production replacement and preserve browser-only rollback readiness",
+      "depends_on": ["STAGE-17"],
+      "targets": [
+        "managed Deno and Supabase logs, health, metrics, and alerts",
+        "production contract and React smoke checks",
+        "post-cutover reconciliation, backup, and incident/rollback decision log",
+        "retained Go/Heroku/Mongo browser-only rollback assets"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Run Release-scheduled smoke checks for Auth0 login/session, feelings read/write, weekly read/upsert, same-origin routing, health, and readiness using approved non-private test handling.",
+        "Monitor status/error rates, latency, database connections, response size, failed authorization, and migration/reconciliation indicators using sanitized provider telemetry.",
+        "Run encrypted logical backups at the approved cadence and verify checksum plus restore evidence according to the approved retention decision.",
+        "Reconcile post-cutover records and investigate any missing, duplicate, cross-user, or malformed result immediately; suspend writes and invoke the approved rollback when a trigger is met.",
+        "Periodically verify Heroku remains in maintenance mode, retired token names remain absent, the two Mongo credentials retain only readWrite on feeling with separate custody, and the browser-only rollback/reconciliation path remains operational."
+      ],
+      "definition_of_done": [
+        "The Release-approved observation conditions are satisfied with no unresolved rollback trigger or data discrepancy.",
+        "Operational ownership, backups, and incidents are recorded without private data or secret values.",
+        "No retired token, broad Mongo privilege, or public legacy machine route has returned.",
+        "No legacy resource has been deleted merely because observation succeeded."
+      ]
+    },
+    {
+      "id": "STAGE-19",
+      "sequence": 19,
+      "title": "Decommission Heroku and Mongo only under separate explicit authority",
+      "depends_on": ["STAGE-18"],
+      "targets": [
+        "Heroku application and configuration",
+        "MongoDB Atlas database and scoped credentials",
+        "legacy Go deployment artifacts and rollback-only configuration",
+        "final retention, export, and deletion evidence"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Obtain a new explicit human approval naming the exact Heroku, MongoDB, credential, backup, and legacy artifact targets; neither plan approval nor Release approval authorizes deletion.",
+        "Before deletion, verify the observation exit conditions, final Supabase reconciliation, latest restore evidence, retained-data obligations, and absence of any rollback need or active legacy caller.",
+        "Resolve each destructive target to an exact provider resource and record whether deletion is recoverable, any retention period, and the final source backup disposition.",
+        "After authorized decommissioning, verify production remains healthy, scoped legacy credentials are revoked, billing/resources match the approved list, and no unrelated resource was affected."
+      ],
+      "definition_of_done": [
+        "Only explicitly named and approved legacy resources are retired.",
+        "The final system remains healthy and its data is reconciled and restorable under the approved operator-backup contract.",
+        "Removal actions, recovery properties, owners, and evidence are recorded in the Release record.",
+        "If explicit decommission approval is withheld, this stage remains unexecuted without blocking operation of the validated replacement."
+      ]
+    },
+    {
+      "id": "STAGE-20",
+      "sequence": 20,
+      "title": "Restore post-decommission recovery readiness and operational accuracy",
+      "depends_on": ["STAGE-19"],
+      "targets": [
+        "paused Free-plan Steady backups Supabase project in Sydney",
+        "current production PostgreSQL logical backup and private encrypted Storage object",
+        "empty PostgreSQL 17 restore rehearsal and sanitized recovery evidence",
+        "post-decommission Release record and active operational runbooks"
+      ],
+      "acceptance_criteria": [],
+      "tests": [
+        "Resume only the existing Steady backups Free-plan project, verify its Sydney region, private database-backups bucket, retained ciphertext inventory, and unchanged plan without upgrading any account.",
+        "Export the current production roles without passwords, schema, and data; require aggregate counts to match the live source and package them with the reviewed authenticated-encryption workflow without exposing credentials, subjects, notes, or plaintext in durable evidence.",
+        "Upload only a new ciphertext object, download it separately, verify its outer checksum, authenticate and decrypt it, restore it into an empty disposable PostgreSQL 17 target, and verify migrations, constraints, forced RLS, policies, exact aggregate counts, and application-read compatibility.",
+        "Remove the exact disposable target and all plaintext scratch material while retaining the encrypted object and sanitized evidence.",
+        "Amend the active Release record and operational runbooks to state that Heroku/MongoDB rollback no longer exists, recovery uses the retained encrypted PostgreSQL backup, Free projects may auto-pause, and operators must resume and verify the backup project before backup or recovery work.",
+        "Run relevant backup tests, artefact validators, patch-hygiene checks, and credential-pattern scans."
+      ],
+      "definition_of_done": [
+        "A current production backup is retained as private ciphertext in the separate Sydney Supabase project and its checksum-qualified empty-target PostgreSQL 17 restore has passed.",
+        "The backup project is reachable for the approved operation without any account-plan upgrade, and Free-plan auto-pause behavior plus the current restore window are accurately documented.",
+        "Active operational records describe post-decommission recovery rather than the removed legacy rollback path.",
+        "REV-FINAL-001 and REV-FINAL-002 have sufficient evidence for targeted re-review; no unrelated production behavior, schema, traffic, identity, or account plan is changed."
+      ]
+    }
+  ],
+  "accepted_complexity": [
+    {
+      "item": "Keep the Go/Heroku/Mongo implementation, separate scoped runtime/operator credentials, checkpoint, and rollback tooling alongside the Deno/Supabase replacement through Review, Release, cutover, and observation.",
+      "rationale": "Incremental migration and evidence-based rollback require a working source implementation until the replacement is proven; temporary duplication is safer than early decommissioning.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "item": "Use a custom least-privilege Postgres runtime role with forced RLS and transaction-local app.auth0_sub in addition to explicit application user filters.",
+      "rationale": "Auth0 remains canonical while direct Supabase Auth/Data API integration is out of scope; the dual enforcement prevents a missing application predicate from exposing sensitive rows.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "item": "Maintain both forward Mongo-to-Postgres migration and post-write target-to-Mongo rollback reconciliation during migration.",
+      "rationale": "A compute-only rollback after Supabase accepts writes would lose acknowledged data; the second direction is required for the approved rollback contract.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "item": "Add reusable black-box differential tests that run against both the Go and Deno services.",
+      "rationale": "Existing tests cover only CORS and cannot prove externally observable compatibility, approved normalization, or slice-by-slice equivalence.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "item": "Pin Deno 2, dependencies, container inputs, and least-privilege runtime permissions while allowing vetted npm compatibility only when native web or JSR options are unsuitable.",
+      "rationale": "The selected runtime is viable but adds compatibility and supply-chain verification work; explicit pinning and an early spike keep that risk bounded and reproducible.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "item": "Keep complete unpaginated feelings history during this migration and measure production size before release.",
+      "rationale": "Pagination would change the public contract and is not approved; measured unsafe size triggers a return to Define rather than concealed scope growth.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "item": "Operate encrypted PostgreSQL logical backups with checksum and restore rehearsal in a separate private Sydney Supabase Storage project while remaining on the Free plan.",
+      "rationale": "The owner accepted operator responsibility and reduced recovery automation for this sole-user pilot to avoid a paid plan; this control is more complex than managed backups and must never be represented as equivalent PITR coverage.",
+      "owner": "Vinicius Delascio"
+    },
+    {
+      "item": "Keep the verified Go release for browser rollback while isolating it with Heroku maintenance mode, permanently removing retired machine tokens, and maintaining two separately held database-scoped Mongo credentials.",
+      "rationale": "Browser rollback remains necessary through observation, but retaining public machine routes or atlasAdmin is unnecessary risk. Maintenance and scoped credentials preserve rollback at the cost of explicit cutover and verification steps.",
+      "owner": "Vinicius Delascio"
+    }
+  ],
+  "approval": {
+    "status": "approved",
+    "by": "Vinicius Delascio",
+    "at": "2026-09-08",
+    "reason": "The original execution-plan approvals remain recorded in repository history. On 2026-09-08, after the final Review identified an overdue recovery point and stale post-decommission operating records, Vinicius Delascio explicitly approved the bounded Stage 20 remediation: resume the existing Free backup project, create and fully restore-test a current encrypted backup, and update post-decommission records without upgrading an account. This approval authorizes only those named operations and no unrelated production behavior, schema, traffic, identity, deletion, or plan change."
+  }
+}

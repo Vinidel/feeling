@@ -1,0 +1,39 @@
+[
+  {
+    "_id": { "$oid": "not-an-object-id" },
+    "userid": "auth0|synthetic-alpha",
+    "status": "2",
+    "createdat": { "$date": "2026-07-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65c000000000000000000001" },
+    "userid": "",
+    "status": "2",
+    "createdat": { "$date": "2026-07-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65c000000000000000000002" },
+    "userid": "auth0|synthetic-alpha",
+    "status": 2,
+    "createdat": { "$date": "2026-07-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65c000000000000000000003" },
+    "userid": "auth0|synthetic-alpha",
+    "status": "3",
+    "createdat": { "$date": "2026-07-01T00:00:00.000Z" },
+    "unexpected": true
+  },
+  {
+    "_id": { "$oid": "65c000000000000000000004" },
+    "userid": "auth0|synthetic-alpha",
+    "status": "1",
+    "createdat": { "$date": "2026-07-01T00:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65c000000000000000000004" },
+    "userid": "auth0|synthetic-beta",
+    "status": "4",
+    "createdat": { "$date": "2026-07-02T00:00:00.000Z" }
+  }
+]

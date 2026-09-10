@@ -1,0 +1,9 @@
+{
+  "$schema": "https://deno.land/x/deno/cli/schemas/config-file.v1.json",
+  "tasks": {
+    "fmt:check": "deno fmt --check heroku_sequence.ts heroku_sequence_test.ts mongo_role_policy.ts mongo_role_policy_test.ts",
+    "lint": "deno lint heroku_sequence.ts heroku_sequence_test.ts mongo_role_policy.ts mongo_role_policy_test.ts",
+    "check": "deno check heroku_sequence.ts heroku_sequence_test.ts mongo_role_policy.ts mongo_role_policy_test.ts",
+    "test": "deno test heroku_sequence_test.ts mongo_role_policy_test.ts"
+  }
+}

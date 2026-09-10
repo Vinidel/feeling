@@ -1,0 +1,156 @@
+# Standalone Deno API
+
+Stages 7, 9, and 10 enable the feelings and weekly-tracker vertical slices on
+the shared authentication, authorization, database, and HTTP boundary, then lock
+the replacement to exactly those four browser method/path combinations. Chat,
+agent, ping, and operator routes remain absent and return the normalized `404`
+envelope.
+
+The complete route, configuration, and intentionally absent responsibility
+inventory is recorded in `specs/backend-migration/stage-10-api-inventory.md`.
+
+## Feelings slice
+
+- `GET /api/feelings` returns only the verified Auth0 subject's rows as a bare
+  array. Empty history is normalized to `[]`, and rows are ordered by
+  `createdAt` descending with generated ID descending as the deterministic tie
+  breaker.
+- `POST /api/feelings` accepts the existing React payload, applies neutral
+  comment/activity defaults, inserts exactly one append-only row for the
+  verified subject, and returns the saved camel-case/nested representation with
+  status serialized as a string.
+- Unknown fields, client-selected identity, malformed timestamps, and status
+  outside `0` through `4` return the normalized `400 invalid_request` envelope
+  without calling persistence.
+
+## Weekly-tracker slice
+
+- `GET /api/weekly-tracker?weekOf=YYYY-MM-DD` returns
+  `{ "ok": true, "record": null }` when the verified subject has no tracker for
+  that week, or the existing camel-case/nested record when present.
+- `POST /api/weekly-tracker` accepts the existing React payload, applies neutral
+  check/note defaults, fixes `trackerVersion` at `1`, and atomically creates or
+  edits the verified subject's one row for that week with
+  `INSERT ... ON
+  CONFLICT`.
+- PostgreSQL generates `updatedAt`; the unique `(user_id, week_of)` constraint,
+  explicit application predicates, and forced RLS provide database-enforced
+  ownership and one-row-per-week guarantees.
+- Invalid dates, moods, versions, unknown fields, and client-selected identity
+  return `400 invalid_request` before persistence is called.
+
+## Security boundary
+
+- Auth0 access tokens are verified with JOSE `6.2.9` against the tenant's remote
+  JWKS. Verification requires RS256, exact issuer, exact API audience, expiry,
+  and a non-empty canonical `sub`.
+- `user_id` comes only from the verified `sub`. An optional `x-user-id` must
+  match exactly. Strict request schemas reject `userID` and every other unknown
+  field, so body data cannot select an identity.
+- The runtime connects with only the `steady_runtime` PostgreSQL role through
+  Supavisor transaction mode. postgres.js uses `prepare: false`, a four-client
+  application pool, bounded connection lifetime/timeouts, TLS with certificate
+  verification, and short transactions.
+- Every user transaction parameterizes
+  `set_config('app.auth0_sub', <verified-sub>, true)` before data access. Query
+  callers must also bind `transaction.userId` in an explicit `user_id`
+  predicate. Forced RLS remains the second authorization layer.
+- The runtime contains no migration credential, Supabase service-role key,
+  browser database credential, operator API, or impersonation path.
+
+JOSE bounds remote JWKS requests with a three-second timeout, a 30-second
+cooldown, and a one-hour in-memory cache maximum. Auth0 documents that custom
+API access tokens must be validated by audience and standard JWT checks, and
+that the tenant JWKS contains the public keys used for RS256 verification:
+<https://auth0.com/docs/secure/tokens/access-tokens/validate-access-tokens> and
+<https://auth0.com/docs/secure/tokens/json-web-tokens/json-web-key-sets>.
+
+## HTTP boundary
+
+- `GET /healthz` is a liveness check and does not contact dependencies.
+- `GET /readyz` performs a minimal PostgreSQL readiness query and returns `503`
+  with a sanitized error when unavailable.
+- Errors use `{ "error": { "code": "...", "message": "..." } }` and
+  `cache-control: no-store`.
+- Each response receives a server-generated `x-request-id`.
+- Logs contain only allowlisted operational fields: request ID, route template,
+  method, status, duration, deployment version, and coarse failure code. Tokens,
+  raw subjects, URLs, bodies, comments, notes, and credentials are discarded.
+- CORS accepts only exact configured origins, `GET`/`POST`/`OPTIONS`, and the
+  `Authorization`, `Content-Type`, and `x-user-id` headers. It does not enable
+  credentialed CORS or any retired integration header.
+
+## Server-only configuration contract
+
+Populate these variables through the eventual managed container provider. The
+example file contains names only and no secret values.
+
+| Variable             | Required | Classification and owner                                                                                                                            |
+| -------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`       | Yes      | Secret; deployment operator; `steady_runtime` transaction-pooler TLS URL only                                                                       |
+| `DATABASE_SSL_MODE`  | No       | `require` by default (verified TLS); `disable` is permitted only for disposable local Supabase verification                                         |
+| `AUTH0_ISSUER`       | Yes      | Non-secret security configuration; must retain the existing `https://dev-vin.au.auth0.com/` issuer                                                  |
+| `AUTH0_AUDIENCE`     | Yes      | Non-secret security configuration; must retain the existing `https://stormy-cliffs-52671.herokuapp.com/api` API identifier until separately changed |
+| `CORS_ORIGINS`       | No       | Non-secret deployment configuration; comma-separated exact origins; defaults to `http://localhost:3000`                                             |
+| `DEPLOYMENT_VERSION` | No       | Non-secret release identifier; defaults to `development`                                                                                            |
+| `HOST`               | No       | Non-secret listener configuration; defaults to `0.0.0.0`                                                                                            |
+| `PORT`               | No       | Non-secret listener configuration; defaults to `8080`                                                                                               |
+
+`MIGRATION_DATABASE_URL`, database-owner credentials, Supabase API keys, Auth0
+client secrets, MongoDB credentials, and retired chat/agent tokens are not API
+runtime variables.
+
+Production and hosted non-production deployments must retain
+`DATABASE_SSL_MODE=require`. The opt-out exists only because the local Supabase
+CLI database does not terminate TLS.
+
+`deno task start` allowlists that disposable local Postgres on
+`127.0.0.1:55322` and `localhost:55322` in addition to the Auth0 JWKS host and
+the Steady Sydney Supavisor transaction endpoint. The container image stays
+limited to Auth0 and Supavisor. Changing either hosted host requires a reviewed
+image-permission update rather than silently expanding network access.
+
+## Verification
+
+From `api/`, using pinned Deno `2.9.4`:
+
+```bash
+deno task fmt:check
+deno task lint
+deno task check
+deno task test
+```
+
+The regular suite uses a controlled loopback JWKS server and synthetic signed
+tokens. It also invokes reusable URL-level feelings and weekly contracts against
+an ephemeral Deno server. `tests/database_integration.ts`,
+`tests/feelings_integration.ts`, and `tests/weekly_integration.ts` are
+separately authorized hosted tests: provide the runtime-only `DATABASE_URL`
+through an operator secret mechanism and grant Deno network access only to that
+database host. Both keep synthetic writes in intentionally rolled-back
+transactions. Together they prove two-subject isolation, denied ownership
+reassignment and DELETE, explicit application predicates, transaction-local
+identity replacement, feeling mapping, exactly one insert, subsequent reads,
+deterministic ordering, and absence of pool identity leakage. The weekly
+integration keeps create/edit writes inside an intentional rollback.
+`tests/weekly_concurrency_integration.ts` is local-only and proves that
+simultaneous writes produce exactly one user/week row; destroy its disposable
+local database after the run.
+
+`tests/feelings_differential_integration.ts` and
+`tests/weekly_differential_integration.ts` are disposable-local verification.
+They run both URL contracts through the real Deno handler and SQL mappers,
+commit only synthetic local rows, write owner-only observation files, and
+require destruction of that local database and the observation files after
+comparison with equivalent Go observations.
+
+Build the portable OCI image from the repository root:
+
+```bash
+docker build -f api/Dockerfile -t feeling-api:stage-10 .
+```
+
+The image remains based on the digest-pinned official Deno 2.9.4 image, runs as
+the non-root `deno` user, installs only integrity-locked production
+dependencies, and starts with frozen cached dependencies and explicit
+permissions.

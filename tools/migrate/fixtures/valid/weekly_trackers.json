@@ -1,0 +1,30 @@
+[
+  {
+    "_id": { "$oid": "65b000000000000000000001" },
+    "userid": "auth0|synthetic-alpha",
+    "weekof": "2026-06-29",
+    "mood": "good",
+    "trackerVersion": 1,
+    "checks": {
+      "cardio": true,
+      "strength": true,
+      "mobility": false,
+      "build": false,
+      "archery": true,
+      "hunt": false
+    },
+    "notes": {
+      "win": "PRIVATE-WIN-SENTINEL",
+      "challenge": "PRIVATE-CHALLENGE-SENTINEL",
+      "nextWeek": "PRIVATE-NEXT-SENTINEL"
+    },
+    "updatedat": { "$date": "2026-07-05T11:30:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "65b000000000000000000002" },
+    "userid": "auth0|synthetic-beta",
+    "weekof": "2026-06-29",
+    "mood": "steady",
+    "updatedat": { "$date": "2026-07-05T12:00:00.000Z" }
+  }
+]

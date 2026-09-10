@@ -1,0 +1,64 @@
+{
+  "work_id": "backend-migration",
+  "source_review": "specs/backend-migration/review.json",
+  "deployment_strategy": "The completed production architecture is the standalone Deno TypeScript API and React client on Azure Container Apps in Australia East, Supabase Postgres project Steady non-prod in Sydney ap-southeast-2, Auth0 as the retained identity provider, and a separate private Supabase Storage project Steady backups in Sydney for operator-encrypted logical backups. www.delasc.io routes to Azure. Heroku and MongoDB were decommissioned under the separately approved Stage 19 and are not rollback targets. No account-plan upgrade is approved or required. Recovery is a restore into a new empty PostgreSQL 17 target from a qualified AES-256-GCM ciphertext, followed by schema, RLS, count, and application verification before any traffic decision. This amended Release is an operational-readiness record for the already-running production system; it requests no deployment, migration, feature-flag, environment, identity, traffic, schema, data, deletion, or account-plan mutation.",
+  "rollout": [
+    "Stages 1 through 16 characterized the Go service, built and verified the Deno/Supabase replacement, rehearsed migration and both pre-commit and post-write rollback while the legacy source still existed, completed independent Review, and recorded the original Release approval.",
+    "Stage 17 executed the separately authorized production backup, write freeze, final Mongo reconciliation, Azure deployment, Auth0 checks, and public traffic cutover. The source-of-truth commit point was recorded on 2026-08-27 and all supported browser journeys passed.",
+    "Stage 18 completed the approved sole-user observation checkpoint with healthy Azure/Supabase state, passing Auth0 journeys, forced RLS, clean advisors, complete data accounting, sanitized logs, and retained browser-only legacy rollback readiness.",
+    "Stage 19 executed only after Vinicius Delascio separately approved every destructive target. www.delasc.io was preserved on Azure; Heroku app stormy-cliffs-52671, Atlas Cluster0, both scoped Atlas users, the local rollback credential, and the Go/Heroku repository artifacts were removed. The empty Atlas project, Azure, Supabase, Auth0, DNS, encrypted backups, keys, current application, tools, runbooks, specifications, and Git history were retained.",
+    "Stage 20 responded to final Review findings on 2026-09-08. The existing Free Steady backups project was resumed without a plan change, its Sydney placement and private bucket were verified, and production was re-exported at 116 feelings and 4 weekly trackers. A first immutable candidate exposed a Supabase-internal grantor portability error during disposable restore and remains explicitly unqualified. A second object, database/20260908T041928Z/steady-production-weekly-20260908T041928Z.steady.enc, is the current qualified recovery point: 56,095 bytes, SHA-256 b35f03b7ffb9786d8fc6d170186e7b98dc67b86e11095e0f0bbdccf910895056, PostgreSQL 17.6, three migrations, Sydney-to-Sydney, and 116/4 rows.",
+    "The qualified Stage 20 object downloaded byte-for-byte, passed authenticated decryption and every internal checksum, restored into a new network-isolated PostgreSQL 17 target, and passed the full schema/constraint/privilege/RLS suite, nine-policy and forced-RLS checks, exact counts, least-privilege role checks, and a restored-row ownership smoke. The disposable target and every local plaintext, decrypted, downloaded, and local ciphertext artifact were then removed; all nine private remote ciphertext objects were retained.",
+    "The final targeted Review was approved by Vinicius Delascio on 2026-09-08 with verdict pass. REV-FINAL-001 and REV-FINAL-002 are resolved and no critical or high finding remains. REV-FINAL-003 remains visible as owned, open, and unwaived medium React dependency work outside the backend migration. Release preflight reconfirmed both Sydney projects ACTIVE_HEALTHY, production at 116/4 with the three expected migrations, the private nine-object/369,619-byte backup inventory with exactly one matching current qualified object, and public health/readiness at HTTP 200."
+  ],
+  "monitoring": [
+    {
+      "signal": "Azure revision, public TLS, /healthz, /readyz, replicas, restarts, and warm latency",
+      "success": "The approved revision is Healthy/Provisioned, www.delasc.io has valid TLS, health and readiness pass, scale remains 0..1, warm p95 is at most 2 seconds, and no unexplained restart or 5xx occurs.",
+      "failure": "Persistent readiness or database failure, repeated 5xx, unhealthy revision, unexpected restart loop, TLS failure, or an unusable supported journey suspends writes and triggers incident recovery evaluation. A scale-to-zero cold start alone does not authorize a paid replica."
+    },
+    {
+      "signal": "Supported Auth0 and React journey",
+      "success": "The retained account can log in, reload its session, read and save feelings, navigate/read/upsert weekly tracking, and log out through www.delasc.io without relinking or re-registration.",
+      "failure": "Persistent login/token failure, forced relinking/re-registration, unapproved Auth0 configuration change, or a supported journey failure suspends writes and triggers incident handling."
+    },
+    {
+      "signal": "Authorization, privacy, and operator boundary",
+      "success": "Missing, invalid, expired, and mismatched credentials are denied; forced RLS exposes only owner rows; retired/operator routes remain absent; operators use provider controls; logs contain no secrets, raw subjects, comments, notes, request bodies, or database URLs.",
+      "failure": "Any cross-user access, caller-selected identity override, privileged route, secret/private-field exposure, or uncertain isolation is a high-severity incident requiring immediate containment."
+    },
+    {
+      "signal": "Supabase production health, data integrity, RLS, advisors, connections, and capacity",
+      "success": "Production remains healthy in Sydney; every expected row is accounted for; both tables retain forced RLS and nine approved policies; the runtime remains least privilege; advisors have no blocking issue; and database/storage consumption remains below 80 percent of a provider limit.",
+      "failure": "Unavailability, missing/duplicate/cross-user/unexplained data, RLS or grant regression, blocking advisor issue, or imminent capacity exhaustion suspends data-affecting work and requires an explicit decision rather than an automatic upgrade."
+    },
+    {
+      "signal": "Encrypted logical-backup cadence, project availability, and recoverability",
+      "success": "A qualified encrypted backup is created weekly and before every release or data-affecting migration; weekly ciphertext is retained for 12 months; the separate Sydney bucket remains private; path, checksum, size, timestamp, counts, owner, and successful empty-target restore are recorded. Before each operation, a paused Free backup project is resumed and verified ACTIVE_HEALTHY without changing plans.",
+      "failure": "A missed weekly backup, inaccessible project beyond a normal wake-up delay, failed upload/download/checksum/authentication/decryption/restore, public bucket, non-Australian placement, plaintext residue, missing key, or retention failure blocks data-affecting work and requires owner action without silently upgrading an account."
+    },
+    {
+      "signal": "Provider audit, incident evidence, and cost",
+      "success": "Vinicius Delascio records every mutation and decision without secrets or private content, preserves short-retention Azure/Supabase/Auth0 evidence promptly, uses only the isolated Azure subscription, and reviews the existing budget alert.",
+      "failure": "Unknown operator change, missing incident evidence, use of an unrelated subscription, or unexpected spend triggers investigation. No alert, pause, or limit independently authorizes an account upgrade."
+    }
+  ],
+  "rollback": {
+    "required": true,
+    "plan": "In-place rollback to Go/Heroku/MongoDB is impossible because those operational resources were explicitly decommissioned. For a bad Azure revision with a healthy database, route traffic to the last healthy immutable Azure revision and verify Auth0 plus the four supported routes. For database corruption or integrity uncertainty, suspend writes, preserve the affected database and provider evidence, resume the Steady backups project if paused, select the latest qualified object by path and checksum, download and authenticate it, restore roles/schema/data into a new empty PostgreSQL 17 target, apply any later reviewed migrations in order, and require exact counts, constraints, forced RLS, nine policies, least-privilege roles, ownership isolation, API/browser smoke, and reconciliation before separately approving any database-secret or traffic change. Never restore blindly over production and never use an object recorded as unqualified. Vinicius Delascio owns the recovery and traffic decisions; production data, secret, infrastructure, and traffic mutations still require explicit authority."
+  },
+  "support_owner": "Vinicius Delascio — release owner, deploy authority, first responder, recovery decision-maker, backup operator, and provider escalation contact through the Azure, Supabase, and Auth0 dashboards/status channels.",
+  "communications": [
+    "There is one user, Vinicius Delascio. Record outages, write suspensions, recovery starts, expected temporary unavailability, restored-target verification, traffic decisions, and completion directly in the Release record; no broader customer campaign is required.",
+    "Record sanitized operator actions, resource names, timestamps, image/migration identifiers, before/after state without values, checksums, aggregate counts, verification results, incidents, provider cases, and recovery outcomes. Never include credentials, tokens, database URLs, raw Auth0 subjects, comments, notes, or request bodies.",
+    "Supabase Storage contains operator-encrypted logical backups, not managed backups or PITR. The separate Free project may auto-pause and must be resumed and verified before backup/recovery work. Weekly retention is 12 months and no account upgrade is approved.",
+    "The legacy React dependency advisories remain separately tracked and are not represented as remediated or waived by this backend migration."
+  ],
+  "blockers": [],
+  "approval": {
+    "status": "approved",
+    "by": "Vinicius Delascio",
+    "at": "2026-09-08T09:07:55Z",
+    "reason": "Vinicius Delascio explicitly approved the amended post-decommission Release decision on 2026-09-08. The approved targeted Review has verdict pass with no unresolved critical/high finding, rollback/recovery is defined, monitoring and support ownership are recorded, and Release preflight is green. REV-FINAL-003 remains visible, owned, open, and unwaived medium React dependency work outside this backend migration. This approval records readiness of the already-running production system and does not authorize or trigger any deployment, migration, environment, identity, traffic, schema, data, deletion, or account-plan mutation."
+  }
+}

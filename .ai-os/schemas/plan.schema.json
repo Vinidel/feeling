@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "plan.schema.json",
+  "title": "AI OS Delivery Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["work_id", "source_design", "stages", "accepted_complexity", "approval"],
+  "properties": {
+    "work_id": {"type": "string", "minLength": 1},
+    "source_design": {"type": "string", "minLength": 1},
+    "stages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "sequence", "title", "depends_on", "targets", "acceptance_criteria", "tests", "definition_of_done"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "sequence": {"type": "integer", "minimum": 1},
+          "title": {"type": "string", "minLength": 1},
+          "depends_on": {"type": "array", "items": {"type": "string"}},
+          "targets": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "acceptance_criteria": {"type": "array", "items": {"type": "string", "pattern": "^AC-[0-9]+$"}},
+          "tests": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "definition_of_done": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "accepted_complexity": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["item", "rationale", "owner"],
+        "properties": {
+          "item": {"type": "string", "minLength": 1},
+          "rationale": {"type": "string", "minLength": 1},
+          "owner": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "by", "at", "reason"],
+      "properties": {
+        "status": {"type": "string", "enum": ["pending", "approved", "rejected"]},
+        "by": {"type": "string"},
+        "at": {"type": "string"},
+        "reason": {"type": "string"}
+      }
+    }
+  }
+}
