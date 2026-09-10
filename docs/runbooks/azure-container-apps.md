@@ -1,14 +1,17 @@
 # Azure Container Apps target
 
-Status: nonproduction rehearsal environment. It is not a production endpoint.
+Status: production. This is the sole environment serving the live application
+at `https://www.delasc.io/`.
 
-Release candidate decision: on 2026-08-27 Vinicius Delascio selected this
-existing environment for promotion instead of provisioning a duplicate stack.
-The selected production URL is
+On 2026-09-10 the owner confirmed that the former nonproduction environment
+became production to avoid the cost of maintaining a second environment.
+Resource names containing `preprod` are historical and do not indicate staging.
+The Azure-generated hostname remains
 `https://steady-preprod.wittyglacier-50c44c34.australiaeast.azurecontainerapps.io`.
-This decision does not make the endpoint production or authorize promotion;
-Stage 17 still requires separate deployment, environment, Auth0, and public
-traffic authority.
+
+The GitHub Actions feature is being specified to deploy merges to `master`
+directly to this production environment. See
+`specs/github-actions-azure-deploy/spec.md` for the feature scope.
 
 ## Selected resources
 
@@ -40,12 +43,13 @@ database SSL mode, deployment version, and static root are non-secret settings.
 - Rollback: multiple-revision mode retains the prior healthy image and supports
   an explicit traffic shift.
 
-## Verified rehearsal state
+## Historical rehearsal evidence
 
-Revision `r3` is the active dark revision. The hosted target passed TLS, HTTPS
+The following records the Stage 12 rehearsal, not the current live revision.
+Revision `r3` was the active dark revision. The hosted target passed TLS, HTTPS
 redirect, root, SPA fallback, readiness, unauthenticated API, same-origin, and
 sanitized-log checks. Traffic was shifted to retained revision `r2` and back to
-`r3`, with readiness passing both times. The active image registry digest is
+`r3`, with readiness passing both times. The rehearsal image registry digest is
 recorded in Stage 12 implementation evidence; production should always deploy
 an approved digest rather than a mutable tag.
 
