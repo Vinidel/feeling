@@ -141,3 +141,36 @@ workflow/controller paths; its provider and operational sections remain explicit
 
 No application runtime configuration, database schema, database record, user data, paid Azure
 resource, or additional environment was introduced by this feature.
+
+## Convergence remediation validation
+
+Local implementation completed on 2026-09-25 without a production deployment or Azure change.
+
+| Check | Result | Evidence |
+|---|---|---|
+| Deployment controller tests | Pass | 56 Python tests, including public baseline failure, outside traffic change, 10/5/5 minute sub-budgets, guarded deactivation, and verified ambiguous activation/deactivation |
+| Frontend tests | Pass | 5 suites / 9 tests |
+| Frontend production build | Pass | Optimized build compiled; release badge and unused styling absent |
+| API checks | Pass | Deno 2.9.4 dependency, format, lint, type-check and 30-test suite passed in the pinned container |
+| Combined Linux/AMD64 image | Pass | `api/Dockerfile` built as `steady-deploy-validation` |
+| `git diff --check` | Pass | No whitespace errors |
+
+The controller now verifies public liveness and readiness for the captured baseline before
+candidate creation. After isolated candidate verification, it confirms production traffic is
+still pinned 100% to that baseline immediately before promotion. Provisioning, candidate health,
+and promotion/public verification receive separate maximum budgets of 10, 5, and 5 minutes,
+all bounded by the existing 20-minute rollout deadline. Revision deactivation is followed by a
+projected state read-back; a timeout is accepted only when Azure reports the revision inactive,
+and a successful no-op that leaves it active fails cleanup.
+
+Release traceability remains in the workflow summary, state artifact, immutable image digest,
+revision identity, and GitHub run evidence. The deployment-only badge has been removed from the
+application UI. These convergence changes remain local and have not been merged or deployed.
+
+The follow-up recovery safety pass requires a fresh, valid named-traffic read immediately before
+every revision deactivation and refuses cleanup when that revision is serving. This protects both
+post-success baseline cleanup and failure-path candidate cleanup from outside traffic changes or
+failed recovery. Baseline activation now reads projected revision state back before any recovery
+traffic write; an ambiguous timeout is accepted only when Azure confirms the revision active, and
+a successful no-op that leaves it inactive fails recovery. These additions were exercised by six
+focused regression tests within the 56-test controller suite.

@@ -193,3 +193,16 @@ by this task-generation stage.
 
 **Next workflow step**: `$speckit-analyze` can check spec/plan/task consistency before implementation.
 Task generation ends here; this document does not execute `$speckit-implement`.
+
+## Phase 7: Convergence
+
+- [X] T039 Remove the deployment-only visible release badge and its associated styling so the application preserves its specified frontend behaviour while release traceability remains in workflow evidence per Constitution I/V and FR-010 (contradicts) — CRITICAL.
+- [X] T040 Verify public production health and readiness for the captured baseline before candidate creation, fail before mutation when those checks do not pass, and add focused controller tests per plan: baseline verification and US2/AC4 (partial).
+- [X] T041 Recheck that named 100% production traffic is still pinned to the captured baseline immediately before promotion, stop without overwriting an outside traffic change, and add regression coverage per plan: candidate isolation and FR-011 (partial).
+- [X] T042 Enforce and test distinct forward sub-budgets of at most ten minutes for provisioning, five minutes for candidate health, and five minutes for promotion/public verification within the existing twenty-minute total per contract: deadlines and T022 (partial).
+- [X] T043 Read back projected revision state after every deactivation, reconcile ambiguous timeout or no-op outcomes, and report cleanup complete only after verified inactivity per contract: mutation verification and plan: cleanup (partial).
+
+## Phase 8: Convergence
+
+- [X] T044 CRITICAL Guard every revision deactivation with a fresh named-traffic read, refuse to deactivate the current serving revision after outside traffic changes or failed recovery, and add regression coverage for successful and failure cleanup paths per Constitution I, plan: cleanup, and contract: never deactivate the only verified serving revision (contradicts).
+- [X] T045 Verify baseline activation through projected revision state before restoring traffic, reconcile ambiguous timeout and successful no-op outcomes, and add focused recovery tests per plan: mutation verification, contract: controller and tool boundary, and US2/AC4 (partial).

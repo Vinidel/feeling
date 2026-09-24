@@ -30,8 +30,12 @@ def release(archive: Path) -> Release:
 
 class Harness(DeploymentController):
     def __init__(self, archive: Path, state: Path, *, fresh=(True, True), fail_at=None, verifier=None, clock=None):
-        super().__init__(config(), release(archive), state, verifier=verifier or (lambda *_a, **_k: None), clock=clock)
         self.events = []
+        actual_verifier = verifier or (lambda *_a, **_k: None)
+        def tracked_verifier(url, *_args, **kwargs):
+            self.events.append("verify:" + url)
+            return actual_verifier(url, *_args, **kwargs)
+        super().__init__(config(), release(archive), state, verifier=tracked_verifier, clock=clock)
         self.fresh = list(fresh)
         self.fail_at = fail_at
 

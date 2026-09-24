@@ -18,7 +18,6 @@ export default function NavBar({ activeView = 'feelings' }) {
       <div>
         <div className="app-heading-meta">
           <div className="app-kicker app-kicker-character">Mood journal</div>
-          <span className="app-release-badge">Auto-deploy is live</span>
         </div>
         <h1 className="app-title app-title-character">Steady</h1>
         <p className="app-tagline">A softer way to notice how your days are landing.</p>
