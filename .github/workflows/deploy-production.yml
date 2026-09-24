@@ -1,0 +1,178 @@
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out event revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: 2.9.4
+
+      - name: Validate API
+        working-directory: api
+        run: |
+          deno ci
+          deno task fmt:check
+          deno task lint
+          deno task check
+          deno task test
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Validate frontend
+        working-directory: client
+        env:
+          CI: "true"
+        run: |
+          npm ci
+          npm test -- --watchAll=false
+          npm run build
+
+      - name: Build exact production image
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          docker build --platform linux/amd64 \
+            --label "org.opencontainers.image.revision=${SOURCE_SHA}" \
+            --tag "steady-build:${SOURCE_SHA}" \
+            --file api/Dockerfile .
+          docker image save "steady-build:${SOURCE_SHA}" --output steady-image.tar
+
+      - name: Create release manifest
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, subprocess
+          archive = "steady-image.tar"
+          image = f"steady-build:{os.environ['SOURCE_SHA']}"
+          inspect = json.loads(subprocess.check_output(["docker", "image", "inspect", image]))[0]
+          digest = hashlib.sha256()
+          with open(archive, "rb") as source:
+              for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                  digest.update(chunk)
+          manifest = {
+              "source_sha": os.environ["SOURCE_SHA"],
+              "run_id": int(os.environ["RUN_ID"]),
+              "run_attempt": int(os.environ["RUN_ATTEMPT"]),
+              "artifact_name": f"steady-image-{os.environ['RUN_ID']}-{os.environ['RUN_ATTEMPT']}",
+              "archive_path": archive,
+              "archive_sha256": digest.hexdigest(),
+              "image_id": inspect["Id"],
+              "source_label": inspect["Config"]["Labels"]["org.opencontainers.image.revision"],
+          }
+          with open("release-manifest.json", "w", encoding="utf-8") as handle:
+              json.dump(manifest, handle, sort_keys=True)
+          PY
+
+      - name: Upload exact release
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: steady-image-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            steady-image.tar
+            release-manifest.json
+          retention-days: 1
+          if-no-files-found: error
+
+  deploy:
+    needs: validate-and-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: production
+    concurrency:
+      group: feeling-production
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_RESOURCE_GROUP: rg-steady-preprod-aue
+      AZURE_CONTAINER_APP: steady-preprod
+      AZURE_CONTAINER_NAME: steady-preprod
+      AZURE_REGISTRY: steadypreprodaue001
+      AZURE_IMAGE_REPOSITORY: steady
+      PRODUCTION_URL: https://www.delasc.io
+      GITHUB_REF: refs/heads/master
+    steps:
+      - name: Check out event revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Skip superseded release before Azure login
+        id: freshness
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          git fetch --no-tags origin master
+          HEAD_SHA="$(git rev-parse FETCH_HEAD)"
+          if [ "$HEAD_SHA" != "$SOURCE_SHA" ]; then
+            printf '{"source_sha":"%s","outcome":"superseded","phase":"freshness_check"}\n' "$SOURCE_SHA" > deployment-state.json
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download same-run release
+        if: steps.freshness.outputs.deploy == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: steady-image-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release
+
+      - name: Set up Python
+        if: steps.freshness.outputs.deploy == 'true'
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Authenticate to Azure using OIDC
+        if: steps.freshness.outputs.deploy == 'true'
+        uses: azure/login@8216e11d8cd9b42fe925c852af8e76311ff067ac # v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy and verify production
+        if: steps.freshness.outputs.deploy == 'true'
+        run: python3 scripts/deploy/deploy.py --manifest release/release-manifest.json --state deployment-state.json
+
+      - name: Publish sanitized deployment evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: deployment-state-${{ github.run_id }}-${{ github.run_attempt }}
+          path: deployment-state.json
+          retention-days: 7
+          if-no-files-found: warn

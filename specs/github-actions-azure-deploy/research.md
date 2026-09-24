@@ -130,3 +130,37 @@ inline shell script obscures recovery states; a persistent orchestrator adds inf
 Additional read-only inspection confirmed the workload profile is Consumption, the container
 name is steady-preprod, the image repository is steadypreprodaue001.azurecr.io/steady, and the
 configured custom domain is www.delasc.io. No production configuration was changed.
+
+## R6 — Pinned implementation toolchain
+
+**Decision:** Pin every third-party workflow action to the following full commit SHA. The
+associated release tags are recorded for human review, but the workflow uses the SHA:
+
+| Action | Release | Commit |
+|---|---|---|
+| `actions/checkout` | v5 | `fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09` |
+| `actions/setup-node` | v4 | `49933ea5288caeca8642d1e84afbd3f7d6820020` |
+| `actions/setup-python` | v5 | `a26af69be951a213d495a4c3e4e4022e16d87065` |
+| `actions/upload-artifact` | v4 | `ea165f8d65b6e75b540449e92b4886f43607fa02` |
+| `actions/download-artifact` | v4 | `d3f86a106a0bac45b974a628896c90dbdf5c8093` |
+| `azure/login` | v2 | `8216e11d8cd9b42fe925c852af8e76311ff067ac` |
+| `denoland/setup-deno` | v2.0.5 | `22d081ff2d3a40755e97629de92e3bcbfa7cf2ed` |
+
+Implementation uses Python 3.12, Node 20, Deno 2.9.4, actionlint 1.7.9 and Azure CLI
+2.78.0 with Container Apps extension 1.2.0b4. The latter is a preview extension already used
+by the isolated Feeling profile; its commands remain protected by read-back verification.
+
+**Evidence:** Tags were resolved from the official Git repositories on 2026-09-24. Azure CLI
+and extension versions were read from the installed CLI and its public extension catalog.
+GitHub's documented `queue: max` syntax must also pass actionlint and a no-Azure-write provider
+exercise before activation. If the hosted runner does not accept it, implementation stops;
+the workflow must not silently fall back to single-pending or cancel-in-progress semantics.
+
+**Implementation finding (2026-09-24):** Pinned actionlint 1.7.9 rejects `queue: max` as an
+unexpected key because its released schema predates GitHub's 2026 queue feature. GitHub's official
+documentation and 2026-05-07 changelog now specify `queue: max` and the 100-pending limit. Linting
+therefore suppresses only this exact known false positive and continues checking every other rule.
+The controlled no-Azure-write provider exercise remains pending; the required queue semantics are
+not weakened. Sources: [GitHub concurrency documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency),
+[GitHub queue changelog](https://github.blog/changelog/2026-05-07-github-actions-concurrency-groups-now-allow-larger-queues/),
+[actionlint queue support request](https://github.com/rhysd/actionlint/pull/658).
