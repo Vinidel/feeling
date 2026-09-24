@@ -4,7 +4,7 @@ Status: implementation in progress. Unexecuted and authority-gated checks remain
 
 ## Workflow-linter compatibility finding
 
-Status: **known false positive isolated; provider exercise pending**.
+Status: **known false positive isolated; provider behavior verified**.
 
 On 2026-09-24, pinned actionlint 1.7.9 rejected the required `queue: max` concurrency key:
 
@@ -14,8 +14,8 @@ On 2026-09-24, pinned actionlint 1.7.9 rejected the required `queue: max` concur
 
 GitHub's official 2026 documentation and changelog support this syntax and its 100-pending
 semantics. actionlint 1.7.9 predates the feature. The validation command suppresses this exact
-message only; no workflow key or other diagnostic is ignored. T036 remains pending for the
-controlled provider exercise, and authority-gated T037/T038 remain pending.
+message only; no workflow key or other diagnostic is ignored. The controlled provider exercise
+below confirms acceptance. Authority-gated T037/T038 remain pending.
 
 ## Toolchain
 
@@ -83,7 +83,16 @@ workflow/controller paths; its provider and operational sections remain explicit
 
 ## Provider and operational evidence
 
-- GitHub concurrency syntax/behavior exercise with Azure disabled: pending authorization and run.
+- GitHub concurrency syntax/behavior exercise with Azure disabled: passed 2026-09-24. Three
+  feature-branch runs used a temporary probe with `queue: max` and `cancel-in-progress: false`.
+  Run 36008944059 executed first while runs 36008986212 and 36009013640 were simultaneously
+  retained as pending; all completed successfully in FIFO order. Their probe jobs began at
+  13:54:38Z, 13:55:27Z and 13:56:03Z. In every run, `validate-and-build` and `deploy` were
+  skipped with zero steps, proving no checkout, artifact, OIDC, Azure or deployment action ran.
+  Evidence: https://github.com/Vinidel/feeling/actions/runs/36008944059,
+  https://github.com/Vinidel/feeling/actions/runs/36008986212, and
+  https://github.com/Vinidel/feeling/actions/runs/36009013640. The temporary probe was removed
+  immediately after evidence capture.
 - Repository identity/default branch: `Vinidel/feeling`, `master` (read-only verified 2026-09-24).
 - GitHub `production` environment: API returned 404; existence/access and setup are pending.
 - Azure registry role mode and exact subscription/app scopes: pending because no Azure CLI login
