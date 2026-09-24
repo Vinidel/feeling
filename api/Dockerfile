@@ -13,6 +13,7 @@ WORKDIR /app
 USER deno
 
 COPY --chown=deno:deno api/deno.json api/deno.lock ./
+COPY --chown=deno:deno api/certs ./certs
 COPY --chown=deno:deno api/src ./src
 COPY --from=client_builder --chown=deno:deno /build/client/build ./public
 
@@ -25,4 +26,4 @@ ENV DEPLOYMENT_VERSION=stage-12
 ENV STATIC_ROOT=/app/public
 EXPOSE 8080
 
-CMD ["run", "--frozen", "--cached-only", "--no-prompt", "--allow-env=AUTH0_AUDIENCE,AUTH0_ISSUER,CORS_ORIGINS,DATABASE_SSL_MODE,DATABASE_URL,DEPLOYMENT_VERSION,HOST,PORT,STATIC_ROOT", "--ignore-env=PG*", "--allow-read=/app/public", "--allow-net=0.0.0.0:8080,dev-vin.au.auth0.com:443,aws-0-ap-southeast-2.pooler.supabase.com:6543", "src/main.ts"]
+CMD ["run", "--frozen", "--cached-only", "--no-prompt", "--allow-env=AUTH0_AUDIENCE,AUTH0_ISSUER,CORS_ORIGINS,DATABASE_SSL_MODE,DATABASE_URL,DEPLOYMENT_VERSION,HOST,PORT,STATIC_ROOT", "--ignore-env=PG*", "--allow-read=/app/public,/app/certs", "--allow-net=0.0.0.0:8080,dev-vin.au.auth0.com:443,aws-0-ap-southeast-2.pooler.supabase.com:6543", "src/main.ts"]

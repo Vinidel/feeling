@@ -7,7 +7,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from controller_support import Harness, config, release  # noqa: E402
-from controller_support import DIGEST  # noqa: E402
+from controller_support import BASE_DIGEST, DIGEST  # noqa: E402
 from deploy import DeploymentController, DeploymentError, PhaseDeadline, TargetSnapshot  # noqa: E402
 from support import FakeClock, FakeRunner  # noqa: E402
 
@@ -63,6 +63,57 @@ class DeployTests(unittest.TestCase):
             with self.assertRaisesRegex(DeploymentError, "not healthy"):
                 controller.capture_baseline(PhaseDeadline.after(controller.clock, 30))
             runner.assert_done()
+
+    def test_candidate_waits_for_azure_readiness_and_is_cleanup_eligible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "image.tar"; archive.write_bytes(b"x")
+            clock = FakeClock()
+            image = f"steadypreprodaue001.azurecr.io/steady@{DIGEST}"
+
+            class ProvisioningController(DeploymentController):
+                def __init__(self):
+                    super().__init__(config(), release(archive), root / "state.json",
+                                     clock=clock, verifier=lambda *_a, **_k: None)
+                    self.snapshots = [
+                        {"provisioningState": "Provisioning", "healthState": "None"},
+                        {"provisioningState": "Provisioned", "healthState": "None"},
+                        {"provisioningState": "Provisioned", "healthState": "Healthy"},
+                    ]
+
+                def command(self, argv, deadline):
+                    return ""
+
+                def inspect_revision(self, name, deadline):
+                    return {"name": name, "image": image, "fqdn": "candidate.example",
+                            **self.snapshots.pop(0)}
+
+            controller = ProvisioningController()
+            controller.baseline = TargetSnapshot("steady-preprod--old", BASE_DIGEST, "old.example")
+            candidate = controller.create_candidate(image, PhaseDeadline.after(clock, 60))
+            self.assertEqual(candidate["healthState"], "Healthy")
+            self.assertTrue(controller.candidate_created)
+            self.assertEqual(clock.sleeps, [10, 10])
+
+    def test_unhealthy_candidate_is_tracked_for_cleanup(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "image.tar"; archive.write_bytes(b"x")
+            image = f"steadypreprodaue001.azurecr.io/steady@{DIGEST}"
+
+            class UnhealthyController(DeploymentController):
+                def command(self, argv, deadline):
+                    return ""
+
+                def inspect_revision(self, name, deadline):
+                    return {"name": name, "image": image, "fqdn": "candidate.example",
+                            "provisioningState": "Provisioned", "healthState": "Unhealthy"}
+
+            controller = UnhealthyController(config(), release(archive), root / "state.json",
+                                               clock=FakeClock(), verifier=lambda *_a, **_k: None)
+            controller.baseline = TargetSnapshot("steady-preprod--old", BASE_DIGEST, "old.example")
+            with self.assertRaisesRegex(DeploymentError, "not healthy"):
+                controller.create_candidate(image, PhaseDeadline.after(controller.clock, 60))
+            self.assertTrue(controller.candidate_created)
+
     def test_success_verifies_candidate_before_named_traffic_and_cleanup(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); archive = root / "image.tar"; archive.write_bytes(b"x")
