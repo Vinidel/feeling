@@ -34,7 +34,7 @@ Full Action commit pins and source evidence are in `research.md`.
 
 | Check | Result | Evidence |
 |---|---|---|
-| Deployment unit tests | Pass | 42 tests passed with Python 3.12.14; zero real Azure/HTTP calls |
+| Deployment unit tests | Pass | 44 tests passed with Python 3.12.14; zero real Azure/HTTP calls |
 | actionlint | Pass with one exact compatibility suppression | 1.7.9 reports only its pre-feature `queue` schema error; all other diagnostics pass |
 | API checks | Pass | Deno 2.9.4 `ci`, fmt, lint, check and 30 tests passed in pinned container |
 | Frontend tests/build | Pass | 5 suites / 9 tests passed; optimized build compiled |
@@ -121,8 +121,16 @@ workflow/controller paths; its provider and operational sections remain explicit
   non-secret variables. Read-back matched all expected values. No client secret, paid resource,
   second environment, standing replica, app setting, traffic change, image push or deployment
   occurred during T037.
-- First normal production deployment: pending completed local/provider checks and explicit
-  production activation authority.
+- First normal production deployment attempt was authorized and run from merge commit
+  `4b0d4e7f8ba2315c8fd72c23c8932466d1b719d2` in GitHub run 36013217191. Build, tests, exact-image
+  publication and OIDC authentication passed. Azure created zero-traffic candidate
+  `steady-preprod--4b0d4e7f8b-36013217191-1`, but readiness remained 503 because the earlier
+  TLS-verification change did not supply Supabase's private root CA. The controller also checked
+  health before Azure could finish and did not mark the discovered candidate for cleanup.
+  Traffic stayed 100% on healthy baseline `steady-preprod--qd8vj4s`; the failed candidate was
+  deactivated with zero replicas after diagnosis. Recovery adds Supabase's published public root
+  CA to the image and covers bounded readiness polling plus cleanup eligibility in tests.
+- Successful normal production deployment: pending recovery merge and live verification.
 
 No traffic, image, application runtime configuration, database or user data was changed while
 preparing this evidence file.

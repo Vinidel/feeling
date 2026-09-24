@@ -415,12 +415,17 @@ class DeploymentController:
         image = candidate.get("image")
         if not isinstance(image, str) or image != image_reference:
             raise DeploymentError("candidate revision image digest mismatch")
-        if candidate.get("provisioningState") != "Provisioned" or candidate.get("healthState") != "Healthy":
-            raise DeploymentError("candidate revision is not healthy")
+        self.candidate_created = True
+        while candidate.get("provisioningState") != "Provisioned" or candidate.get("healthState") != "Healthy":
+            if candidate.get("provisioningState") == "Failed" or candidate.get("healthState") == "Unhealthy":
+                raise DeploymentError("candidate revision is not healthy")
+            self.clock.sleep(deadline.command_timeout(10))
+            candidate = self.inspect_revision(expected_name, deadline)
+            if candidate.get("name") != expected_name or candidate.get("image") != image_reference:
+                raise DeploymentError("candidate revision identity changed while provisioning")
         fqdn = candidate.get("fqdn")
         if not isinstance(fqdn, str) or not fqdn:
             raise DeploymentError("candidate revision FQDN is missing")
-        self.candidate_created = True
         self.transition("candidate_created", candidate_revision=name)
         if copy_error is not None:
             raise copy_error

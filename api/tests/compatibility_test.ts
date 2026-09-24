@@ -51,9 +51,17 @@ Deno.test("postgres.js creates a lazy TLS-capable client without native addons o
 });
 
 Deno.test("hosted database TLS verifies the peer certificate", () => {
-  assert.deepEqual(postgresSsl(), { rejectUnauthorized: true });
-  assert.deepEqual(postgresSsl("require"), { rejectUnauthorized: true });
+  const ca = "-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----";
+  assert.deepEqual(postgresSsl(undefined, ca), {
+    ca,
+    rejectUnauthorized: true,
+  });
+  assert.deepEqual(postgresSsl("require", ca), {
+    ca,
+    rejectUnauthorized: true,
+  });
   assert.equal(postgresSsl("disable"), false);
+  assert.throws(() => postgresSsl("require"), /CA certificate is required/);
 });
 
 Deno.test("runtime configuration is strict and defaults to the permitted container listener", () => {

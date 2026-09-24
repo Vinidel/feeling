@@ -7,12 +7,17 @@ export type DatabaseOptions = Readonly<{
 
 export type PostgresSsl =
   | false
-  | { readonly rejectUnauthorized: true };
+  | { readonly ca: string; readonly rejectUnauthorized: true };
 
 export function postgresSsl(
   mode?: "require" | "disable",
+  caCertificate?: string,
 ): PostgresSsl {
-  return mode === "disable" ? false : { rejectUnauthorized: true };
+  if (mode === "disable") return false;
+  if (!caCertificate?.includes("-----BEGIN CERTIFICATE-----")) {
+    throw new Error("database CA certificate is required");
+  }
+  return { ca: caCertificate, rejectUnauthorized: true };
 }
 
 export type QueryValue = boolean | Date | number | string | null;
@@ -67,13 +72,16 @@ function userTransaction(
 }
 
 export function createDatabase(options: DatabaseOptions): Database {
+  const caCertificate = options.ssl === "disable"
+    ? undefined
+    : Deno.readTextFileSync("certs/supabase-prod-ca-2021.crt");
   const sql = postgres(options.databaseUrl, {
     connect_timeout: 5,
     idle_timeout: 20,
     max: 4,
     max_lifetime: 30 * 60,
     prepare: false,
-    ssl: postgresSsl(options.ssl),
+    ssl: postgresSsl(options.ssl, caCertificate),
   });
 
   return {
