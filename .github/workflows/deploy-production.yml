@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - master
+      - codex/github-actions-azure-deploy # Temporary provider exercise; removed after T036.
 
 permissions:
   contents: read
 
 jobs:
   validate-and-build:
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -101,6 +103,7 @@ jobs:
           if-no-files-found: error
 
   deploy:
+    if: github.ref == 'refs/heads/master'
     needs: validate-and-build
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -176,3 +179,22 @@ jobs:
           path: deployment-state.json
           retention-days: 7
           if-no-files-found: warn
+
+  queue-provider-exercise:
+    if: github.ref == 'refs/heads/codex/github-actions-azure-deploy'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    concurrency:
+      group: feeling-production-provider-exercise
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: read
+    steps:
+      - name: Hold the provider queue without Azure access
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          echo "provider exercise start ${SOURCE_SHA}"
+          sleep 30
+          echo "provider exercise finish ${SOURCE_SHA}"
