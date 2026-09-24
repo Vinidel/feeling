@@ -58,7 +58,7 @@ made zero production calls; intentional live failure injection remains prohibite
 | FR-006 | TLS health/readiness/root verifier and failed rollout state implemented; live evidence pending |
 | FR-007 | Atomic allowlisted state, streamed identifiers, summary and secret-redaction tests pass |
 | FR-008 | `queue: max`, two freshness gates and stale skip implemented; controlled provider behavior exercise pending |
-| FR-009 | Setup and manual recovery runbook added; exact Azure IDs/roles pending authenticated read-only inspection |
+| FR-009 | Setup and manual recovery runbook includes verified Azure IDs, exact proposed role actions/scopes and recovery commands |
 | FR-010 | Candidate copies baseline changing image/suffix only; workflow performs no migration or app configuration write |
 | FR-011 | Pre-promotion containment and post-promotion baseline recovery paths implemented; broader failure matrix pending |
 | FR-012 | Existing app/revisions only; no environment, service, tier or permanent standby added |
@@ -94,9 +94,20 @@ workflow/controller paths; its provider and operational sections remain explicit
   https://github.com/Vinidel/feeling/actions/runs/36009013640. The temporary probe was removed
   immediately after evidence capture.
 - Repository identity/default branch: `Vinidel/feeling`, `master` (read-only verified 2026-09-24).
-- GitHub `production` environment: API returned 404; existence/access and setup are pending.
-- Azure registry role mode and exact subscription/app scopes: pending because no Azure CLI login
-  was available; no login or mutation was attempted.
+- GitHub `production` environment: API returned 404; authorized setup must create it with the
+  verified subject `repo:Vinidel/feeling:environment:production` and `master`-only policy.
+- Azure read-only preflight passed 2026-09-25 using the isolated profile: enabled subscription
+  `d840b6bc-0a68-438f-a400-2589a385114c`, tenant `8e263016-4fa0-4d3c-a7f2-7cc76d872ccb`,
+  registry mode `LegacyRegistryPermissions`, ACR admin disabled, app mode `Multiple`, and named
+  100% traffic on healthy/provisioned `steady-preprod--qd8vj4s` at immutable digest
+  `sha256:bffde960b8d9eb263d72a7b02b817039bb75733dad93f533c3c77fc4a4757497`.
+- Cost/configuration preflight: workload profile `Consumption`, scale 0–1, 0.25 CPU / 0.5 GiB,
+  and only the secret reference name `database-url`. No secret value was queried.
+- Existing roles: owner inherited at subscription; runtime service principal has only `AcrPull`
+  at the registry. No deployment principal or app-scoped deployment role exists. Proposed setup
+  is one federated deployment identity, the documented custom app role at exact app scope,
+  `AcrPush` at exact legacy-registry scope, and three non-secret GitHub environment variables.
+  No Azure or GitHub setting was changed by T035.
 - OIDC federation, scoped Azure roles, and GitHub production environment setup: pending exact
   mutation review and explicit production-infrastructure authority.
 - First normal production deployment: pending completed local/provider checks and explicit

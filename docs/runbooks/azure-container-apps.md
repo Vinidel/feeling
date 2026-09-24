@@ -8,9 +8,10 @@ is the sole production environment. The workflow does not create another Contain
 environment, paid tier, database, or warm standby. Temporary overlap between revisions and
 verification requests can consume usage.
 
-The target is subscription-specific and must be checked during setup. Its fixed non-secret
-resource coordinates are:
+The target was checked read-only on 2026-09-25. Its fixed non-secret resource coordinates are:
 
+- subscription `d840b6bc-0a68-438f-a400-2589a385114c` (`Azure subscription 1`)
+- tenant `8e263016-4fa0-4d3c-a7f2-7cc76d872ccb`
 - resource group `rg-steady-preprod-aue`
 - Container App and container `steady-preprod`
 - registry `steadypreprodaue001.azurecr.io`
@@ -42,12 +43,31 @@ reviewer and protection rules. Do not add a client secret.
 
 The proposed deployment identity needs only these capabilities:
 
-1. At the existing Container App scope, read the app and revisions, copy/activate/deactivate a
-   revision, and read/set ingress traffic. Use a reviewed custom role if no built-in role grants
-   that exact boundary without unrelated resource-management permissions.
-2. At the existing registry scope, push and read image manifests. In classic registry RBAC mode,
-   use `AcrPush`; in repository ABAC mode, use the corresponding repository writer role scoped
-   to `steady`.
+1. Create a custom role named `Feeling Production Revision Deployer` with only the following
+   control-plane actions. `containerApps/write` is required by Azure's app update surface used for
+   revision copy and named traffic; the explicit revision actions support recovery and cleanup.
+   Do not include `listSecrets/action`, delete, exec, logstream, role-assignment, environment write,
+   or resource-group write permissions.
+
+   ```text
+   Microsoft.App/containerApps/read
+   Microsoft.App/containerApps/write
+   Microsoft.App/containerApps/revisions/read
+   Microsoft.App/containerApps/revisions/activate/action
+   Microsoft.App/containerApps/revisions/deactivate/action
+   ```
+
+   Assign it only at:
+
+   ```text
+   /subscriptions/d840b6bc-0a68-438f-a400-2589a385114c/resourceGroups/rg-steady-preprod-aue/providers/Microsoft.App/containerApps/steady-preprod
+   ```
+
+2. The registry reports `LegacyRegistryPermissions`, so assign built-in `AcrPush` only at:
+
+   ```text
+   /subscriptions/d840b6bc-0a68-438f-a400-2589a385114c/resourceGroups/rg-steady-preprod-aue/providers/Microsoft.ContainerRegistry/registries/steadypreprodaue001
+   ```
 
 Do not grant subscription Contributor, role-assignment permissions, or reuse the app's runtime
 pull identity. The workflow must not receive `DATABASE_URL`, Azure client secrets, or production
@@ -61,18 +81,26 @@ Review these exact intended mutations before setup:
 - one registry/repository push assignment at the existing registry boundary;
 - three non-secret GitHub environment variables and a `master` deployment restriction.
 
-Read-only repository verification on 2026-09-24 confirmed `Vinidel/feeling` is the repository and
-`master` is its default branch. The `production` environment endpoint returned 404, so setup must
-review whether the environment is absent or hidden by current permissions before proposing its
-creation. Azure CLI credentials were unavailable, so subscription ID, tenant ID, registry role
-mode, exact app resource ID and existing Azure assignments remain pending; do not infer them.
+Read-only repository verification confirmed `Vinidel/feeling` and default branch `master`, making
+the exact federated subject `repo:Vinidel/feeling:environment:production`. The GitHub `production`
+environment endpoint returned 404 and therefore must be created during authorized setup with a
+`master`-only deployment policy; there are no existing environment protections to replace.
+
+Read-only Azure verification on 2026-09-25 confirmed the subscription is enabled, ACR admin is
+disabled, and registry authorization mode is `LegacyRegistryPermissions`. The app is in Multiple
+revision mode with 100% named traffic on healthy/provisioned `steady-preprod--qd8vj4s`, using
+immutable digest `sha256:bffde960b8d9eb263d72a7b02b817039bb75733dad93f533c3c77fc4a4757497`.
+The runtime user-assigned identity retains `AcrPull` at registry scope. The only inherited app/ACR
+administrator is the owner's subscription-level role. No deployment service principal or app-scoped
+deployment assignment exists yet. The app remains on `Consumption`, scales from zero to one replica,
+and uses 0.25 CPU / 0.5 GiB. Its only secret reference name is `database-url`; no secret value was read.
 
 ## Preflight and provider validation
 
-Read-only checks must establish that the subscription is expected, revision mode is `Multiple`,
-there is exactly one named 100% traffic target, and that revision is active, provisioned and
-healthy. Confirm its immutable image digest and confirm the app remains on the Consumption
-workload profile with its existing scale and resource settings.
+Before applying setup, repeat the read-only checks that established the expected enabled
+subscription, `Multiple` revision mode, exactly one named 100% traffic target, and an active,
+provisioned, healthy baseline with an immutable image digest. Confirm the app remains on its
+Consumption workload profile with its existing scale and resource settings.
 
 Run `actionlint` locally. Then validate the workflow on GitHub with all Azure login and deploy
 steps disabled. Confirm the provider accepts the fixed `feeling-production` group,
