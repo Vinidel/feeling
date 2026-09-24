@@ -108,10 +108,21 @@ workflow/controller paths; its provider and operational sections remain explicit
   is one federated deployment identity, the documented custom app role at exact app scope,
   `AcrPush` at exact legacy-registry scope, and three non-secret GitHub environment variables.
   No Azure or GitHub setting was changed by T035.
-- OIDC federation, scoped Azure roles, and GitHub production environment setup: pending exact
-  mutation review and explicit production-infrastructure authority.
+- Authorized T037 setup applied and verified 2026-09-25. Dedicated Entra application/client ID
+  `3906ee09-ad38-4235-94d8-ebfd451bf846` has one federated credential with issuer
+  `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, and exact
+  subject `repo:Vinidel/feeling:environment:production`. Its service principal
+  `f6df6cac-e147-420f-8256-940b4e54fbf5` has exactly `Feeling Production Revision Deployer` at
+  the existing app scope and `AcrPush` at the existing registry scope. The custom role contains
+  only app read/write, revision read, activate and deactivate actions; it has no delete,
+  list-secrets, exec, environment, authorization, or data actions.
+- GitHub environment `production` was created with custom branch policy `master`, no wait timer or
+  reviewer gate, and only `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID`
+  non-secret variables. Read-back matched all expected values. No client secret, paid resource,
+  second environment, standing replica, app setting, traffic change, image push or deployment
+  occurred during T037.
 - First normal production deployment: pending completed local/provider checks and explicit
   production activation authority.
 
-No production configuration, Azure role assignment, GitHub environment, traffic, image, or
-data was changed while preparing this evidence file.
+No traffic, image, application runtime configuration, database or user data was changed while
+preparing this evidence file.

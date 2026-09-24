@@ -24,6 +24,8 @@ tests and a ready workflow do not grant that authority.
 
 ## Operational setup proposal
 
+Status: applied and verified on 2026-09-25 under explicit owner approval.
+
 Before changing Azure or GitHub, record the actual subscription ID, tenant ID, GitHub owner and
 repository, registry role-assignment mode, current revision mode, named traffic target, and
 existing GitHub `production` environment protections. Do not record tokens or secret values.
@@ -81,6 +83,13 @@ Review these exact intended mutations before setup:
 - one registry/repository push assignment at the existing registry boundary;
 - three non-secret GitHub environment variables and a `master` deployment restriction.
 
+Applied identity details (non-secret): application/client ID
+`3906ee09-ad38-4235-94d8-ebfd451bf846`, application object ID
+`966f8014-ea80-4bb3-aa72-3a9cf95e6e3d`, and service-principal object ID
+`f6df6cac-e147-420f-8256-940b4e54fbf5`. Federation, both role assignments, the GitHub environment,
+its exact `master` branch policy and the three environment variables were read back successfully.
+No client secret exists. No runtime identity assignment or application configuration was changed.
+
 Read-only repository verification confirmed `Vinidel/feeling` and default branch `master`, making
 the exact federated subject `repo:Vinidel/feeling:environment:production`. The GitHub `production`
 environment endpoint returned 404 and therefore must be created during authorized setup with a
@@ -90,10 +99,10 @@ Read-only Azure verification on 2026-09-25 confirmed the subscription is enabled
 disabled, and registry authorization mode is `LegacyRegistryPermissions`. The app is in Multiple
 revision mode with 100% named traffic on healthy/provisioned `steady-preprod--qd8vj4s`, using
 immutable digest `sha256:bffde960b8d9eb263d72a7b02b817039bb75733dad93f533c3c77fc4a4757497`.
-The runtime user-assigned identity retains `AcrPull` at registry scope. The only inherited app/ACR
-administrator is the owner's subscription-level role. No deployment service principal or app-scoped
-deployment assignment exists yet. The app remains on `Consumption`, scales from zero to one replica,
-and uses 0.25 CPU / 0.5 GiB. Its only secret reference name is `database-url`; no secret value was read.
+The runtime user-assigned identity retains `AcrPull` at registry scope. The dedicated deployment
+service principal now has only the documented custom role at app scope and `AcrPush` at registry
+scope. The app remains on `Consumption`, scales from zero to one replica, and uses 0.25 CPU / 0.5 GiB.
+Its only secret reference name is `database-url`; no secret value was read.
 
 ## Preflight and provider validation
 
