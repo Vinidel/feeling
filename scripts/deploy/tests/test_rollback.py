@@ -87,6 +87,11 @@ class RollbackTests(unittest.TestCase):
             root = Path(tmp); archive = root / "i"; archive.write_bytes(b"x")
             controller = Harness(archive, root / "s")
             calls = []
+            controller.inspect_target = lambda _deadline: {
+                "revisionMode": "Multiple", "traffic": [
+                    {"revisionName": "steady--serving", "weight": 100, "latestRevision": False}
+                ]
+            }
             controller.command = lambda _argv, _deadline: calls.append("deactivate") or ""
             controller.inspect_revision = lambda _name, _deadline: {"active": False}
             DeploymentController.deactivate(
@@ -98,6 +103,11 @@ class RollbackTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); archive = root / "i"; archive.write_bytes(b"x")
             controller = Harness(archive, root / "s")
+            controller.inspect_target = lambda _deadline: {
+                "revisionMode": "Multiple", "traffic": [
+                    {"revisionName": "steady--serving", "weight": 100, "latestRevision": False}
+                ]
+            }
             controller.command = lambda _argv, _deadline: ""
             controller.inspect_revision = lambda _name, _deadline: {"active": True}
             with self.assertRaisesRegex(DeploymentError, "still active"):
@@ -109,6 +119,11 @@ class RollbackTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); archive = root / "i"; archive.write_bytes(b"x")
             controller = Harness(archive, root / "s")
+            controller.inspect_target = lambda _deadline: {
+                "revisionMode": "Multiple", "traffic": [
+                    {"revisionName": "steady--serving", "weight": 100, "latestRevision": False}
+                ]
+            }
             controller.command = lambda _argv, _deadline: (_ for _ in ()).throw(
                 DeploymentError("command timed out: az")
             )
@@ -116,6 +131,90 @@ class RollbackTests(unittest.TestCase):
             DeploymentController.deactivate(
                 controller, "steady--old", PhaseDeadline.after(controller.clock, 30)
             )
+
+    def test_deactivation_refuses_to_mutate_named_serving_revision(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "i"; archive.write_bytes(b"x")
+            controller = Harness(archive, root / "s")
+            controller.inspect_target = lambda _deadline: {
+                "revisionMode": "Multiple", "traffic": [
+                    {"revisionName": "steady--serving", "weight": 100, "latestRevision": False}
+                ]
+            }
+            controller.command = lambda *_args: self.fail("deactivation command must not run")
+            with self.assertRaisesRegex(DeploymentError, "serving revision"):
+                DeploymentController.deactivate(
+                    controller, "steady--serving", PhaseDeadline.after(controller.clock, 30)
+                )
+
+    def test_failed_recovery_cleanup_leaves_serving_candidate_active(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "i"; archive.write_bytes(b"x")
+            controller = Harness(archive, root / "s")
+            controller.state.candidate_revision = "steady--candidate"
+            controller.inspect_target = lambda _deadline: {
+                "revisionMode": "Multiple", "traffic": [
+                    {"revisionName": "steady--candidate", "weight": 100, "latestRevision": False}
+                ]
+            }
+            controller.command = lambda *_args: self.fail("serving candidate must not be deactivated")
+            controller.deactivate = DeploymentController.deactivate.__get__(controller)
+            DeploymentController.cleanup_candidate(controller)
+            self.assertEqual(controller.state.cleanup_outcome, "failed")
+
+    def test_activation_reads_back_active_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "i"; archive.write_bytes(b"x")
+            controller = Harness(archive, root / "s")
+            calls = []
+            controller.command = lambda _argv, _deadline: calls.append("activate") or ""
+            controller.inspect_revision = lambda _name, _deadline: {"active": True}
+            DeploymentController.activate(
+                controller, "steady--old", PhaseDeadline.after(controller.clock, 30)
+            )
+            self.assertEqual(calls, ["activate"])
+
+    def test_activation_rejects_successful_noop_before_traffic_restore(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "i"; archive.write_bytes(b"x")
+            controller = Harness(archive, root / "s")
+            controller.command = lambda _argv, _deadline: ""
+            controller.inspect_revision = lambda _name, _deadline: {"active": False}
+            with self.assertRaisesRegex(DeploymentError, "not active"):
+                DeploymentController.activate(
+                    controller, "steady--old", PhaseDeadline.after(controller.clock, 30)
+                )
+
+    def test_activation_reconciles_timeout_when_revision_is_active(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "i"; archive.write_bytes(b"x")
+            controller = Harness(archive, root / "s")
+            controller.command = lambda _argv, _deadline: (_ for _ in ()).throw(
+                DeploymentError("command timed out: az")
+            )
+            controller.inspect_revision = lambda _name, _deadline: {"active": True}
+            DeploymentController.activate(
+                controller, "steady--old", PhaseDeadline.after(controller.clock, 30)
+            )
+
+    def test_recovery_confirms_activation_before_restoring_traffic(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "i"; archive.write_bytes(b"x")
+            controller = Harness(archive, root / "s")
+            controller.baseline = TargetSnapshot("steady--old", DIGEST, "old.example")
+            controller.state.candidate_revision = "steady--new"
+            controller.inspect_target = lambda _deadline: {
+                "revisionMode": "Multiple", "traffic": [
+                    {"revisionName": "steady--new", "weight": 100, "latestRevision": False}
+                ]
+            }
+            snapshots = iter([{"active": False}, {"active": True}])
+            controller.inspect_revision = lambda _name, _deadline: next(snapshots)
+            controller.command = lambda _argv, _deadline: controller.events.append("activate-command") or ""
+            DeploymentController.recover(controller)
+            self.assertEqual(controller.state.recovery_outcome, "restored")
+            self.assertLess(controller.events.index("activate-command"),
+                            controller.events.index("traffic:steady--old"))
 
 
 if __name__ == "__main__": unittest.main()

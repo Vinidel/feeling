@@ -399,6 +399,20 @@ class DeploymentController:
                 or entry.get("weight") != 100 or entry.get("latestRevision") is True):
             raise DeploymentError("production traffic changed outside this deployment")
 
+    def require_not_serving(self, revision: str, deadline: PhaseDeadline) -> None:
+        """Fail closed unless production has one different, named 100% traffic target."""
+        target = self.inspect_target(deadline)
+        traffic = target.get("traffic")
+        if target.get("revisionMode") != "Multiple" or not isinstance(traffic, list) or len(traffic) != 1:
+            raise DeploymentError("production traffic state is unsafe for cleanup")
+        entry = traffic[0]
+        if (not isinstance(entry, dict) or not isinstance(entry.get("revisionName"), str)
+                or not entry.get("revisionName") or entry.get("weight") != 100
+                or entry.get("latestRevision") is True):
+            raise DeploymentError("production traffic state is unsafe for cleanup")
+        if entry["revisionName"] == revision:
+            raise DeploymentError("refusing to deactivate the serving revision")
+
     def create_candidate(self, image_reference: str, deadline: PhaseDeadline) -> dict[str, Any]:
         assert self.baseline is not None
         expected_name = f"{self.config.container_app}--{self.release.revision_suffix}"
@@ -444,6 +458,7 @@ class DeploymentController:
                       "--output", "none"], deadline)
 
     def deactivate(self, revision: str, deadline: PhaseDeadline) -> None:
+        self.require_not_serving(revision, deadline)
         command_error: DeploymentError | None = None
         try:
             self.command(["az", "containerapp", "revision", "deactivate", "--name", self.config.container_app,
@@ -457,6 +472,21 @@ class DeploymentController:
             if command_error is not None:
                 raise command_error
             raise DeploymentError("deactivated revision is still active")
+
+    def activate(self, revision: str, deadline: PhaseDeadline) -> None:
+        command_error: DeploymentError | None = None
+        try:
+            self.command(["az", "containerapp", "revision", "activate", "--name", self.config.container_app,
+                          "--resource-group", self.config.resource_group, "--revision", revision,
+                          "--output", "none"], deadline)
+        except DeploymentError as exc:
+            # Reconcile an ambiguous command result before any traffic mutation.
+            command_error = exc
+        current = self.inspect_revision(revision, deadline)
+        if current.get("active") is not True:
+            if command_error is not None:
+                raise command_error
+            raise DeploymentError("activated revision is not active")
 
     def recover(self) -> None:
         if self.baseline is None:
@@ -475,9 +505,7 @@ class DeploymentController:
             if serving != self.baseline.baseline_revision:
                 baseline = self.inspect_revision(self.baseline.baseline_revision, deadline)
                 if baseline.get("active") is not True:
-                    self.command(["az", "containerapp", "revision", "activate", "--name", self.config.container_app,
-                                  "--resource-group", self.config.resource_group,
-                                  "--revision", self.baseline.baseline_revision, "--output", "none"], deadline)
+                    self.activate(self.baseline.baseline_revision, deadline)
                 self.set_traffic(self.baseline.baseline_revision, deadline)
                 self.require_named_traffic(self.baseline.baseline_revision, deadline)
             self.verifier(self.config.production_url, include_root=True, clock=self.clock,
