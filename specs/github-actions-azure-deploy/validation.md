@@ -1,6 +1,6 @@
 # Implementation Validation Evidence
 
-Status: implementation in progress. Unexecuted and authority-gated checks remain pending.
+Status: implementation and authorized production activation complete.
 
 ## Workflow-linter compatibility finding
 
@@ -15,17 +15,17 @@ On 2026-09-24, pinned actionlint 1.7.9 rejected the required `queue: max` concur
 GitHub's official 2026 documentation and changelog support this syntax and its 100-pending
 semantics. actionlint 1.7.9 predates the feature. The validation command suppresses this exact
 message only; no workflow key or other diagnostic is ignored. The controlled provider exercise
-below confirms acceptance. Authority-gated T037/T038 remain pending.
+below confirms acceptance. Authorized T037/T038 completed successfully.
 
 ## Toolchain
 
 | Tool | Selected version | Evidence |
 |---|---|---|
 | Python | 3.12.14 | Local bundled runtime verified |
-| Node | 20 workflow target; 26.7.0 local | Local frontend suite verified; hosted Node 20 pending |
+| Node | 20 workflow target; 26.7.0 local | Local frontend suite and hosted workflow verified |
 | Deno | 2.9.4 | Pinned container suite verified |
 | Docker | 28.0.0 client / 27.4.0 server | Linux/AMD64 build passed |
-| Azure CLI / Container Apps extension | 2.78.0 / 1.2.0b4 | Version selection recorded; production use pending |
+| Azure CLI / Container Apps extension | 2.78.0 / 1.2.0b4 | Version selection and production deployment verified |
 | actionlint | 1.7.9 | Installed from pinned release; required queue syntax rejected as recorded above |
 
 Full Action commit pins and source evidence are in `research.md`.
@@ -130,7 +130,14 @@ workflow/controller paths; its provider and operational sections remain explicit
   Traffic stayed 100% on healthy baseline `steady-preprod--qd8vj4s`; the failed candidate was
   deactivated with zero replicas after diagnosis. Recovery adds Supabase's published public root
   CA to the image and covers bounded readiness polling plus cleanup eligibility in tests.
-- Successful normal production deployment: pending recovery merge and live verification.
+- Successful normal production deployment completed in GitHub run 36015099458 from merge commit
+  `709fe7f9b1bdb93637fbc5c592227314122a83ce`. The exact published image digest is
+  `sha256:61ea68f3e2365f7647dfbcfeecf3ea6c1d88691f877cd1ccea16461fa78eb355`. Azure reports candidate
+  `steady-preprod--709fe7f9b1-36015099458-1` Healthy/Provisioned with 100% named traffic and the
+  same immutable digest; baseline `steady-preprod--qd8vj4s` was deactivated. The sanitized state
+  artifact records `phase: complete`, `outcome: succeeded`, `cleanup_outcome: complete`, and no
+  recovery or failure stage. Public `/healthz`, `/readyz`, and `/` returned HTTP 200, and the
+  served frontend bundle contains the visible `Auto-deploy is live` marker.
 
-No traffic, image, application runtime configuration, database or user data was changed while
-preparing this evidence file.
+No application runtime configuration, database schema, database record, user data, paid Azure
+resource, or additional environment was introduced by this feature.
