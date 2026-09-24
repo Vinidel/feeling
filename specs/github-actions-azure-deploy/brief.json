@@ -1,0 +1,77 @@
+{
+  "work_id": "github-actions-azure-deploy",
+  "title": "Deploy Feeling to Azure after merges to master",
+  "outcome": "Automatically deploy the existing Feeling application directly to production at delasc.io after each merge to master, with validation and visible deployment results.",
+  "users": [
+    "Feeling maintainer"
+  ],
+  "scope": {
+    "in": [
+      "GitHub Actions automation deploys merges to master directly to the existing production Azure Container App steady-preprod serving delasc.io.",
+      "Build and deploy the combined React frontend and Deno API using api/Dockerfile.",
+      "Run relevant existing checks before deployment and verify deployed health.",
+      "Document required GitHub and Azure authentication, configuration, and recovery steps."
+    ],
+    "out": [
+      "Application feature changes.",
+      "Database schema or data migrations.",
+      "Replacement hosting architecture.",
+      "Production resource provisioning or secret changes without explicit authority.",
+      "A separate staging or nonproduction environment; the owner selected one environment to control costs."
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "given": "A change is merged into master",
+      "when": "GitHub receives the resulting master update",
+      "then": "A GitHub Actions run validates and builds the application for Azure deployment."
+    },
+    {
+      "id": "AC-002",
+      "given": "Required validation and the container build succeed",
+      "when": "The deployment job runs",
+      "then": "The combined frontend and API image for that commit is deployed directly to the existing production Azure Container App steady-preprod serving delasc.io."
+    },
+    {
+      "id": "AC-003",
+      "given": "A required validation or build step fails",
+      "when": "The run completes",
+      "then": "The run reports failure and does not deploy that build."
+    },
+    {
+      "id": "AC-004",
+      "given": "Azure accepts the deployment",
+      "when": "Post-deployment verification runs",
+      "then": "The workflow checks application health and readiness and reports failure if either fails."
+    },
+    {
+      "id": "AC-005",
+      "given": "A maintainer inspects a deployment run",
+      "when": "They review its result",
+      "then": "They can identify the source commit, deployed image, target, and verification outcome without exposed credentials."
+    }
+  ],
+  "constraints": [
+    "Use Spec Kit for this new feature as requested by the user; existing migration artefacts remain historical context.",
+    "Existing image serves frontend and API from one origin.",
+    "Never commit or print secrets.",
+    "The owner explicitly selected automatic production deployment on merges to master. This draft records that intended behaviour; it does not authorize unrelated production infrastructure or secret changes.",
+    "The former nonproduction Azure environment is now the sole production environment, as confirmed by the owner on 2026-09-10; preprod resource names are historical."
+  ],
+  "dependencies": [
+    "Existing production Container App steady-preprod and registry steadypreprodaue001 in resource group rg-steady-preprod-aue.",
+    "GitHub Actions identity authorized for registry push and application deployment."
+  ],
+  "risks": [
+    "With one environment, a faulty deployment can affect live users directly; validation, health verification, and recovery need design.",
+    "Overlapping deployment runs could publish older changes after newer changes; address ordering in design."
+  ],
+  "unresolved_questions": [],
+  "approval": {
+    "status": "pending",
+    "by": "",
+    "at": "",
+    "reason": "Deployment target clarified by the owner on 2026-09-10; explicit approval of the complete brief remains pending."
+  }
+}
