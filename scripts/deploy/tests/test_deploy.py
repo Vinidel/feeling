@@ -119,9 +119,39 @@ class DeployTests(unittest.TestCase):
             root = Path(tmp); archive = root / "image.tar"; archive.write_bytes(b"x")
             controller = Harness(archive, root / "state.json")
             self.assertEqual(controller.run(), 0)
+            self.assertLess(controller.events.index("verify:https://www.delasc.io"),
+                            controller.events.index("candidate"))
             self.assertLess(controller.events.index("candidate"), controller.events.index("traffic:steady-preprod--new"))
+            baseline_recheck = controller.events.index("traffic-verified:steady-preprod--old")
+            self.assertLess(controller.events.index("verify:https://new.example"), baseline_recheck)
+            self.assertLess(baseline_recheck, controller.events.index("traffic:steady-preprod--new"))
             self.assertLess(controller.events.index("traffic:steady-preprod--new"), controller.events.index("deactivate:steady-preprod--old"))
             self.assertEqual(json.loads((root / "state.json").read_text())["outcome"], "succeeded")
+
+    def test_public_baseline_health_failure_prevents_candidate_creation(self):
+        def verifier(url, *_args, **_kwargs):
+            if url == "https://www.delasc.io":
+                raise DeploymentError("baseline unhealthy")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "image.tar"; archive.write_bytes(b"x")
+            controller = Harness(archive, root / "state.json", verifier=verifier)
+            self.assertEqual(controller.run(), 1)
+            self.assertNotIn("candidate", controller.events)
+            self.assertFalse(any(item.startswith("traffic:") for item in controller.events))
+
+    def test_outside_traffic_change_before_promotion_stops_without_overwrite(self):
+        class ChangedTraffic(Harness):
+            def require_named_traffic(self, revision, deadline):
+                self._event("traffic-verified:" + revision)
+                if revision.endswith("--old"):
+                    raise DeploymentError("production traffic changed outside this deployment")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "image.tar"; archive.write_bytes(b"x")
+            controller = ChangedTraffic(archive, root / "state.json")
+            self.assertEqual(controller.run(), 1)
+            self.assertNotIn("traffic:steady-preprod--new", controller.events)
+            self.assertNotIn("recover", controller.events)
+            self.assertIn("cleanup-candidate", controller.events)
 
     def test_baseline_failure_prevents_candidate_and_traffic(self):
         with tempfile.TemporaryDirectory() as tmp:

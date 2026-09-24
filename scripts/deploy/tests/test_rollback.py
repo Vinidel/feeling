@@ -13,7 +13,7 @@ class RollbackTests(unittest.TestCase):
         calls = {"count": 0}
         def verifier(*_a, **_k):
             calls["count"] += 1
-            if calls["count"] == 2:
+            if calls["count"] == 3:
                 from deploy import DeploymentError
                 raise DeploymentError("public failed")
         with tempfile.TemporaryDirectory() as tmp:
@@ -81,6 +81,41 @@ class RollbackTests(unittest.TestCase):
             self.assertEqual(controller.state.candidate_revision, expected)
             self.assertTrue(controller.candidate_created)
             self.assertEqual(calls, ["copy"])
+
+    def test_deactivation_reads_back_inactive_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "i"; archive.write_bytes(b"x")
+            controller = Harness(archive, root / "s")
+            calls = []
+            controller.command = lambda _argv, _deadline: calls.append("deactivate") or ""
+            controller.inspect_revision = lambda _name, _deadline: {"active": False}
+            DeploymentController.deactivate(
+                controller, "steady--old", PhaseDeadline.after(controller.clock, 30)
+            )
+            self.assertEqual(calls, ["deactivate"])
+
+    def test_deactivation_rejects_successful_noop_when_revision_remains_active(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "i"; archive.write_bytes(b"x")
+            controller = Harness(archive, root / "s")
+            controller.command = lambda _argv, _deadline: ""
+            controller.inspect_revision = lambda _name, _deadline: {"active": True}
+            with self.assertRaisesRegex(DeploymentError, "still active"):
+                DeploymentController.deactivate(
+                    controller, "steady--old", PhaseDeadline.after(controller.clock, 30)
+                )
+
+    def test_deactivation_reconciles_timeout_when_revision_is_inactive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); archive = root / "i"; archive.write_bytes(b"x")
+            controller = Harness(archive, root / "s")
+            controller.command = lambda _argv, _deadline: (_ for _ in ()).throw(
+                DeploymentError("command timed out: az")
+            )
+            controller.inspect_revision = lambda _name, _deadline: {"active": False}
+            DeploymentController.deactivate(
+                controller, "steady--old", PhaseDeadline.after(controller.clock, 30)
+            )
 
 
 if __name__ == "__main__": unittest.main()

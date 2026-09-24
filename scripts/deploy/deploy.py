@@ -215,6 +215,12 @@ class PhaseDeadline:
         return min(maximum, remaining)
 
 
+def bounded_deadline(clock: Clock, seconds: float, outer: PhaseDeadline) -> PhaseDeadline:
+    """Allocate a phase budget without extending the enclosing rollout deadline."""
+    outer.command_timeout()
+    return PhaseDeadline(clock, min(clock.monotonic() + seconds, outer.ends_at))
+
+
 def _json_object(value: str, context: str) -> dict[str, Any]:
     try:
         parsed = json.loads(value)
@@ -438,9 +444,19 @@ class DeploymentController:
                       "--output", "none"], deadline)
 
     def deactivate(self, revision: str, deadline: PhaseDeadline) -> None:
-        self.command(["az", "containerapp", "revision", "deactivate", "--name", self.config.container_app,
-                      "--resource-group", self.config.resource_group, "--revision", revision,
-                      "--output", "none"], deadline)
+        command_error: DeploymentError | None = None
+        try:
+            self.command(["az", "containerapp", "revision", "deactivate", "--name", self.config.container_app,
+                          "--resource-group", self.config.resource_group, "--revision", revision,
+                          "--output", "none"], deadline)
+        except DeploymentError as exc:
+            # A timed-out or disconnected command may still have been applied by Azure.
+            command_error = exc
+        current = self.inspect_revision(revision, deadline)
+        if current.get("active") is not False:
+            if command_error is not None:
+                raise command_error
+            raise DeploymentError("deactivated revision is still active")
 
     def recover(self) -> None:
         if self.baseline is None:
@@ -493,6 +509,7 @@ class DeploymentController:
             self.verify_subscription(preflight)
             image_reference = self.publish(preflight)
             baseline = self.capture_baseline(preflight)
+            self.verifier(self.config.production_url, clock=self.clock, deadline=preflight.ends_at)
             if baseline.baseline_digest == self.state.registry_digest:
                 self.verifier(self.config.production_url, include_root=True, clock=self.clock,
                               deadline=preflight.ends_at)
@@ -504,15 +521,20 @@ class DeploymentController:
                 self.transition("superseded", outcome="superseded")
                 return 0
             forward = PhaseDeadline.after(self.clock, 1200)
-            candidate = self.create_candidate(image_reference, forward)
-            self.verifier(f"https://{candidate['fqdn']}", clock=self.clock, deadline=forward.ends_at)
+            provisioning = bounded_deadline(self.clock, 600, forward)
+            candidate = self.create_candidate(image_reference, provisioning)
+            candidate_health = bounded_deadline(self.clock, 300, forward)
+            self.verifier(f"https://{candidate['fqdn']}", clock=self.clock,
+                          deadline=candidate_health.ends_at)
             self.transition("candidate_verified")
-            self.set_traffic(str(candidate["name"]), forward)
+            promotion = bounded_deadline(self.clock, 300, forward)
+            self.require_named_traffic(baseline.baseline_revision, promotion)
+            self.set_traffic(str(candidate["name"]), promotion)
             self.transition("promotion_attempted")
-            self.require_named_traffic(str(candidate["name"]), forward)
+            self.require_named_traffic(str(candidate["name"]), promotion)
             self.verifier(self.config.production_url, include_root=True, clock=self.clock,
-                          deadline=forward.ends_at)
-            current = self.inspect_revision(str(candidate["name"]), forward)
+                          deadline=promotion.ends_at)
+            current = self.inspect_revision(str(candidate["name"]), promotion)
             if current.get("image") != image_reference:
                 raise DeploymentError("public serving revision identity changed")
             self.transition("public_verified")
