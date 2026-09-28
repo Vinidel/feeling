@@ -14,10 +14,10 @@ const ActivityGroup = ({activity, handleOnChange}) => {
   return (
     <label
       htmlFor={activity.id}
-      className={`minimal-activity-chip ${activity.checked ? 'minimal-activity-chip-selected' : ''}`}
+      className={`st-chip ${activity.checked ? 'st-chip-selected' : ''}`}
     >
       <input
-        className="minimal-checkbox"
+        className="st-chip-input"
         type="checkbox"
         id={activity.id}
         value={activity.id}
