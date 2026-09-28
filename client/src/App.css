@@ -505,6 +505,7 @@
 
 .st-chart-canvas {
   height: 240px;
+  overflow: hidden;
 }
 
 .st-chart-empty,
