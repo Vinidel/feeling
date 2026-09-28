@@ -31,6 +31,46 @@ The retired Go API, Heroku application, and MongoDB runtime are no longer part
 of the live system. Their final encrypted migration and decommission backups
 are retained according to the project runbooks.
 
+## Production deployment
+
+Updates to `master` deploy through GitHub Actions using blue-green behaviour at
+the Azure Container Apps revision level. The current revision continues serving
+production while a temporary candidate revision is created and verified. This
+uses the existing Container App rather than a second environment or permanent
+standby capacity.
+
+```mermaid
+flowchart TD
+    A[Push or merge to master] --> B[Run API and frontend checks]
+    B -->|Checks fail| X[Fail without deploying]
+    B -->|Checks pass| C[Build and record the exact image]
+    C --> D[Enter serialized production deployment]
+    D --> E{Still current master SHA?}
+    E -->|No| Y[Record as superseded]
+    E -->|Yes| F[Publish image by immutable digest]
+    F --> G[Capture and verify the serving baseline]
+    G --> H[Create zero-traffic candidate revision]
+    H --> I[Verify candidate health and readiness]
+    I -->|Fails| J[Keep baseline traffic and safely deactivate candidate]
+    I -->|Passes| K{Baseline still has 100% traffic?}
+    K -->|No| L[Stop without overwriting outside traffic changes]
+    K -->|Yes| M[Switch 100% traffic to candidate]
+    M --> N[Verify named traffic, digest, and public endpoints]
+    N -->|Passes| O[Safely deactivate old baseline]
+    O --> P[Report successful deployment]
+    N -->|Fails| Q[Activate and verify baseline if needed]
+    Q --> R[Restore 100% traffic to baseline]
+    R --> S[Verify public recovery]
+    S --> T[Safely deactivate failed candidate]
+    T --> U[Report failed deployment with recovery outcome]
+```
+
+Every traffic or revision mutation is checked against Azure state. Cleanup
+refuses to deactivate the named serving revision, and a recovered deployment
+remains reported as failed so the original release problem stays visible. See
+the [Azure Container Apps runbook](docs/runbooks/azure-container-apps.md) for
+configuration, investigation, and manual recovery procedures.
+
 ## Project structure
 
 ```text
