@@ -30,15 +30,11 @@ const App = () => {
   };
 
   return (
-    <div className="app-shell">
-      <div className="app-gradient" />
-      <div className="app-noise" />
-      <div className="app-inner">
-        {isAuthenticated ? <NavBar activeView={view} /> : null}
-        <main className="app-content">
-          {isAuthenticated ? renderView() : <LoginComponent />}
-        </main>
-      </div>
+    <div className="st-app">
+      {isAuthenticated ? <NavBar activeView={view} /> : null}
+      <main className={`st-main ${isAuthenticated ? '' : 'st-main-guest'}`}>
+        {isAuthenticated ? renderView() : <LoginComponent />}
+      </main>
     </div>
   );
 }

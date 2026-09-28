@@ -112,46 +112,43 @@ const FeelingComponent  = ()  =>{
   }
 
   return (
-    <div className="minimal-layout character-layout">
-      <section className="minimal-section panel section-card section-card-character">
-        <div className="minimal-section-head">
-          <div>
-            <h2 className="section-title section-title-character">Today</h2>
-            <p className="section-subtitle section-subtitle-character">A quick check-in for mood, movement, and context.</p>
-          </div>
-        </div>
+    <div className="st-stack st-journal">
+      <section className={`st-card st-checkin st-wash-${selectedMood.key}`}>
+        <p className="st-kicker">Today</p>
+        <h1 className="st-title">How’s today landing?</h1>
+        <p className="st-subtitle">A quick check-in for mood, movement, and context.</p>
 
-        <form className="minimal-form" onSubmit={handleSubmit}>
+        <form className="st-form" onSubmit={handleSubmit}>
           <div>
-            <label className="minimal-label">Mood</label>
-            <div className="minimal-selected-mood">
-              Selected: <span className="minimal-selected-mood-value">{selectedMood.emoji} {selectedMood.label}</span>
-            </div>
-            <div className="minimal-mood-grid">
+            <div className="st-blobs" role="group" aria-label="Mood">
               {MOOD_OPTIONS.map((option) => {
                 const selected = state.status === option.value;
                 return (
                   <button
                     key={option.value}
                     type="button"
-                    className={`minimal-mood-card character-mood-card ${option.moodTone} ${selected ? 'minimal-mood-card-selected character-mood-card-selected' : ''}`}
+                    className={`st-blob st-fill-${option.key} ${selected ? 'st-blob-selected' : ''}`}
                     onClick={() => setStatus(option.value)}
                     aria-pressed={selected}
+                    aria-label={option.label}
+                    title={option.label}
                   >
-                    <span className="minimal-mood-emoji character-mood-emoji">{option.emoji}</span>
-                    <span className="minimal-mood-text character-mood-text">{option.label}</span>
+                    <span className="st-blob-emoji" aria-hidden="true">{option.emoji}</span>
                   </button>
                 );
               })}
             </div>
+            <p className="st-mood-name" aria-live="polite">
+              Feeling <strong>{selectedMood.label.toLowerCase()}</strong>
+            </p>
           </div>
 
           <div>
-            <div className="minimal-row-head">
-              <label className="minimal-label">Activities</label>
-              <span className="minimal-muted">Optional</span>
+            <div className="st-label-row">
+              <span className="st-label">What did you get up to?</span>
+              <span className="st-optional">Optional</span>
             </div>
-            <div className="minimal-activity-grid">
+            <div className="st-chips">
               {Object.entries(state.activities).map(([key, value]) => (
                 <ActivityGroup
                   key={key}
@@ -162,62 +159,56 @@ const FeelingComponent  = ()  =>{
             </div>
           </div>
 
-          <div className="minimal-meta-grid feeling-meta-grid">
-            <div className="feeling-meta-field">
-              <label className="minimal-label">Date</label>
+          <div className="st-meta-grid">
+            <div>
+              <label className="st-label" htmlFor="activity-date">Date</label>
               <input
-                className="minimal-input character-input"
+                className="st-input"
                 type="date"
                 id="activity-date"
                 value={state.createdAt}
                 onChange={(e) => setDate(e.target.value)}
               />
             </div>
-            <div className="feeling-meta-field feeling-note-field">
-              <label className="minimal-label" htmlFor="comment">Note</label>
+            <div>
+              <label className="st-label" htmlFor="comment">Note</label>
               <textarea
                 name="comment"
                 placeholder="What influenced your mood today?"
                 id="comment"
-                className="minimal-textarea character-input feeling-note-textarea"
+                className="st-textarea"
                 value={state.comment}
                 onChange={handleCommentChange}
               />
-              <div className="minimal-helper-text">
+              <div className="st-helper">
                 Optional: one or two lines are enough to make patterns easier to spot later.
               </div>
             </div>
           </div>
 
-          {saveMessage ? <div className="minimal-feedback minimal-feedback-success">{saveMessage}</div> : null}
-          {saveError ? <div className="minimal-feedback minimal-feedback-error">{saveError}</div> : null}
+          {saveMessage ? <div className="st-feedback st-feedback-success">{saveMessage}</div> : null}
+          {saveError ? <div className="st-feedback st-feedback-error">{saveError}</div> : null}
 
-          <div className="minimal-actions">
-            <button
-              className="minimal-primary-button character-primary-button"
-              type="submit"
-              disabled={isSaving}
-            >
-              {isSaving ? 'Saving…' : 'Save'}
-            </button>
-          </div>
+          <button
+            className="st-primary"
+            type="submit"
+            disabled={isSaving}
+          >
+            {isSaving ? 'Saving…' : 'Save check-in'}
+          </button>
         </form>
       </section>
 
-      <section className="minimal-section panel section-card section-card-character">
-        <div className="minimal-section-head">
-          <div>
-            <h2 className="section-title section-title-character">History and trends</h2>
-            <p className="section-subtitle section-subtitle-character">Last 30 days at a glance, plus your entry history.</p>
-          </div>
-        </div>
+      <section className="st-card">
+        <h2 className="st-h2">History and trends</h2>
+        <p className="st-subtitle">Last 30 days at a glance, plus your entry history.</p>
         <WithFetch
           myUpdate={update}
           url={`${BASE_API_URL}/api/feelings`}
           render={({data, isFetching}) => (
-            <div className="minimal-history-stack">
+            <div className="st-history">
               {!isFetching && data.length ? (
-                <div className="minimal-chart-shell">
+                <div className="st-chart-shell">
                   <FeelingChartComponent feelingHistory={data} />
                 </div>
               ) : null}

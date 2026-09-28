@@ -137,36 +137,41 @@ export default function WeeklyTrackerComponent() {
   };
 
   return (
-    <div className="minimal-layout character-layout">
-      <section className="minimal-section panel section-card section-card-character tracker-hero">
-        <div className="minimal-section-head tracker-head">
-          <div>
-            <h2 className="section-title section-title-character">Weekly tracker</h2>
-            <p className="section-subtitle section-subtitle-character">
-              A quick weekly reset for body, build, and bow / hunt.
-            </p>
-          </div>
-          <div className="tracker-summary">
-            <div className="tracker-summary-label">Completion</div>
-            <div className="tracker-summary-value">{completion}%</div>
+    <div className="st-stack">
+      <section className="st-card st-week-hero">
+        <div>
+          <p className="st-kicker">This week</p>
+          <h1 className="st-title">Weekly tracker</h1>
+          <p className="st-subtitle">A quick weekly reset for body, build, and bow / hunt.</p>
+          <div className="st-progress">
+            <div className="st-ring" style={{ '--st-pct': `${completion}%` }}>
+              <span className="st-ring-value">{completion}%</span>
+            </div>
+            <div>
+              <div className="st-progress-title">Completion</div>
+              <div className="st-progress-sub">
+                {Object.values(checks).filter(Boolean).length} of {checklist.length} done
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="tracker-top-grid tracker-top-grid-simple">
+        <div className="st-week-fields">
           <div>
-            <label className="minimal-label" htmlFor="weekOf">Week of</label>
+            <label className="st-label" htmlFor="weekOf">Week of</label>
             <input
               id="weekOf"
               type="date"
-              className="minimal-input character-input"
+              className="st-input"
               value={weekOf}
               onChange={(e) => setWeekOf(e.target.value)}
             />
           </div>
           <div>
-            <label className="minimal-label">Week overall felt</label>
+            <label className="st-label" htmlFor="weekMood">Week overall felt</label>
             <select
-              className="minimal-input character-input"
+              id="weekMood"
+              className="st-select"
               value={mood}
               onChange={(e) => setMood(e.target.value)}
             >
@@ -176,43 +181,36 @@ export default function WeeklyTrackerComponent() {
         </div>
       </section>
 
-      <section className="minimal-section panel section-card section-card-character">
-        <div className="minimal-section-head">
-          <div>
-            <h2 className="section-title section-title-character">Weekly checklist</h2>
-            <p className="section-subtitle section-subtitle-character">Hit the basics. Don’t overthink it.</p>
-          </div>
-        </div>
+      <section className="st-card">
+        <h2 className="st-h2">Weekly checklist</h2>
+        <p className="st-subtitle">Hit the basics. Don’t overthink it.</p>
 
-        <div className="tracker-check-grid tracker-check-grid-simple">
-          {checklist.map((item) => (
+        <div className="st-goals">
+          {checklist.map((item, index) => (
             <button
               key={item.key}
               type="button"
-              className={`tracker-check ${checks[item.key] ? 'tracker-check-active' : ''}`}
+              className={`st-goal st-goal-${index % 3} ${checks[item.key] ? 'st-goal-active' : ''}`}
               onClick={() => toggleCheck(item.key)}
+              aria-pressed={checks[item.key]}
             >
-              <span className="tracker-check-box">{checks[item.key] ? '✓' : ''}</span>
+              <span className="st-goal-check" aria-hidden="true">{checks[item.key] ? '✓' : ''}</span>
               <span>{item.label}</span>
             </button>
           ))}
         </div>
       </section>
 
-      <section className="minimal-section panel section-card section-card-character">
-        <div className="minimal-section-head">
-          <div>
-            <h2 className="section-title section-title-character">Short review</h2>
-            <p className="section-subtitle section-subtitle-character">Just enough to make next week better.</p>
-          </div>
-        </div>
+      <section className="st-card">
+        <h2 className="st-h2">Short review</h2>
+        <p className="st-subtitle">Just enough to make next week better.</p>
 
-        <div className="tracker-text-grid tracker-text-grid-simple">
+        <div className="st-review">
           <div>
-            <label className="minimal-label" htmlFor="win">One win</label>
+            <label className="st-label" htmlFor="win">One win</label>
             <textarea
               id="win"
-              className="minimal-textarea character-input tracker-textarea tracker-textarea-simple"
+              className="st-textarea"
               placeholder="What actually went well?"
               value={notes.win}
               onChange={(e) => updateNote('win', e.target.value)}
@@ -220,21 +218,21 @@ export default function WeeklyTrackerComponent() {
           </div>
 
           <div>
-            <label className="minimal-label" htmlFor="challenge">Main challenge</label>
+            <label className="st-label" htmlFor="challenge">Main challenge</label>
             <textarea
               id="challenge"
-              className="minimal-textarea character-input tracker-textarea tracker-textarea-simple"
+              className="st-textarea"
               placeholder="What got in the way?"
               value={notes.challenge}
               onChange={(e) => updateNote('challenge', e.target.value)}
             />
           </div>
 
-          <div className="tracker-full-width">
-            <label className="minimal-label" htmlFor="nextWeek">Next week focus</label>
+          <div className="st-review-full">
+            <label className="st-label" htmlFor="nextWeek">Next week focus</label>
             <textarea
               id="nextWeek"
-              className="minimal-textarea character-input tracker-textarea tracker-textarea-simple"
+              className="st-textarea"
               placeholder="What matters most next week?"
               value={notes.nextWeek}
               onChange={(e) => updateNote('nextWeek', e.target.value)}
@@ -242,15 +240,15 @@ export default function WeeklyTrackerComponent() {
           </div>
         </div>
 
-        <div className="minimal-actions tracker-actions">
+        <div className="st-actions">
           {feedback.message ? (
-            <div className={`minimal-feedback ${feedback.type === 'success' ? 'minimal-feedback-success' : 'minimal-feedback-error'}`}>
+            <div className={`st-feedback ${feedback.type === 'success' ? 'st-feedback-success' : 'st-feedback-error'}`}>
               {feedback.message}
             </div>
           ) : null}
           <button
             type="button"
-            className="minimal-primary-button character-primary-button"
+            className="st-primary"
             onClick={handleSave}
             disabled={isSaving}
           >
@@ -261,3 +259,4 @@ export default function WeeklyTrackerComponent() {
     </div>
   );
 }
+

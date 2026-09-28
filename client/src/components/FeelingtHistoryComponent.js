@@ -67,7 +67,7 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
       .map((mood) => ({
         label: mood.label,
         value: totals[mood.label] || 0,
-        className: mood.trendTone,
+        className: `st-fill-${mood.key}`,
       }));
   }, [sortedFeelings]);
 
@@ -75,7 +75,7 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
 
   const renderContent = () => {
     return (
-      <div className="minimal-history-list">
+      <div className="st-entries">
         {filteredFeelings.map((f, i) => {
           const date = moment(new Date(f.createdAt)).format('DD MMM YYYY');
           const status = getMoodByValue(f.status);
@@ -84,40 +84,34 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
           const activities = parseActivitiesToArray(f.activities);
 
           return (
-            <div className={`minimal-history-item character-history-item ${status.historyTone}`} key={rowId}>
+            <div className={`st-entry st-tint-${status.key}`} key={rowId}>
               <button
                 type="button"
-                className="minimal-history-button"
+                className="st-entry-button"
                 onClick={() => toggle(rowId)}
+                aria-expanded={isOpen}
               >
-                <div className="minimal-history-main">
-                  <span className="minimal-history-emoji character-history-emoji">{status.emoji}</span>
-                  <div>
-                    <div className="minimal-history-title">{status.label}</div>
-                    <div className="minimal-history-date">{date}</div>
-                  </div>
-                </div>
-
-                <div className="minimal-history-side">
-                  {activities.length ? (
-                    <div className="minimal-history-tags">
-                      {activities.map((activity) => (
-                        <span className="minimal-tag character-tag" key={activity}>
-                          {activityMeta[activity] || activity}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                  <span className={`minimal-history-chevron ${isOpen ? 'minimal-history-chevron-open' : ''}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
+                <span className="st-entry-emoji" aria-hidden="true">{status.emoji}</span>
+                <span className="st-entry-meta">
+                  <span className="st-entry-mood">{status.label}</span>
+                  <span className="st-entry-date">{date}</span>
+                </span>
+                {activities.length ? (
+                  <span className="st-entry-tags">
+                    {activities.map((activity) => (
+                      <span className="st-tag" key={activity}>
+                        {activityMeta[activity] || activity}
+                      </span>
+                    ))}
                   </span>
-                </div>
+                ) : null}
+                <svg xmlns="http://www.w3.org/2000/svg" className={`st-chevron ${isOpen ? 'st-chevron-open' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
 
               {isOpen ? (
-                <div className="minimal-history-note character-history-note">
+                <div className="st-entry-note">
                   {f.comment ? f.comment : 'No note added.'}
                 </div>
               ) : null}
@@ -130,46 +124,47 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
 
   const renderEmpty = () => {
     return (
-      <div className="minimal-empty-state character-empty-state">
+      <div className="st-empty">
         No entries yet - your check-ins will show up here.
       </div>
     )
   }
 
   return (
-    <div className="history-stack">
+    <div className="st-history">
       {!isFetching && totalEntries ? (
-        <div className="history-summary-card">
-          <div className="history-summary-top">
+        <div className="st-summary">
+          <div className="st-summary-top">
             <div>
-              <div className="history-summary-title">Trend snapshot</div>
-              <div className="history-summary-subtitle">{totalEntries} total check-ins</div>
+              <div className="st-summary-title">Trend snapshot</div>
+              <div className="st-summary-subtitle">{totalEntries} total check-ins</div>
             </div>
-            <div className="history-filter-group">
+            <div className="st-filters">
               {filterMeta.map((filter) => (
                 <button
                   key={filter.key}
                   type="button"
-                  className={`history-filter-chip ${activeFilter === filter.key ? 'history-filter-chip-active' : ''}`}
+                  className={`st-filter ${activeFilter === filter.key ? 'st-filter-active' : ''}`}
                   onClick={() => setActiveFilter(filter.key)}
+                  aria-pressed={activeFilter === filter.key}
                 >
                   {filter.label}
                 </button>
               ))}
             </div>
           </div>
-          <div className="history-summary-bars">
+          <div className="st-bars">
             {moodSummary.map((entry) => {
               const width = totalEntries ? Math.max(6, Math.round((entry.value / totalEntries) * 100)) : 6;
               return (
-                <div key={entry.label} className="history-summary-row">
-                  <div className="history-summary-row-head">
+                <div key={entry.label}>
+                  <div className="st-bar-head">
                     <span>{entry.label}</span>
                     <span>{entry.value}</span>
                   </div>
-                  <div className="history-trend-track">
+                  <div className="st-bar-track">
                     <div
-                      className={`history-trend-fill ${entry.className}`}
+                      className={`st-bar-fill ${entry.className}`}
                       style={{ width: `${width}%` }}
                     />
                   </div>
@@ -182,7 +177,7 @@ const FeelingHistoryComponent = ({data = [], isFetching}) => {
       {isFetching ? <SpinnerComponent /> : null}
       {!isFetching && filteredFeelings.length ? renderContent() : null}
       {!isFetching && totalEntries > 0 && !filteredFeelings.length ? (
-        <div className="minimal-empty-state character-empty-state">
+        <div className="st-empty">
           No entries match this filter yet.
         </div>
       ) : null}

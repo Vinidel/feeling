@@ -6,6 +6,7 @@ import { clampMood, getMoodByValue } from '../moodMeta'
 
 const CHART_WINDOW_DAYS = 30
 const SUMMARY_WINDOW_DAYS = 7
+const CHART_ACCENT = '#66798a'
 
 const parseEntryDate = (raw) => {
   if (!raw) {
@@ -217,29 +218,33 @@ export default function FeelingChartComponent({ feelingHistory }) {
   const hasRecentChartData = chartData.chartEntries.length > 0
 
   return (
-    <div className="mood-chart-panel">
-      <div className="mood-chart-summary">
-        <div className="mood-chart-summary-main">
-          <span className="mood-chart-summary-label">Last 7 days</span>
-          <span className="mood-chart-summary-value">
+    <div className="st-chart-panel">
+      <div className="st-chart-summary">
+        <div className="st-chart-summary-main">
+          <span className="st-chart-summary-label">Last 7 days</span>
+          <span className="st-chart-summary-value">
             {summary.dominantLabel ? `Mostly ${summary.dominantLabel}` : 'No check-ins yet'}
           </span>
         </div>
-        <div className="mood-chart-summary-meta">
+        <div className="st-chart-summary-meta">
           <span>{summary.checkInCount} check-in{summary.checkInCount === 1 ? '' : 's'}</span>
-          <span className="mood-chart-summary-divider">·</span>
+          <span aria-hidden="true">·</span>
           <span>{summary.trendLabel}</span>
         </div>
       </div>
 
       {hasRecentChartData ? (
-        <div className="mood-chart-canvas">
+        <div className="st-chart-canvas">
           <Chart
             options={{
               data: chartSeries,
               primaryAxis,
               secondaryAxes,
-              dark: true,
+              dark: false,
+              getSeriesStyle: () => ({
+                color: CHART_ACCENT,
+                line: { strokeWidth: 2.5 },
+              }),
               getDatumStyle: () => ({
                 circle: {
                   r: 4,
@@ -250,7 +255,7 @@ export default function FeelingChartComponent({ feelingHistory }) {
           />
         </div>
       ) : (
-        <div className="mood-chart-empty">
+        <div className="st-chart-empty">
           No check-ins in the last {CHART_WINDOW_DAYS} days. Your next save will show up here.
         </div>
       )}

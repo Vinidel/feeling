@@ -1,43 +1,33 @@
 export const MOOD_OPTIONS = [
   {
     value: 0,
+    key: 'rough',
     emoji: '😔',
     label: 'Rough',
-    moodTone: 'mood-tone-rough',
-    historyTone: 'history-tone-rough',
-    trendTone: 'history-trend-tone-rough',
   },
   {
     value: 1,
+    key: 'low',
     emoji: '🙁',
     label: 'Low',
-    moodTone: 'mood-tone-low',
-    historyTone: 'history-tone-low',
-    trendTone: 'history-trend-tone-low',
   },
   {
     value: 2,
+    key: 'steady',
     emoji: '😐',
     label: 'Steady',
-    moodTone: 'mood-tone-steady',
-    historyTone: 'history-tone-steady',
-    trendTone: 'history-trend-tone-steady',
   },
   {
     value: 3,
+    key: 'good',
     emoji: '🙂',
     label: 'Good',
-    moodTone: 'mood-tone-good',
-    historyTone: 'history-tone-good',
-    trendTone: 'history-trend-tone-good',
   },
   {
     value: 4,
+    key: 'great',
     emoji: '😀',
     label: 'Great',
-    moodTone: 'mood-tone-great',
-    historyTone: 'history-tone-great',
-    trendTone: 'history-trend-tone-great',
   },
 ]
 
